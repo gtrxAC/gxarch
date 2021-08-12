@@ -1,0 +1,29 @@
+val r0, 0xFFF0
+val r1, 0xFFF1
+val r2, 0xFFF2
+val r3, 0xFFF3
+val res, 0xFFFA
+
+dat start
+dat "Hello world!"
+
+start:
+	set r0, 0x00
+	set r1, 0x01
+	set r2, 0xF0
+
+loop:
+	add *r1, 1
+	mov res, r1
+	cj *r0, continue
+	jmp exit
+
+continue:
+	sub *r1, 2
+	mov res, r3
+	mov *r0, *r2
+	jmp loop
+
+exit:
+	end
+	jmp exit

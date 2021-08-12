@@ -1,0 +1,58 @@
+Grammar {
+  Program = Command*
+
+  Command =
+    inst ListOf<Argument, ",">        -- inst
+  | dat ListOf<(value | string), ","> -- data
+  | val ident "," value               -- value
+  | ident ":"                         -- label
+
+  Argument = "*"? value
+
+  value =
+    "0x" hexDigit+    -- hex
+  | "0b" ("0" | "1")+ -- bin
+  | digit+            -- dec
+  | ident             -- label
+
+  // ___________________________________________________________________________
+  //
+  //  Strings
+  // ___________________________________________________________________________
+  //
+
+  string = "\"" stringpart* "\""
+
+  stringpart =
+    "\\n"  -- lf
+  | "\\r"  -- cr
+  | "\\t"  -- tab
+  | "\\0"  -- nul
+  | "\\\\" -- bs
+  | (~"\"" ~"\n" any)
+
+  // ___________________________________________________________________________
+  //
+  //  Identifiers and Keywords
+  // ___________________________________________________________________________
+  //
+
+  ident = ~keyword identstart identpart*
+  identstart = letter | "_"    
+  identpart = alnum | "_"
+
+  k<name> = name ~identpart
+
+  keyword = dat | val | inst
+
+  dat = k<"dat">
+  val = k<"val">
+
+  inst =
+    k<"nop"> | k<"set"> | k<"mov">
+  | k<"add"> | k<"sub"> | k<"mul"> | k<"div">
+  | k<"and"> | k<"or">  | k<"xor"> | k<"not">
+  | k<"equ"> | k<"lt">  | k<"gt">
+  | k<"jmp"> | k<"cj">  | k<"js">  | k<"cjs"> | k<"ret">
+  | k<"key"> | k<"end">
+}

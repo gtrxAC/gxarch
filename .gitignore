@@ -1,0 +1,8 @@
+.vscode/
+node_modules/
+gxvm
+png2h
+splash.h
+tileset.h
+dump.txt
+output.gxa
