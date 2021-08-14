@@ -127,8 +127,8 @@ hex dec bin    op  arg arg   description
 11  17  010001 cjs adr adr   Jump to subroutine adrA if value at adrB != 0
 12  18  010010 ret --- ---   Return from subroutine
 
-13  19  010011 key val ---   Return 1 if key code val is pressed, see Keyboard
-14  20  010100 end --- ---   Draw current frame
+13  19  010011 key val --- * Return 1 if key code val is pressed, see Keyboard
+14  20  010100 end --- ---   Draw current frame (VRAM is not cleared)
 ```
 
 ## Keyboard
