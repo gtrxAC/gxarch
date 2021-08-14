@@ -1,6 +1,8 @@
 Grammar {
   Program = Command*
 
+  space += ";" (~"\n" any)* -- comment
+
   Command =
     inst ListOf<Argument, ",">        -- inst
   | dat ListOf<(value | string), ","> -- data
@@ -13,7 +15,7 @@ Grammar {
     "0x" hexDigit+    -- hex
   | "0b" ("0" | "1")+ -- bin
   | digit+            -- dec
-  | ident             -- label
+  | ident ~":"        -- label
 
   // ___________________________________________________________________________
   //

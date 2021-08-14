@@ -127,9 +127,21 @@ hex dec bin    op  arg arg   description
 11  17  010001 cjs adr adr   Jump to subroutine adrA if value at adrB != 0
 12  18  010010 ret --- ---   Return from subroutine
 
-13  19  010011 key val ---   Return how many frames key val has been pressed for, 0 = not pressed
+13  19  010011 key val ---   Return 1 if key code val is pressed, see Keyboard
 14  20  010100 end --- ---   Draw current frame
 ```
+
+## Keyboard
+
+The keyboard uses a modified US layout:
+
+* Shift and Caps Lock are not scancodes, they just allow access to uppercase letters and more characters.
+* ESC maps to 0x1B, Tab maps to 0x09, Backspace maps to 0x08 and Return/Enter maps to 0x0A.
+* Keys F1 to F12 map to 0x80 to 0x8B.
+* Arrow keys up, left, down, and right map to 0x8C, 0x8D, 0x8E, and 0x8F.
+* Ctrl, Windows/Super key, and Alt map to 0x11, 0x12, and 0x13.
+* Right Ctrl, Alt and Windows/Super map to the same scancodes as on the left.
+* Menu, Numpad, Print Screen, Scroll Lock, Insert, Delete, Home, End, Page Up/Down are not mapped.
 
 
 ## Implementation Notes

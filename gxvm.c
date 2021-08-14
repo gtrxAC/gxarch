@@ -24,6 +24,34 @@
 // _____________________________________________________________________________
 //
 
+const u16 keymap[0x100] = {
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x07
+	0, KEY_BACKSPACE, KEY_TAB, KEY_ENTER, 0, 0, 0, 0, // 0x0F
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x17
+	0, 0, 0, KEY_ESCAPE, 0, 0, 0, 0, // 0x1F
+	' ', '!', '"', '#', '$', '%', '&', '\'',
+	'(', ')', '*', '+', ',', '-', '.', '/',
+	'0', '1', '2', '3', '4', '5', '6', '7',
+	'8', '9', ':', ';', '<', '=', '>', '?',
+	'@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+	'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+	'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+	'X', 'Y', 'Z', '[', '\\', ']', '^', '_',
+	'`', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+	'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+	'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+	'x', 'y', 'z', '{', '|', '}', '~', 0, // 0x7F
+	KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, // 0x87
+	KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_UP, KEY_LEFT, KEY_DOWN, KEY_RIGHT, // 0x8F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x9F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xAF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xBF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xCF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xDF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xEF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xFF
+};
+
 enum Instruction {
 	I_NOP, I_SET, I_MOV,
 	I_ADD, I_SUB, I_MUL, I_DIV,
@@ -79,7 +107,7 @@ u8 debug = 0;
 
 // Dump a range of memory into a file.
 void dumprange(FILE *dump, u16 start, u16 end) {
-	for (u16 i = 0; i < 0x800; i++) {
+	for (u16 i = start; i < end; i++) {
 		fprintf(dump, "0x%.3x |", i);
 
 		for (u8 j = 0; j < 16; j++) {
@@ -106,13 +134,13 @@ void err(const char *fmt, ...) {
 		if (dump) {
 			fprintf(dump, "ROM/RAM\n");
 			dumprange(dump, 0x000, 0x800);
-			fprintf(dump, "Call stack");
+			fprintf(dump, "\n\nCall stack\n");
 			dumprange(dump, 0x800, 0x810);
-			fprintf(dump, "Tileset");
+			fprintf(dump, "\n\nTileset\n");
 			dumprange(dump, 0xB00, 0xF00);
-			fprintf(dump, "VRAM");
+			fprintf(dump, "\n\nVRAM\n");
 			dumprange(dump, 0xF00, 0xF3F);
-			fprintf(dump, "Registers");
+			fprintf(dump, "\n\nRegisters\n");
 			dumprange(dump, 0xFFF, 0x1000);
 			fclose(dump);
 		}
@@ -166,12 +194,15 @@ u16 getaddr(u8 ptr) {
 
 // Run one instruction.
 void step(void) {
+	// Update random number register
+	vm.mem[RAND] = GetRandomValue(0, 0xFF);
+
 	u8 inst = consume();
 	u8 arg1ptr = inst & 0b10000000;
 	u8 arg2ptr = inst & 0b01000000;
 
 	switch (inst & 0b00111111) {
-		#define dbgins(i) //printf("0x%.4x/%d %s\n", get16(PC) - 1, get16(PC) - 1, i)
+		#define dbgins(i) printf("0x%.4x/%d %s\n", get16(PC) - 1, get16(PC) - 1, i)
 
 		case I_NOP:
 			dbgins("nop");
@@ -247,8 +278,10 @@ void step(void) {
 
 		case I_RET:
 			dbgins("ret");
-			set16(PC, get16(get16(SP)));
+			set16(get16(SP), 0);
 			set16(SP, get16(SP) - 2);
+			printf("%d\n",get16(get16(SP)));
+			set16(PC, get16(get16(SP)));
 
 			if (get16(SP) < 0x8000)
 				err("Call stack underflow, 0x%.4x < 0x8000", get16(SP));
@@ -259,12 +292,22 @@ void step(void) {
 			vm.needdraw = true;
 			break;
 
-		case I_KEY:
-			vm.mem[RESULT] = IsKeyPressed(getval(arg1ptr));
+		case I_KEY: {
+			u8 val = getval(arg1ptr);
+			u16 key = keymap[val];
+
+			if (!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_RIGHT_SHIFT)) {
+				if (key >= 'a' && key <= 'z') key -= 32;
+			}
+
+
+			printf("gxvm key: %d   raylib key: %d   pressed? %d\n", val, key, IsKeyPressed(key));
+			vm.mem[RESULT] = IsKeyPressed(key);
 			break;
+		}
 
 		default:
-			err("Invalid opcode or not implemented: %d", inst);
+			err("Invalid opcode at 0x%.4x: %d", get16(PC), inst);
 			break;
 	}
 }
