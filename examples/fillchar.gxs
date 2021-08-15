@@ -13,7 +13,8 @@ val res, 0xFFF1    ; R register low byte
 dat start          ; entry point
 
 start:
-	end end end    ; draw current frame (20fps)
+	end end end    ; draw current frame 6 times for 10fps
+	end end end
 	set r0, 0xF0   ; set address to beginning of VRAM 0xF000
 	
 loop:

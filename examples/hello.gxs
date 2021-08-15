@@ -1,29 +1,35 @@
-val r0, 0xFFE0
-val r1, 0xFFE1
-val r2, 0xFFE2
-val r3, 0xFFE3
-val res, 0xFFF1
+; Hello world for gxarch
+; Author: gtrxAC
+; Date: 2021-08-12
+; Writes "Hello world!" on the screen
 
-dat start
-dat "Hello world!"
+
+val r0, 0xFFE0         ; current character address, high byte
+val r1, 0xFFE1         ; current character low byte
+val r2, 0xFFE2         ; destination VRAM address for current char, high byte
+val r3, 0xFFE3         ; destination low byte
+val res, 0xFFF1        ; R register, only need low byte
+
+dat start              ; entry point
+dat "Hello world!"     ; null terminated string to write
 
 start:
-	set r0, 0x00
-	set r1, 0x01
-	set r2, 0xF0
+	set r1, 0x01       ; move to the start of the string (minus one, because
+	                   ; it's incremented at the start)
+	set r2, 0xF0       ; set destination to start of VRAM
 
 loop:
-	add *r1, 1
-	mov res, r1
-	cj *r0, continue
-	jmp exit
+	add *r1, 1         ; increment source address
+	mov res, r1        ; write incremented
+	cj *r0, continue   ; if current char is not null term, continue
+	jmp exit           ; null term, exit
 
 continue:
-	sub *r1, 2
-	mov res, r3
-	mov *r0, *r2
-	jmp loop
+	sub *r1, 2         ; destination addr low byte = source addr low byte - 2,
+	mov res, r3        ; because source string is 2 offset in the ROM
+	mov *r0, *r2       ; move source character to destination
+	jmp loop           ; and loop back
 
-exit:
+exit:                  ; everything is printed, keep drawing frames
 	end
 	jmp exit
