@@ -1,0 +1,31 @@
+; FillChar for gxarch
+; Author: gtrxAC
+; Date: 2021-08-15
+; Fills the screen with increasing characters
+
+
+val r0, 0xFFE0     ; current VRAM address high byte
+val r1, 0xFFE1     ; VRAM low byte
+val r2, 0xFFE2     ; current char being incremented
+val resh, 0xFFF0   ; R register high byte
+val res, 0xFFF1    ; R register low byte
+
+dat start          ; entry point
+
+start:
+	end end end    ; draw current frame (20fps)
+	set r0, 0xF0   ; set address to beginning of VRAM 0xF000
+	
+loop:
+	mov *r0, r2    ; get the char at current address
+	add *r2, 1     ; increment the char
+	mov res, r2    ; write the incremented char
+	mov r2, *r0    ; and copy it to VRAM
+
+	add *r1, 1     ; increment address
+	mov res, r1    ; write incremented
+	add *r0, *resh ; increment high byte if overflow
+	mov res, r0    ; write incremented
+	equ *r0, 0xF4  ; reached end of VRAM?
+	cj res, start  ; go back to start
+	jmp loop       ; otherwise loop back

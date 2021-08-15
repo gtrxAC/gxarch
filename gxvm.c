@@ -75,11 +75,11 @@ struct VM {
 } vm;
 
 #define ENTRY 0x0000
-#define STACK 0x8000
-#define TILESET 0xB000
+#define STACK 0xF400
+#define TILESET 0xD000
 #define VRAM 0xF000
-#define REG(n) (0xFFF0 + n)
-#define RESULT 0xFFFA
+#define REG(n) (0xFFE0 + n)
+#define RESULT 0xFFF0
 #define RAND 0xFFFB
 #define PC 0xFFFC
 #define SP 0xFFFE
@@ -134,12 +134,14 @@ void err(const char *fmt, ...) {
 		if (dump) {
 			fprintf(dump, "ROM/RAM\n");
 			dumprange(dump, 0x000, 0x800);
-			fprintf(dump, "\n\nCall stack\n");
-			dumprange(dump, 0x800, 0x810);
+			fprintf(dump, "\n\nSave RAM\n");
+			dumprange(dump, 0x800, 0xBFF);
 			fprintf(dump, "\n\nTileset\n");
-			dumprange(dump, 0xB00, 0xF00);
+			dumprange(dump, 0xD00, 0xEFF);
 			fprintf(dump, "\n\nVRAM\n");
-			dumprange(dump, 0xF00, 0xF3F);
+			dumprange(dump, 0xF00, 0xF3E);
+			fprintf(dump, "\n\nCall stack\n");
+			dumprange(dump, 0xF40, 0xF4F);
 			fprintf(dump, "\n\nRegisters\n");
 			dumprange(dump, 0xFFF, 0x1000);
 			fclose(dump);
@@ -224,7 +226,7 @@ void step(void) {
 
 		#define BINOP(op) {\
 			dbgins(#op);\
-			vm.mem[RESULT] = getval(arg1ptr) op getval(arg2ptr);\
+			set16(RESULT, getval(arg1ptr) op getval(arg2ptr));\
 			break;\
 		}
 
@@ -280,7 +282,7 @@ void step(void) {
 			dbgins("ret");
 			set16(get16(SP), 0);
 			set16(SP, get16(SP) - 2);
-			printf("%d\n",get16(get16(SP)));
+			printf("%d\n",get16(get16(SP))); //
 			set16(PC, get16(get16(SP)));
 
 			if (get16(SP) < 0x8000)
@@ -293,15 +295,14 @@ void step(void) {
 			break;
 
 		case I_KEY: {
-			u8 val = getval(arg1ptr);
-			u16 key = keymap[val];
+			// u8 val = getval(arg1ptr);
+			u16 key = keymap[getval(arg1ptr)];
 
 			if (!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_RIGHT_SHIFT)) {
 				if (key >= 'a' && key <= 'z') key -= 32;
 			}
 
-
-			printf("gxvm key: %d   raylib key: %d   pressed? %d\n", val, key, IsKeyPressed(key));
+			// printf("gxvm key: %d   raylib key: %d   pressed? %d\n", val, key, IsKeyPressed(key));
 			vm.mem[RESULT] = IsKeyPressed(key);
 			break;
 		}

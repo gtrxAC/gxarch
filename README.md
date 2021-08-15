@@ -51,23 +51,27 @@ cc gxvm.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o gxvm
 
 ### `0x0000 - 0x7FFF` 32k RAM/ROM
  * ROM is loaded at `0x0000`.
- 
-### `0x8000 - 0x8100` call stack
 
-### `0xB000 - 0xEFFF` tileset
- * 4096 bytes from left to right, top to bottom, creating a 128 × 128 × 4bpp image where each 8 × 8 region is a tile.
+### `0x8000 - 0xBFFF` 16k save RAM - not implemented
+ * The contents of this memory range are saved to a file after exiting.
+
+### `0xD000 - 0xEFFF` tileset - not implemented as a memory range
+ * 8192 bytes from left to right, top to bottom, creating a 128 × 128 × 4bpp image where each 8 × 8 region is a tile.
 
 ### `0xF000 - 0xF3E8` screen memory
  * 1000 bytes from left to right, top to bottom, creating a 320 × 200 image of 40 × 25 tiles, 8 × 8 pixels each.
 
-### `0xFFF0 - 0xFFFF` reserved
- * `0xFFFx` registers 0-9
- * `0xFFFA` result register "R"
+### `0xF400 - 0xF4FF` call stack
+
+### `0xFFE0 - 0xFFFF` reserved
+ * `0xFFEx` registers 0-F
+ * `0xFFF0` result register "R" (high byte)
+ * `0xFFF1` result (low byte)
  * `0xFFFB` random number
  * `0xFFFC` program counter
  * `0xFFFE` stack pointer
  
-Unused memory areas can be defined by implementations.
+Unused memory ranges can be defined by implementations.
 
 
 ## ROM Layout
@@ -100,7 +104,7 @@ Unused memory areas can be defined by implementations.
 val = 1 byte argument, 2 bytes if pointer flag set
 adr = always 2 byte argument
 
-* = modifies the R register 0xFFFA
+* = modifies the R register 0xFFF0
 
 hex dec bin    op  arg arg   description
 00  00  000000 nop --- ---   Do nothing

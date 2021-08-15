@@ -1,8 +1,8 @@
-val r0, 0xFFF0
-val r1, 0xFFF1
-val r2, 0xFFF2
-val r3, 0xFFF3
-val res, 0xFFFA
+val r0, 0xFFE0
+val r1, 0xFFE1
+val r2, 0xFFE2
+val r3, 0xFFE3
+val res, 0xFFF1
 
 dat start
 dat "Hello world!"
