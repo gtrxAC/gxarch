@@ -271,7 +271,7 @@ void step(void) {
 			u8 cond = vm.mem[getaddr(arg1ptr)];
 			u16 addr = getaddr(arg2ptr);
 			if (cond) {
-				set16(get16(SP), get16(PC) + 1);
+				set16(get16(SP), get16(PC));
 				set16(SP, get16(SP) + 2);
 				set16(PC, addr);
 			}
@@ -282,7 +282,7 @@ void step(void) {
 			dbgins("ret");
 			set16(get16(SP), 0);
 			set16(SP, get16(SP) - 2);
-			printf("%d\n",get16(get16(SP))); //
+			// printf("%d\n",get16(get16(SP))); //
 			set16(PC, get16(get16(SP)));
 
 			if (get16(SP) < 0x8000)
