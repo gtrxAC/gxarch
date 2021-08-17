@@ -1,0 +1,82 @@
+; doesn't work yet
+
+val r0, 0xFFE0 ; X location
+val r1, 0xFFE1 ; Y location
+val r2, 0xFFE2 ; VRAM dest high byte
+val r3, 0xFFE3 ; VRAM dest low byte
+val r4, 0xFFE4
+val r5, 0xFFE5
+val resh, 0xFFF0
+val res, 0xFFF1
+
+dat start
+
+start:
+	key 0x8C
+	cjs res, up
+	key 0x8D
+	cjs res, left
+	key 0x8E
+	cjs res, down
+	key 0x8F
+	cjs res, right
+calculate:
+	set *r2, 0 ; clear current one
+
+	set r2, 0xF0 ; reset address
+	set r3, 0x00
+
+	mul *r1, 40   ; 
+	add *res, *r0
+	mov resh, r4
+	mov res, r5
+
+	add *r2, *r4
+	mov res, r2
+	
+	add *r3, *r5
+	mov res, r3
+draw:
+	set *r2, 0x2B
+	end end end
+	jmp start
+
+up:
+	sub *r1, 1
+	mov res, r1
+	equ *r1, 0xFF
+	cj res, uplimit
+	ret
+uplimit:
+	set r1, 23
+	ret
+
+down:
+	add *r1, 1
+	mov res, r1
+	equ *r1, 24
+	cj res, downlimit
+	ret
+downlimit:
+	set r1, 0
+	ret
+
+left:
+	sub *r0, 1
+	mov res, r0
+	equ *r0, 0x00
+	cj res, leftlimit
+	ret
+leftlimit:
+	set r0, 39
+	ret
+
+right:
+	add *r0, 1
+	mov res, r0
+	equ *r0, 40
+	cj res, rightlimit
+	ret
+rightlimit:
+	set r0, 0
+	ret

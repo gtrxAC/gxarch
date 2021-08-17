@@ -239,7 +239,7 @@ void step(void) {
 		case I_XOR: BINOP(^)
 
 		case I_NOT:
-			vm.mem[RESULT] = ~getval(arg1ptr);
+			vm.mem[RESULT + 1] = ~getval(arg1ptr);
 			break;
 
 		case I_EQU: BINOP(==)
@@ -302,8 +302,8 @@ void step(void) {
 				if (key >= 'a' && key <= 'z') key -= 32;
 			}
 
-			// printf("gxvm key: %d   raylib key: %d   pressed? %d\n", val, key, IsKeyPressed(key));
-			vm.mem[RESULT] = IsKeyPressed(key);
+			// printf("gxvm key: %d   raylib key: %d   rl key as str: %c pressed? %d\n", val, key, key, IsKeyPressed(key));
+			vm.mem[RESULT + 1] = IsKeyDown(key);
 			break;
 		}
 
@@ -341,7 +341,7 @@ void cleanup(void) {
 
 // Load a ROM file and tileset, if found.
 void loadfile(char *name) {
-	int size;
+	u32 size;
 	u8 *file = LoadFileData(name, &size);
 
 	if (!file) err("Failed to load file");
