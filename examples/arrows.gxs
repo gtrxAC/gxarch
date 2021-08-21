@@ -27,8 +27,8 @@ calculate:
 	set r3, 0x00
 
 	mul *r1, 40   ; 
-	add *res, *r0
 	mov resh, r4
+	add *res, *r0
 	mov res, r5
 
 	add *r2, *r4

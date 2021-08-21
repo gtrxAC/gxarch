@@ -1,12 +1,12 @@
 # gxarch
 
-Simple fantasy computer architecture. This repository contains `gxVM`, an emulator written in C using raylib, and `gxasm`, an assembler written in Node.js.
+Simple fantasy computer architecture. This repository contains `gxVM`, an emulator written in C using [raylib](https://raylib.com), and `gxasm`, an assembler written in [Node.js](https://nodejs.org).
 
 ## Features
 
 * 320 × 200 16-color tilemap screen
 * Unlimited instructions/second, the `end` instruction draws a frame (60 fps).
-* 32k RAM/ROM
+* 56k RAM/ROM, 4k save RAM
 * 21 instructions
 
 ## Building
@@ -49,14 +49,11 @@ cc gxvm.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o gxvm
 
 ## Memory Layout
 
-### `0x0000 - 0x7FFF` 32k RAM/ROM
+### `0x0000 - 0xDFFF` 56k RAM/ROM
  * ROM is loaded at `0x0000`.
 
-### `0x8000 - 0xBFFF` 16k save RAM - not implemented
+### `0xE000 - 0xEFFF` 4k save RAM - not implemented
  * The contents of this memory range are saved to a file after exiting.
-
-### `0xD000 - 0xEFFF` tileset - not implemented as a memory range
- * 8192 bytes from left to right, top to bottom, creating a 128 × 128 × 4bpp image where each 8 × 8 region is a tile.
 
 ### `0xF000 - 0xF3E8` screen memory
  * 1000 bytes from left to right, top to bottom, creating a 320 × 200 image of 40 × 25 tiles, 8 × 8 pixels each.
@@ -80,7 +77,7 @@ Unused memory ranges can be defined by implementations.
 * ROMs consist of two files: a binary file with the `.gxa` extension containing code/data, and a tileset `.png` image.
 * They should have the same filename without extension, for example the tileset for `mygame.gxa` is `mygame.png`.
 * If a matching image file is not found, the default `tileset.png` is used.
-* The ROM is loaded at the beginning of memory. It should be 32k or smaller to fit into ROM/RAM. The first two bytes of the file indicate the program entry point.
+* The ROM is loaded at the beginning of memory. It should be 56k or smaller to fit into ROM/RAM. The first two bytes of the file indicate the program entry point.
 * The tileset contains a 128 × 128 × 4bpp indexed palette image. The colors in the palette don't matter. It is loaded at `0xB000`. If this file doesn't exist, a default built-in tileset is used.
 
  
@@ -150,5 +147,4 @@ The keyboard uses a modified US layout:
 
 ## Implementation Notes
 
-* Tilesets are currently not loaded into `0xB000` like in the spec, so tiles cannot be modified at runtime.
 * The amount of colors in tileset images is currently not checked, but you should still only use 16 colors.

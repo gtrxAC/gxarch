@@ -141,12 +141,12 @@ for (let arg of process.argv.slice(2)) {
 	switch (arg) {
 		case '-v':
 		case '--version':
-			console.log("1.0");
+			console.log("1.0.1");
 			break;
 		
 		case '-h':
 		case '--help':
-			console.log("gxarch assembler v1.0\n-v, --version: print version number\n-h, --help: show this screen");
+			console.log("gxarch assembler v1.0.1\n-v, --version: print version number\n-h, --help: show this screen");
 			break;
 
 		default: {
@@ -157,8 +157,8 @@ for (let arg of process.argv.slice(2)) {
 				semantics(match).eval();
 				
 				const outfile = new Uint8Array(output);
-				if (outfile.length > 32768)
-					throw new Error(`Output file too large, ${outfile.length} > 32768`);
+				if (outfile.length > 0xE000)
+					throw new Error(`Output file too large, ${outfile.length} > 56k`);
 
 				labelrefs.forEach((label, addr) => {
 					console.log(`${addr}: ${label}`);

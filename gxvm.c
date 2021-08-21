@@ -6,17 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define u8 uint8_t
 #define u16 uint16_t
-#define u32 uint32_t
-#define u64 uint64_t
-#define i8 int8_t
-#define i16 int16_t
-#define i32 int32_t
-#define i64 int64_t
-#define f32 float
-#define f64 double
 
 // _____________________________________________________________________________
 //
@@ -63,7 +56,8 @@ enum Instruction {
 
 enum State {
 	ST_IDLE,
-	ST_RUNNING
+	ST_RUNNING,
+	ST_PAUSED
 };
 
 struct VM {
@@ -75,9 +69,9 @@ struct VM {
 } vm;
 
 #define ENTRY 0x0000
-#define STACK 0xF400
-#define TILESET 0xD000
+#define SRAM 0xE000
 #define VRAM 0xF000
+#define STACK 0xF400
 #define REG(n) (0xFFE0 + n)
 #define RESULT 0xFFF0
 #define RAND 0xFFFB
@@ -91,11 +85,7 @@ char message[64] = {0};
 u8 msgtime = 0;
 u8 debug = 0;
 
-#define showmsg(msg)\
-	message = msg;\
-	msgtime = 0;
-
-#define fmtshowmsg(...)\
+#define showmsg(...)\
 	sprintf(message, __VA_ARGS__);\
 	msgtime = 0;
 
@@ -133,18 +123,18 @@ void err(const char *fmt, ...) {
 
 		if (dump) {
 			fprintf(dump, "ROM/RAM\n");
-			dumprange(dump, 0x000, 0x800);
+			dumprange(dump, 0x000, 0xDFF);
 			fprintf(dump, "\n\nSave RAM\n");
-			dumprange(dump, 0x800, 0xBFF);
-			fprintf(dump, "\n\nTileset\n");
-			dumprange(dump, 0xD00, 0xEFF);
-			fprintf(dump, "\n\nVRAM\n");
+			dumprange(dump, 0xE00, 0xEFF);
+			fprintf(dump, "\n\nVideo RAM\n");
 			dumprange(dump, 0xF00, 0xF3E);
 			fprintf(dump, "\n\nCall stack\n");
 			dumprange(dump, 0xF40, 0xF4F);
 			fprintf(dump, "\n\nRegisters\n");
 			dumprange(dump, 0xFFF, 0x1000);
 			fclose(dump);
+		} else {
+			perror("Failed to write dump file");
 		}
 	}
 	
@@ -196,7 +186,7 @@ u16 getaddr(u8 ptr) {
 
 // Run one instruction.
 void step(void) {
-	// Update random number register
+	// Update random number register.
 	vm.mem[RAND] = GetRandomValue(0, 0xFF);
 
 	u8 inst = consume();
@@ -204,7 +194,7 @@ void step(void) {
 	u8 arg2ptr = inst & 0b01000000;
 
 	switch (inst & 0b00111111) {
-		#define dbgins(i) printf("0x%.4x/%d %s\n", get16(PC) - 1, get16(PC) - 1, i)
+		#define dbgins(i) if (debug) printf("0x%.4x/%d %s\n", get16(PC) - 1, get16(PC) - 1, i)
 
 		case I_NOP:
 			dbgins("nop");
@@ -247,7 +237,7 @@ void step(void) {
 		case I_GT: BINOP(>)
 
 		case I_JMP:
-			dbgins("jmp ");
+			dbgins("jmp");
 			set16(PC, getaddr(arg1ptr));
 			break;
 
@@ -314,8 +304,8 @@ void step(void) {
 }
 
 void draw(void) {
-	for (i8 x = 0; x < 40; x++) {
-		for (i8 y = 0; y < 25; y++) {
+	for (u8 x = 0; x < 40; x++) {
+		for (u8 y = 0; y < 25; y++) {
 			u8 chr = vm.mem[VRAM + y * 40 + x];
 			DrawTextureRec(
 				vm.tileset,
@@ -341,15 +331,15 @@ void cleanup(void) {
 
 // Load a ROM file and tileset, if found.
 void loadfile(char *name) {
-	u32 size;
+	unsigned int size;
 	u8 *file = LoadFileData(name, &size);
 
 	if (!file) err("Failed to load file");
 
-	if (size > 0x8000) err("ROM too big, %d > 32768", size);
+	if (size > 0xE000) err("ROM too big, %d > 56k", size);
 	
 	memcpy(&vm.mem, file, size);
-	for (u32 i = size; i < 0x10000; i++) vm.mem[i] = 0;
+	for (int i = size; i < 0x10000; i++) vm.mem[i] = 0;
 	set16(PC, get16(0x0000));
 	set16(STACK, get16(0x0000));
 	set16(SP, STACK + 2);
@@ -439,7 +429,7 @@ int main(int argc, char **argv) {
 			int height = GetScreenHeight() + 200;
 
 			SetWindowSize(width, height);
-			fmtshowmsg("%d x %d", width, height);
+			showmsg("%d x %d", width, height);
 		}
 
 		if (IsKeyPressed(KEY_PAGE_DOWN)) {
@@ -449,10 +439,30 @@ int main(int argc, char **argv) {
 			if (!width) width = 320, height = 200;
 
 			SetWindowSize(width, height);
-			fmtshowmsg("%d x %d", width, height);
+			showmsg("%d x %d", width, height);
 		}
 
 		if (IsKeyPressed(KEY_END) && debug) err("User initiated error");
+
+		if (IsKeyPressed(KEY_PAUSE)) {
+			switch (vm.state) {
+				case ST_RUNNING:
+					vm.state = ST_PAUSED;
+					showmsg("paused");
+					SetWindowTitle("gxVM - paused");
+					break;
+
+				case ST_PAUSED:
+					vm.state = ST_RUNNING;
+					showmsg("running");
+					SetWindowTitle("gxVM - running");
+					break;
+
+				case ST_IDLE:
+					showmsg("no program loaded");
+					break;
+			}
+		}
 
 		// _____________________________________________________________________
 		//
@@ -464,31 +474,34 @@ int main(int argc, char **argv) {
 
 		BeginDrawing();
 		ClearBackground(BLACK);
+		BeginTextureMode(vm.screen);
 
-		if (vm.state == ST_RUNNING) {
-			if (vm.needdraw) {
-				BeginTextureMode(vm.screen);
-				draw();
-				EndTextureMode();
-				vm.needdraw = false;
-			}
-			DrawTexturePro(
-				vm.screen.texture,
-				(Rectangle){0, 0, vm.screen.texture.width, -vm.screen.texture.height},
-				(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
-				(Vector2){0, 0}, 0.0f, WHITE
-			);
-		} else {
-			// If no file loaded, show "drag and drop ROM file" screen
-			DrawTextureEx(splash, (Vector2){0, 0}, 0.0f, GetScreenWidth() / 320, WHITE);
+		if (vm.needdraw || vm.state == ST_PAUSED) {
+			draw();
+			vm.needdraw = false;
+		} else if (vm.state == ST_IDLE) {
+			DrawTexture(splash, 0, 0, WHITE);
 		}
 
 		// Show message for 1 second
 		if (msgtime < 60) {
-			DrawText(message, 1, 1, 10 * GetScreenWidth() / 320, BLACK);
-			DrawText(message, 0, 0, 10 * GetScreenWidth() / 320, WHITE);
+			for (int x = 0; x < 3; x++) {
+				for (int y = 0; y < 3; y++) {
+					DrawText(message, x, y, 10, BLACK);
+				}
+			}
+			DrawText(message, 1, 1, 10, YELLOW);
 			msgtime++;
 		}
+
+		EndTextureMode();
+
+		DrawTexturePro(
+			vm.screen.texture,
+			(Rectangle){0, 0, vm.screen.texture.width, -vm.screen.texture.height},
+			(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
+			(Vector2){0, 0}, 0.0f, WHITE
+		);
 
 		EndDrawing();
 	}
