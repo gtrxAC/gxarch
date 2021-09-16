@@ -1,4 +1,9 @@
-; doesn't work yet
+; Arrow Keys for gxarch
+; Author: gtrxAC
+; Date: 2021-09-16
+; Move a character using the arrow keys
+; Note: has some graphical glitches.
+
 
 val r0, 0xFFE0 ; X location
 val r1, 0xFFE1 ; Y location

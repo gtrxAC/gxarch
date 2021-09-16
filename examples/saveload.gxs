@@ -1,0 +1,96 @@
+; Save/Load for gxarch
+; Author: gtrxAC
+; Date: 2021-08-15
+; Demonstrates persistent storage
+; Note: uses subroutines which are currently broken
+
+
+val SRAM, 0xE000
+
+val rB, 0xFFEB     ; current key being checked
+
+val rC, 0xFFEC     ; registers for print subroutine
+val rD, 0xFFED
+val rE, 0xFFEE
+val rF, 0xFFEF
+
+val resh, 0xFFF0   ; R register high byte
+val res, 0xFFF1    ; R register low byte
+
+dat start          ; entry point
+
+
+; string definitions
+line1: dat "Press a key to change the character"
+line2: dat "It will be saved when you close"
+line3: dat "Current character: [ ]"
+
+val line1pos, 147  ; string destinations in VRAM, low byte
+val line2pos, 188  ; add 256 to get actual location
+val line3pos, 233
+
+val line1addr, 2   ; 8-bit addresses of the strings
+val line2addr, 38  ; we can't use labels because they are 16-bit addresses
+val line3addr, 70
+
+
+; Prints a string to the screen.
+; rC - rD: VRAM position to print at
+; rE - rF: pointer to string
+print:
+	cj *rE, print_continue
+	ret
+print_continue:
+	; move current character to VRAM
+	mov *rE, *rC
+
+	; increment the string pointer to move to next char
+	add *rF, 1
+	mov res, rF
+	add *resh, *rE
+	mov res, rE
+
+	; increment destination
+	add *rD, 1
+	mov res, rD
+	add *resh, *rC
+	mov res, rC
+
+	; print next character
+	jmp print
+
+
+start:
+	set rC, 0xF1
+	set rD, line1pos
+	set rF, line1addr
+	js print
+
+	set rD, line2pos
+	set rF, line2addr
+	js print
+
+	set rD, line3pos
+	set rF, line3addr
+	js print
+	end
+
+
+
+
+loop:
+	key *rB          ; is current key down?
+	cj res, keydown  ; if it is, write it to SRAM
+	add *rB, 1       ; increment current key
+	mov res, rB      ; write incremented
+	equ *res, 255       ; if we looped over all keys,
+	cj res, draw     ; draw frame
+	jmp loop
+
+keydown:
+	mov rB, SRAM
+	
+draw:
+	mov SRAM, 0xF1FD
+	end
+	jmp loop

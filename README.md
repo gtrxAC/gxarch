@@ -1,4 +1,4 @@
-# gxarch
+![](assets/logo.png)
 
 Simple fantasy computer architecture. This repository contains `gxVM`, an emulator written in C using [raylib](https://raylib.com), and `gxasm`, an assembler written in [Node.js](https://nodejs.org).
 
@@ -28,7 +28,7 @@ cc png2h.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o png2h
 
 ```sh
 # Create headers from images
-./png2h splash.png tileset.png
+./png2h assets/splash.png assets/tileset.png assets/icon.png
 ```
 
 5. Build the main file.
@@ -52,8 +52,8 @@ cc gxvm.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o gxvm
 ### `0x0000 - 0xDFFF` 56k RAM/ROM
  * ROM is loaded at `0x0000`.
 
-### `0xE000 - 0xEFFF` 4k save RAM - not implemented
- * The contents of this memory range are saved to a file after exiting.
+### `0xE000 - 0xEFFF` 4k save RAM
+ * The contents of this memory range are saved to a file after exiting. If the entire memory range is blank and a save file doesn't already exist, or if the `--nosave` command line argument is specified, the file is not created.
 
 ### `0xF000 - 0xF3E8` screen memory
  * 1000 bytes from left to right, top to bottom, creating a 320 × 200 image of 40 × 25 tiles, 8 × 8 pixels each.
@@ -71,14 +71,15 @@ cc gxvm.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o gxvm
 Unused memory ranges can be defined by implementations.
 
 
-## ROM Layout
+## File Structure
 
 * The assembly files have the `.gxs` extension and must be assembled with `node gxasm.js filename.gxs` before running. The assembler outputs a `output.gxa` file.
-* ROMs consist of two files: a binary file with the `.gxa` extension containing code/data, and a tileset `.png` image.
+* ROMs consist of two files:
+	* A binary file with the `.gxa` extension containing code/data
+	* Optionally a tileset `.png` image, 128 × 128, 16 colors preferred but currently not enforced.
 * They should have the same filename without extension, for example the tileset for `mygame.gxa` is `mygame.png`.
-* If a matching image file is not found, the default `tileset.png` is used.
+* If a matching image file is not found, the default `tileset.png` is used. This file is embedded into the executable, so it doesn't need to be in the same directory as gxVM.
 * The ROM is loaded at the beginning of memory. It should be 56k or smaller to fit into ROM/RAM. The first two bytes of the file indicate the program entry point.
-* The tileset contains a 128 × 128 × 4bpp indexed palette image. The colors in the palette don't matter. It is loaded at `0xB000`. If this file doesn't exist, a default built-in tileset is used.
 
  
 ## Instructions
@@ -148,3 +149,5 @@ The keyboard uses a modified US layout:
 ## Implementation Notes
 
 * The amount of colors in tileset images is currently not checked, but you should still only use 16 colors.
+* The RET instruction is probably not working.
+* The KEY instruction needs some work.

@@ -1,9 +1,16 @@
 .vscode/
 node_modules/
+
 gxvm
+gxvm.exe
 png2h
+png2h.exe
+
 splash.h
 tileset.h
+icon.h
+
 dump.txt
-output.gxa
 screenshot*.png
+*.gxa
+*.sav

@@ -1,12 +1,14 @@
 #include "raylib.h"
 #include "splash.h"
 #include "tileset.h"
+#include "icon.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
 #define u8 uint8_t
 #define u16 uint16_t
@@ -17,23 +19,24 @@
 // _____________________________________________________________________________
 //
 
+// gxvm to raylib key mappings
 const u16 keymap[0x100] = {
 	0, 0, 0, 0, 0, 0, 0, 0, // 0x07
 	0, KEY_BACKSPACE, KEY_TAB, KEY_ENTER, 0, 0, 0, 0, // 0x0F
-	0, 0, 0, 0, 0, 0, 0, 0, // 0x17
+	0, KEY_LEFT_CONTROL, KEY_LEFT_SUPER, KEY_LEFT_ALT, 0, 0, 0, 0, // 0x17
 	0, 0, 0, KEY_ESCAPE, 0, 0, 0, 0, // 0x1F
-	' ', '!', '"', '#', '$', '%', '&', '\'',
-	'(', ')', '*', '+', ',', '-', '.', '/',
+	' ', 0, 0, 0, 0, 0, 0, '\'',
+	0, 0, 0, 0, ',', '-', '.', '/',
 	'0', '1', '2', '3', '4', '5', '6', '7',
-	'8', '9', ':', ';', '<', '=', '>', '?',
-	'@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+	'8', '9', 0, ';', 0, '=', 0, 0,
+	0, 'A', 'B', 'C', 'D', 'E', 'F', 'G',
 	'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
 	'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-	'X', 'Y', 'Z', '[', '\\', ']', '^', '_',
-	'`', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
-	'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-	'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-	'x', 'y', 'z', '{', '|', '}', '~', 0, // 0x7F
+	'X', 'Y', 'Z', '[', '\\', ']', 0, 0,
+	'`', 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x7F
 	KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, // 0x87
 	KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_UP, KEY_LEFT, KEY_DOWN, KEY_RIGHT, // 0x8F
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x9F
@@ -54,19 +57,16 @@ enum Instruction {
 	I_KEY, I_END
 };
 
-enum State {
+enum {
 	ST_IDLE,
 	ST_RUNNING,
 	ST_PAUSED
-};
+} state;
 
-struct VM {
-	u8 mem[0x10000];
-	RenderTexture screen;
-	Texture tileset;
-	enum State state;
-	u8 needdraw;
-} vm;
+u8 mem[0x10000];
+RenderTexture screen;
+Texture tileset;
+bool needdraw;
 
 #define ENTRY 0x0000
 #define SRAM 0xE000
@@ -81,9 +81,12 @@ struct VM {
 // _____________________________________________________________________________
 //
 
+char filename[256] = {0};
 char message[64] = {0};
 u8 msgtime = 0;
-u8 debug = 0;
+bool nosave = false;
+bool debug = false;
+bool capslock = false;
 
 #define showmsg(...)\
 	sprintf(message, __VA_ARGS__);\
@@ -101,7 +104,7 @@ void dumprange(FILE *dump, u16 start, u16 end) {
 		fprintf(dump, "0x%.3x |", i);
 
 		for (u8 j = 0; j < 16; j++) {
-			fprintf(dump, "%.2x ", vm.mem[i * 16 + j]);
+			fprintf(dump, "%.2x ", mem[i * 16 + j]);
 		}
 
 		fprintf(dump, "\n");
@@ -148,18 +151,18 @@ void err(const char *fmt, ...) {
 void set16(u16 index, u16 val) {
 	u8 high = (val & 0xFF00) >> 8;
 	u8 low = val & 0xFF;
-	vm.mem[index] = high;
-	vm.mem[index + 1] = low;
+	mem[index] = high;
+	mem[index + 1] = low;
 }
 
 // Get a 16-bit value.
 u16 get16(u16 index) {
-	return vm.mem[index] << 8 | vm.mem[index + 1];
+	return mem[index] << 8 | mem[index + 1];
 }
 
 // Get the next instruction byte.
 u8 consume(void) {
-	u8 res = vm.mem[get16(PC)];
+	u8 res = mem[get16(PC)];
 	set16(PC, get16(PC) + 1);
 	return res;
 }
@@ -171,7 +174,7 @@ u16 consume16(void) {
 
 // Get a value argument.
 u8 getval(u8 ptr) {
-	return ptr ? vm.mem[consume16()] : consume();
+	return ptr ? mem[consume16()] : consume();
 }
 
 // Get an address argument.
@@ -187,79 +190,78 @@ u16 getaddr(u8 ptr) {
 // Run one instruction.
 void step(void) {
 	// Update random number register.
-	vm.mem[RAND] = GetRandomValue(0, 0xFF);
+	mem[RAND] = GetRandomValue(0, 0xFF);
+
+	if (get16(PC) < 2 || get16(PC) > REG(0))
+		err("Attempted to execute code at 0x%.4x", get16(PC));
 
 	u8 inst = consume();
 	u8 arg1ptr = inst & 0b10000000;
 	u8 arg2ptr = inst & 0b01000000;
 
 	switch (inst & 0b00111111) {
-		#define dbgins(i) if (debug) printf("0x%.4x/%d %s\n", get16(PC) - 1, get16(PC) - 1, i)
+		#define DBGINS(i) if (debug) printf("0x%.4x/%d %s\n", get16(PC) - 1, get16(PC) - 1, i)
+		#define INST(i) case I_ ## i: DBGINS(#i);
 
-		case I_NOP:
-			dbgins("nop");
-			break;
+		INST(NOP) break;
 
-		case I_SET: {
-			dbgins("set");
-			vm.mem[getaddr(arg1ptr)] = getval(arg2ptr);
+		INST(SET) {
+			mem[getaddr(arg1ptr)] = getval(arg2ptr);
 			break;
 		}
 
-		case I_MOV: {
-			dbgins("mov");
+		INST(MOV) {
 			u16 src = getaddr(arg1ptr);
 			u16 dest = getaddr(arg2ptr);
-			vm.mem[dest] = vm.mem[src];
+			mem[dest] = mem[src];
 			break;
 		}
 
-		#define BINOP(op) {\
-			dbgins(#op);\
-			set16(RESULT, getval(arg1ptr) op getval(arg2ptr));\
-			break;\
-		}
+		#define BINOP(name, op) \
+			INST(name) {\
+				set16(RESULT, getval(arg1ptr) op getval(arg2ptr));\
+				break;\
+			}
 
-		case I_ADD: BINOP(+)
-		case I_SUB: BINOP(-)
-		case I_MUL: BINOP(*)
-		case I_DIV: BINOP(/)
-		case I_AND: BINOP(&)
-		case I_OR: BINOP(|)
-		case I_XOR: BINOP(^)
+		BINOP(ADD, +)
+		BINOP(SUB, -)
+		BINOP(MUL, *)
+		BINOP(DIV, /)
+		BINOP(AND, &)
+		BINOP(OR, |)
+		BINOP(XOR, ^)
 
-		case I_NOT:
-			vm.mem[RESULT + 1] = ~getval(arg1ptr);
+		INST(NOT)
+			mem[RESULT + 1] = ~getval(arg1ptr);
 			break;
 
-		case I_EQU: BINOP(==)
-		case I_LT: BINOP(<)
-		case I_GT: BINOP(>)
+		BINOP(EQU, ==)
+		BINOP(LT, <)
+		BINOP(GT, >)
 
-		case I_JMP:
-			dbgins("jmp");
+		INST(JMP) {
 			set16(PC, getaddr(arg1ptr));
 			break;
+		}
 
-		case I_CJ: {
-			dbgins("cj");
-			u8 cond = vm.mem[getaddr(arg1ptr)];
+		INST(CJ) {
+			u8 cond = mem[getaddr(arg1ptr)];
 			u16 addr = getaddr(arg2ptr);
 			if (cond) set16(PC, addr);
 			break;
 		}
 
-		case I_JS:
-			dbgins("js");
+		INST(JS) {
 			set16(get16(SP), get16(PC) + 1);
 			set16(SP, get16(SP) + 2);
 			set16(PC, getaddr(arg1ptr));
 			break;
+		}
 
-		case I_CJS: {
-			dbgins("cjs");
-			u8 cond = vm.mem[getaddr(arg1ptr)];
+		INST(CJS) {
+			u8 cond = mem[getaddr(arg1ptr)];
 			u16 addr = getaddr(arg2ptr);
+			
 			if (cond) {
 				set16(get16(SP), get16(PC));
 				set16(SP, get16(SP) + 2);
@@ -268,32 +270,21 @@ void step(void) {
 			break;
 		}
 
-		case I_RET:
-			dbgins("ret");
+		INST(RET) {
 			set16(get16(SP), 0);
 			set16(SP, get16(SP) - 2);
-			// printf("%d\n",get16(get16(SP))); //
-			set16(PC, get16(get16(SP)));
+			set16(PC, get16(get16(SP))); // -1 or not -1?
 
-			if (get16(SP) < 0x8000)
-				err("Call stack underflow, 0x%.4x < 0x8000", get16(SP));
+			if (get16(SP) < STACK)
+				err("Call stack underflow, 0x%.4x < 0x%.4x", get16(SP), STACK);
 
 			break;
+		}
 
-		case I_END:
-			vm.needdraw = true;
-			break;
+		INST(END) needdraw = true; break;
 
-		case I_KEY: {
-			// u8 val = getval(arg1ptr);
-			u16 key = keymap[getval(arg1ptr)];
-
-			if (!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_RIGHT_SHIFT)) {
-				if (key >= 'a' && key <= 'z') key -= 32;
-			}
-
-			// printf("gxvm key: %d   raylib key: %d   rl key as str: %c pressed? %d\n", val, key, key, IsKeyPressed(key));
-			vm.mem[RESULT + 1] = IsKeyDown(key);
+		INST(KEY) {
+			mem[RESULT + 1] = IsKeyDown(keymap[getval(arg1ptr)]);
 			break;
 		}
 
@@ -306,14 +297,42 @@ void step(void) {
 void draw(void) {
 	for (u8 x = 0; x < 40; x++) {
 		for (u8 y = 0; y < 25; y++) {
-			u8 chr = vm.mem[VRAM + y * 40 + x];
+			u8 chr = mem[VRAM + y * 40 + x];
 			DrawTextureRec(
-				vm.tileset,
+				tileset,
 				(Rectangle){(chr % 16) * 8, ((u8) chr / 16) * 8, 8, 8},
 				(Vector2){x * 8, y * 8}, WHITE
 			);
 		}
 	}
+}
+
+// Saves SRAM data to file.
+void save(void) {
+	char *savename = TextReplace(filename, GetFileExtension(filename), ".sav");
+	bool needsave = false;
+
+	// If SRAM is blank and save file doesn't exist, no point in saving
+	for (int i = SRAM; i < VRAM; i++) if (mem[i]) needsave = true;
+	if (!needsave && !FileExists(savename)) return;
+
+	SaveFileData(savename, mem + SRAM, 0x1000);
+	free(savename);
+}
+
+// Loads SRAM data from file.
+void load(void) {
+	char *savename = TextReplace(filename, GetFileExtension(filename), ".sav");
+	if (!FileExists(savename)) return;
+
+	unsigned int size;
+	u8 *data = LoadFileData(savename, &size);
+
+	if (!data) err("Failed to load file");
+	if (size > 0x1000) err("Save data too big, %d > 4096", size);
+
+	memcpy(mem + SRAM, data, 0x1000);
+	UnloadFileData(data);
 }
 
 // _____________________________________________________________________________
@@ -324,22 +343,26 @@ void draw(void) {
 
 // Unload everything and exit.
 void cleanup(void) {
-	UnloadRenderTexture(vm.screen);
-	UnloadTexture(vm.tileset);
+	save();
+	UnloadRenderTexture(screen);
+	UnloadTexture(tileset);
 	CloseWindow();
 }
 
 // Load a ROM file and tileset, if found.
 void loadfile(char *name) {
+	strcpy(filename, name);
+
 	unsigned int size;
 	u8 *file = LoadFileData(name, &size);
 
 	if (!file) err("Failed to load file");
-
 	if (size > 0xE000) err("ROM too big, %d > 56k", size);
 	
-	memcpy(&vm.mem, file, size);
-	for (int i = size; i < 0x10000; i++) vm.mem[i] = 0;
+	memcpy(&mem, file, size);
+	for (int i = size; i < 0x10000; i++) mem[i] = 0;
+	load();
+
 	set16(PC, get16(0x0000));
 	set16(STACK, get16(0x0000));
 	set16(SP, STACK + 2);
@@ -351,12 +374,12 @@ void loadfile(char *name) {
 	char *imgname = TextReplace(name, GetFileExtension(name), ".png");
 
 	if (FileExists(imgname)) {
-		vm.tileset = LoadTexture(imgname);
+		tileset = LoadTexture(imgname);
 
-		if (vm.tileset.width != 128 || vm.tileset.height != 128)
+		if (tileset.width != 128 || tileset.height != 128)
 			err(
 				"Invalid tileset size, expected 128 x 128 but got %d x %d",
-				vm.tileset.width, vm.tileset.height
+				tileset.width, tileset.height
 			);
 	} else {
 		// If tileset image was not found, load the default tileset (tileset.h)
@@ -369,13 +392,12 @@ void loadfile(char *name) {
 			1, TILESET_FORMAT
 		};
 
-		vm.tileset = LoadTextureFromImage(tilesetimg);
+		tileset = LoadTextureFromImage(tilesetimg);
 	}
 
-	ClearDroppedFiles();
 	free(imgname);
 	SetWindowTitle("gxVM - running");
-	vm.state = ST_RUNNING;
+	state = ST_RUNNING;
 }
 
 // _____________________________________________________________________________
@@ -385,18 +407,42 @@ void loadfile(char *name) {
 //
 
 int main(int argc, char **argv) {
-	InitWindow(640, 400, "gxVM");
-	SetTargetFPS(60);
-
 	for (int i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+			puts("gxVM: gxarch emulator\n");
+			puts("gxvm [options] [file]");
+			puts("-h, --help    Show this message");
+			puts("-d, --debug   Save memory dump on error");
+			puts("-n, --nosave  Don't create a .sav file\n");
+			puts("Keybinds:");
+			puts("End           Trigger an error, only works with --debug");
+			puts("Page Up/Down  Resize screen");
+			puts("Pause         Pause/continue emulation");
+			exit(EXIT_SUCCESS);
+		} else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			debug = true;
+		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nosave")) {
+			nosave = true;
 		} else {
-			loadfile(argv[i]);
+			// We can't use loadfile() here because window is not initialized
+			// Instead, the filename string is checked before the main loop.
+			strcpy(filename, argv[i]);
 		}
 	}
 
-	vm.screen = LoadRenderTexture(320, 200);
+	InitWindow(640, 400, "gxVM");
+	SetTargetFPS(60);
+
+	Image icon = {
+		ICON_DATA,
+		ICON_WIDTH,
+		ICON_HEIGHT,
+		1, ICON_FORMAT
+	};
+
+	SetWindowIcon(icon);
+
+	screen = LoadRenderTexture(320, 200);
 
 	// Load splash screen from header file
 	// Default tileset is loaded if a ROM doesn't have a tileset, see loadfile()
@@ -406,16 +452,19 @@ int main(int argc, char **argv) {
 		SPLASH_HEIGHT,
 		1, SPLASH_FORMAT
 	};
-
 	Texture splash = LoadTextureFromImage(splashimg);
 
 	atexit(cleanup);
+
+	// If a file was specified from command line args, load it
+	if (state == ST_IDLE && strlen(filename)) loadfile(filename);
 	
 	while (!WindowShouldClose()) {
-		if (vm.state == ST_IDLE && IsFileDropped()) {
+		if (state == ST_IDLE && IsFileDropped()) {
 			int unused;
 			char **files = GetDroppedFiles(&unused);
 			loadfile(files[0]);
+			ClearDroppedFiles();
 		}
 
 		// _____________________________________________________________________
@@ -432,7 +481,7 @@ int main(int argc, char **argv) {
 			showmsg("%d x %d", width, height);
 		}
 
-		if (IsKeyPressed(KEY_PAGE_DOWN)) {
+		else if (IsKeyPressed(KEY_PAGE_DOWN)) {
 			int width = GetScreenWidth() - 320;
 			int height = GetScreenHeight() - 200;
 
@@ -442,18 +491,18 @@ int main(int argc, char **argv) {
 			showmsg("%d x %d", width, height);
 		}
 
-		if (IsKeyPressed(KEY_END) && debug) err("User initiated error");
+		else if (IsKeyPressed(KEY_END) && debug) err("User initiated error");
 
-		if (IsKeyPressed(KEY_PAUSE)) {
-			switch (vm.state) {
+		else if (IsKeyPressed(KEY_PAUSE)) {
+			switch (state) {
 				case ST_RUNNING:
-					vm.state = ST_PAUSED;
+					state = ST_PAUSED;
 					showmsg("paused");
 					SetWindowTitle("gxVM - paused");
 					break;
 
 				case ST_PAUSED:
-					vm.state = ST_RUNNING;
+					state = ST_RUNNING;
 					showmsg("running");
 					SetWindowTitle("gxVM - running");
 					break;
@@ -464,27 +513,35 @@ int main(int argc, char **argv) {
 			}
 		}
 
+		// Note: if caps lock is turned on before gxvm is started, this will be
+		// out of sync - I can't do much about that
+		else if (IsKeyPressed(KEY_CAPS_LOCK)) {
+			capslock = !capslock;
+			showmsg("caps lock %s", capslock ? "on" : "off");
+		}
+
 		// _____________________________________________________________________
 		//
 		//  Update and Draw
 		// _____________________________________________________________________
 		//
 
-		if (vm.state == ST_RUNNING) while (!vm.needdraw) step();
+		if (state == ST_RUNNING) while (!needdraw) step();
 
 		BeginDrawing();
 		ClearBackground(BLACK);
-		BeginTextureMode(vm.screen);
+		BeginTextureMode(screen);
 
-		if (vm.needdraw || vm.state == ST_PAUSED) {
+		if (needdraw || state == ST_PAUSED) {
 			draw();
-			vm.needdraw = false;
-		} else if (vm.state == ST_IDLE) {
+			needdraw = false;
+		} else if (state == ST_IDLE) {
 			DrawTexture(splash, 0, 0, WHITE);
 		}
 
 		// Show message for 1 second
 		if (msgtime < 60) {
+			// Draw a thick black outline with yellow text in the middle
 			for (int x = 0; x < 3; x++) {
 				for (int y = 0; y < 3; y++) {
 					DrawText(message, x, y, 10, BLACK);
@@ -497,8 +554,8 @@ int main(int argc, char **argv) {
 		EndTextureMode();
 
 		DrawTexturePro(
-			vm.screen.texture,
-			(Rectangle){0, 0, vm.screen.texture.width, -vm.screen.texture.height},
+			screen.texture,
+			(Rectangle){0, 0, screen.texture.width, -screen.texture.height},
 			(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
 			(Vector2){0, 0}, 0.0f, WHITE
 		);
