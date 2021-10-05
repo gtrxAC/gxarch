@@ -146,7 +146,7 @@ for (let arg of process.argv.slice(2)) {
 		
 		case '-h':
 		case '--help':
-			console.log("gxarch assembler v1.0.1\n-v, --version: print version number\n-h, --help: show this screen");
+			console.log("gxarch assembler\n\n-h, --help: show this screen");
 			break;
 
 		default: {

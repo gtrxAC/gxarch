@@ -26,7 +26,7 @@ line2: dat "It will be saved when you close"
 line3: dat "Current character: [ ]"
 
 val line1pos, 147  ; string destinations in VRAM, low byte
-val line2pos, 188  ; add 256 to get actual location
+val line2pos, 188
 val line3pos, 233
 
 val line1addr, 2   ; 8-bit addresses of the strings
