@@ -20,8 +20,6 @@ enum {
 } state;
 
 struct VM *vm;
-RenderTexture screen;
-Texture tileset;
 char filename[256] = {0};
 char message[64] = {0};
 u8 msgtime = 0;
@@ -84,19 +82,6 @@ void err(const char *fmt, ...) {
 	sprintf(message, __VA_ARGS__);\
 	msgtime = 0;
 
-void draw() {
-	for (u8 x = 0; x < 40; x++) {
-		for (u8 y = 0; y < 25; y++) {
-			u8 chr = vm->mem[VRAM + y * 40 + x];
-			DrawTextureRec(
-				tileset,
-				(Rectangle){(chr % 16) * 8, ((u8) chr / 16) * 8, 8, 8},
-				(Vector2){x * 8, y * 8}, WHITE
-			);
-		}
-	}
-}
-
 // Saves SRAM data to file.
 void save() {
 	char *savename = TextReplace(filename, GetFileExtension(filename), ".sav");
@@ -134,8 +119,8 @@ void load() {
 // Unload everything and exit.
 void cleanup() {
 	save(vm);
-	UnloadRenderTexture(screen);
-	UnloadTexture(tileset);
+	UnloadRenderTexture(vm->screen);
+	UnloadTexture(vm->tileset);
 	CloseWindow();
 }
 
@@ -153,9 +138,7 @@ void loadfile(char *name) {
 	for (int i = size; i < 0x10000; i++) vm->mem[i] = 0;
 	load(vm);
 
-	set16(PC, get16(0x0000));
-	set16(STACK, get16(0x0000));
-	set16(SP, STACK + 2);
+	vm->pc = get16(0x0000);
 
 	UnloadFileData(file);
 
@@ -164,12 +147,12 @@ void loadfile(char *name) {
 	char *imgname = TextReplace(name, GetFileExtension(name), ".png");
 
 	if (FileExists(imgname)) {
-		tileset = LoadTexture(imgname);
+		vm->tileset = LoadTexture(imgname);
 
-		if (tileset.width != 128 || tileset.height != 128)
+		if (vm->tileset.width > 256 || vm->tileset.height > 256)
 			err(
-				"Invalid tileset size, expected 128 x 128 but got %d x %d",
-				tileset.width, tileset.height
+				"Invalid tileset size, expected below 256 x 256 but got %d x %d",
+				vm->tileset.width, vm->tileset.height
 			);
 	} else {
 		// If tileset image was not found, load the default tileset (tileset.h)
@@ -182,7 +165,7 @@ void loadfile(char *name) {
 			1, TILESET_FORMAT
 		};
 
-		tileset = LoadTextureFromImage(tilesetimg);
+		vm->tileset = LoadTextureFromImage(tilesetimg);
 	}
 
 	free(imgname);
@@ -223,7 +206,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	InitWindow(640, 400, "gxVM");
+	InitWindow(512, 512, "gxVM");
 	SetTargetFPS(60);
 
 	Image icon = {
@@ -235,7 +218,7 @@ int main(int argc, char **argv) {
 
 	SetWindowIcon(icon);
 
-	screen = LoadRenderTexture(320, 200);
+	vm->screen = LoadRenderTexture(128, 128);
 
 	// Load splash screen from header file
 	// Default tileset is loaded if a ROM doesn't have a tileset, see loadfile()
@@ -267,18 +250,18 @@ int main(int argc, char **argv) {
 		//
 
 		if (IsKeyPressed(KEY_PAGE_UP)) {
-			int width = GetScreenWidth() + 320;
-			int height = GetScreenHeight() + 200;
+			int width = GetScreenWidth() + 128;
+			int height = GetScreenHeight() + 128;
 
 			SetWindowSize(width, height);
 			SHOWMSG("%d x %d", width, height);
 		}
 
 		else if (IsKeyPressed(KEY_PAGE_DOWN)) {
-			int width = GetScreenWidth() - 320;
-			int height = GetScreenHeight() - 200;
+			int width = GetScreenWidth() - 128;
+			int height = GetScreenHeight() - 128;
 
-			if (!width) width = 320, height = 200;
+			if (!width) width = 128, height = 128;
 
 			SetWindowSize(width, height);
 			SHOWMSG("%d x %d", width, height);
@@ -319,17 +302,21 @@ int main(int argc, char **argv) {
 		// _____________________________________________________________________
 		//
 
-		if (state == ST_RUNNING) while (!vm->needdraw) step();
-
-		BeginDrawing();
+		BeginTextureMode(vm->screen);
 		ClearBackground(BLACK);
-		BeginTextureMode(screen);
 
-		if (vm->needdraw || state == ST_PAUSED) {
-			draw();
-			vm->needdraw = false;
-		} else if (state == ST_IDLE) {
-			DrawTexture(splash, 0, 0, WHITE);
+		switch (state) {
+			case ST_IDLE:
+				DrawTexture(splash, 0, 0, WHITE);
+				break;
+
+			case ST_RUNNING:
+				while (!vm->needdraw) step();
+				// fall through
+				
+			case ST_PAUSED:
+				vm->needdraw = false;
+				break;
 		}
 
 		// Show message for 1 second
@@ -346,13 +333,14 @@ int main(int argc, char **argv) {
 
 		EndTextureMode();
 
+		BeginDrawing();
+		ClearBackground(BLACK);
 		DrawTexturePro(
-			screen.texture,
-			(Rectangle){0, 0, screen.texture.width, -screen.texture.height},
+			vm->screen.texture,
+			(Rectangle){0, 0, vm->screen.texture.width, -vm->screen.texture.height},
 			(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
 			(Vector2){0, 0}, 0.0f, WHITE
 		);
-
 		EndDrawing();
 	}
 
