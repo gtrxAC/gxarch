@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "sram.h"
 void err(const char *fmt, ...); // main.c
 
 // Opcode names, used for debugging.
@@ -38,72 +39,20 @@ const u16 keymap[0x100] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xFF
 };
 
-// Converts an address/value into a string. Registers are converted into their
-// names, such as r0 and res, for easier debugging.
-// const u8 *_addr2str(struct VM *vm, u16 addr, u8 digits) {
-// 	if (addr >= REG(0) && addr <= REG(15)) {
-// 		sprintf(vm->addr2str_buf, "r%X", addr & 0x0F);
-// 		return vm->addr2str_buf;
-// 	}
-
-// 	switch (addr) {
-// 		// case RESULT: return "resh"; break;
-// 		// case RESULT + 1: return "res"; break;
-// 		case RAND: return "rand"; break;
-
-// 		default:
-// 			sprintf(vm->addr2str_buf, "0x%.*x", digits, addr);
-// 			return vm->addr2str_buf;
-// 	}
-// }
-
-// Set a 16-bit value.
-// void _set16(struct VM *vm, u16 index, u16 val) {
-// 	vm->mem[index] = (val & 0xFF00) >> 8;
-// 	vm->mem[index + 1] = val & 0xFF;
-// }
-
-// Get a value argument.
-// u8 _getval(struct VM *vm, u8 ptr) {
-// 	u8 result;
-// 	if (ptr) {
-// 		u16 addr = consume16();
-// 		result = vm->mem[addr];
-// 		DBGLOG("*%s (= %s) ", addr2str(addr, 4), addr2str(result, 2));
-// 	} else {
-// 		result = consume();
-// 		DBGLOG("%s ", addr2str(result, 2));
-// 	}
-// 	return result;
-// }
-
-// // Get an address argument.
-// u16 _getaddr(struct VM *vm, u8 ptr) {
-// 	u16 result;
-// 	if (ptr) {
-// 		u16 addr = consume16();
-// 		result = get16(addr);
-// 		DBGLOG("*%s (= %s) ", addr2str(addr, 4), addr2str(result, 4));
-// 	} else {
-// 		result = consume16();
-// 		DBGLOG("%s ", addr2str(result, 4));
-// 	}
-// 	return result;
-// }
-
 void _step(struct VM *vm) {
-	DBGLOG("%5d | 0x%.4x  ", vm->pc, vm->pc);
+	DBGLOG("%5d | 0x%.4X  ", vm->pc, vm->pc);
 
 	vm->mem[RAND] = GetRandomValue(0, 0xFF);
+	vm->mem[KEY] = GetKeyPressed();
 
-	if (vm->pc < 2)
-		err("Attempted to execute code at 0x%.4x", vm->pc);
+	if (vm->pc < 2 || vm->pc >= RESERVED)
+		err("Attempted to execute code at 0x%.4X", vm->pc);
 
 	u8 inst = consume();
 	DBGLOG("%s ", instnames[inst]);
 
 	if (inst >= I_COUNT)
-		err("Invalid opcode at 0x%.4x: %d", vm->pc - 1, inst);
+		err("Invalid opcode at 0x%.4X: %d", vm->pc - 1, inst);
 
 	switch (inst) {
 		case I_NOP: break;
@@ -121,8 +70,10 @@ void _step(struct VM *vm) {
 			break;
 
 		case I_ST: {
-			u8 reg = consume();
-			vm->mem[consume16()] = vm->reg[reg];
+			u8 val = vm->reg[consume()];
+			u16 addr = consume16();
+			vm->mem[addr] = val;
+			if (addr == SRAM_TOGGLE && val) load();
 			break;
 		}
 
@@ -186,7 +137,7 @@ void _step(struct VM *vm) {
 			break;
 			
 		case I_AT:	
-			if (!vm->drawsize) err("Draw size is 0 or DW not used before AT at 0x%.4x", vm->pc - 1);
+			if (!vm->drawsize) err("Draw size is 0 or DW not used before AT at 0x%.4X", vm->pc - 1);
 			
 			DrawTextureRec(
 				vm->tileset,
@@ -204,7 +155,7 @@ void _step(struct VM *vm) {
 		}
 		
 		case I_SND:
-			err("SND not implemented, used at 0x%.4x", vm->pc - 1);
+			err("SND not implemented, used at 0x%.4X", vm->pc - 1);
 			break;
 
 		case I_END:
@@ -212,6 +163,6 @@ void _step(struct VM *vm) {
 			break;
 	}
 
-	DBGLOG("\nREG: "); for (int i = 0; i < 32; i++) DBGLOG("%.2x " , vm->reg[i]); DBGLOG("  RESH: %.2x", vm->resh);
+	DBGLOG("\nREG: "); for (int i = 0; i < 32; i++) DBGLOG("%.2X " , vm->reg[i]); DBGLOG("  RESH: %.2X", vm->resh);
 	DBGLOG("\n");
 }

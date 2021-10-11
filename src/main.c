@@ -8,6 +8,7 @@
 #include "raylib.h"
 #include "tinyfiledialogs.h"
 #include "vm.h"
+#include "sram.h"
 
 #include "../splash.h"
 #include "../tileset.h"
@@ -20,7 +21,6 @@ enum {
 } state;
 
 struct VM *vm;
-char filename[256] = {0};
 char message[64] = {0};
 u8 msgtime = 0;
 bool nosave = false;
@@ -32,12 +32,14 @@ bool nosave = false;
 //
 
 // Dump a range of memory into a file.
+// Note: start/end should be divided by 16
+// For example, to dump 0xF000 - 0xFEFF, use 0xF00 for start and 0xFEF for end.
 void dumprange(FILE *dump, u16 start, u16 end) {
 	for (u16 i = start; i < end; i++) {
 		fprintf(dump, "0x%.3x |", i);
 
 		for (u8 j = 0; j < 16; j++) {
-			fprintf(dump, "%.2x ", vm->mem[i * 16 + j]);
+			fprintf(dump, "%.2X ", vm->mem[i * 16 + j]);
 		}
 
 		fprintf(dump, "\n");
@@ -59,15 +61,11 @@ void err(const char *fmt, ...) {
 
 		if (dump) {
 			fprintf(dump, "ROM/RAM\n");
-			dumprange(dump, 0x000, 0xDFF);
+			dumprange(dump, 0x000, 0xEFF);
 			fprintf(dump, "\n\nSave RAM\n");
-			dumprange(dump, 0xE00, 0xEFF);
-			fprintf(dump, "\n\nVideo RAM\n");
-			dumprange(dump, 0xF00, 0xF3E);
-			fprintf(dump, "\n\nCall stack\n");
-			dumprange(dump, 0xF40, 0xF4F);
-			fprintf(dump, "\n\nRegisters\n");
-			dumprange(dump, 0xFFF, 0x1000);
+			dumprange(dump, 0xF00, 0xFEF);
+			fprintf(dump, "\n\nReserved\n");
+			dumprange(dump, 0xFF0, 0x1000);
 			fclose(dump);
 		} else {
 			perror("Failed to write dump file");
@@ -82,34 +80,6 @@ void err(const char *fmt, ...) {
 	sprintf(message, __VA_ARGS__);\
 	msgtime = 0;
 
-// Saves SRAM data to file.
-void save() {
-	char *savename = TextReplace(filename, GetFileExtension(filename), ".sav");
-	bool needsave = false;
-
-	// If SRAM is blank and save file doesn't exist, no point in saving
-	for (int i = SRAM; i < VRAM; i++) if (vm->mem[i]) needsave = true;
-	if (!needsave && !FileExists(savename)) return;
-
-	SaveFileData(savename, vm->mem + SRAM, 0x1000);
-	free(savename);
-}
-
-// Loads SRAM data from file.
-void load() {
-	char *savename = TextReplace(filename, GetFileExtension(filename), ".sav");
-	if (!FileExists(savename)) return;
-
-	unsigned int size;
-	u8 *data = LoadFileData(savename, &size);
-
-	if (!data) err("Failed to load file");
-	if (size > 0x1000) err("Save data too big, %d > 4096", size);
-
-	memcpy(vm->mem + SRAM, data, 0x1000);
-	UnloadFileData(data);
-}
-
 // _____________________________________________________________________________
 //
 //  Loading/Unloading
@@ -118,7 +88,7 @@ void load() {
 
 // Unload everything and exit.
 void cleanup() {
-	save(vm);
+	if (vm->mem[SRAM_TOGGLE]) save();
 	UnloadRenderTexture(vm->screen);
 	UnloadTexture(vm->tileset);
 	CloseWindow();
@@ -126,17 +96,17 @@ void cleanup() {
 
 // Load a ROM file and tileset, if found.
 void loadfile(char *name) {
-	strcpy(filename, name);
+	strcpy(vm->filename, name);
 
 	unsigned int size;
 	u8 *file = LoadFileData(name, &size);
 
 	if (!file) err("Failed to load file");
-	if (size > 0xE000) err("ROM too big, %d > 56k", size);
+	if (size > 0xFF00) err("ROM too large, 0x%.4X > 0xFF00", size);
 	
 	memcpy(&vm->mem, file, size);
 	for (int i = size; i < 0x10000; i++) vm->mem[i] = 0;
-	load(vm);
+	load();
 
 	vm->pc = get16(0x0000);
 
@@ -202,7 +172,7 @@ int main(int argc, char **argv) {
 		} else {
 			// We can't use loadfile() here because window is not initialized
 			// Instead, the filename string is checked before the main loop.
-			strcpy(filename, argv[i]);
+			strcpy(vm->filename, argv[i]);
 		}
 	}
 
@@ -233,7 +203,13 @@ int main(int argc, char **argv) {
 	atexit(cleanup);
 
 	// If a file was specified from command line args, load it
-	if (state == ST_IDLE && strlen(filename)) loadfile(filename);
+	if (state == ST_IDLE && strlen(vm->filename)) loadfile(vm->filename);
+
+	// _________________________________________________________________________
+	//
+	//  Main loop
+	// _________________________________________________________________________
+	//
 	
 	while (!WindowShouldClose()) {
 		if (state == ST_IDLE && IsFileDropped()) {
@@ -242,12 +218,6 @@ int main(int argc, char **argv) {
 			loadfile(files[0]);
 			ClearDroppedFiles();
 		}
-
-		// _____________________________________________________________________
-		//
-		//  Screen Resizing
-		// _____________________________________________________________________
-		//
 
 		if (IsKeyPressed(KEY_PAGE_UP)) {
 			int width = GetScreenWidth() + 128;

@@ -24,9 +24,25 @@ main:
 
 loop:
 	add %0 %1 %0 ; increment scroll counter
-	dw  %0 %0 %3 ; take a 128×128 area starting at %0
+	dw  %0 %0 %3 ; take a 128×128 area from the tileset at %0, %0
 	at  %2 %2    ; and draw it at 0, 0
 	end          ; draw frame
 	jmp loop
 ```
 ![](assets/example.gif)
+
+
+## Memory Map
+* `0x0000 - 0xEFFF` Shared ROM/RAM
+  * ROM is loaded at `0x0000`.
+  * The first two bytes of ROM indicate the entry point address.
+
+* `0xF000 - 0xFEFF` Save RAM
+  * The contents of SRAM are saved to a file when exiting.
+  * Must be enabled by setting the SRAM toggle `0xFF01` to 1.
+  * If disabled, this is just part of ROM/RAM.
+
+* `0xFF00 - 0xFFFF` Reserved
+  * `0xFF00` Currently pressed key
+  * `0xFF01` SRAM toggle
+  * `0xFF02` Random number

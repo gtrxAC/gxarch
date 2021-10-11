@@ -1,3 +1,6 @@
+#ifndef VM_H
+#define VM_H
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -7,9 +10,11 @@
 #define u16 uint16_t
 
 #define ENTRY 0x0000
-#define SRAM 0xE000
-#define VRAM 0xF000
-#define RAND 0xFFFB
+#define SRAM 0xF000
+#define RESERVED 0xFF00
+#define KEY 0xFF00
+#define SRAM_TOGGLE 0xFF01
+#define RAND 0xFF02
 
 #define DBGLOG(...) if (vm->debug) printf(__VA_ARGS__);
 
@@ -26,6 +31,7 @@ struct VM {
 	u8 drawsize;
 	bool needdraw;
 
+	char filename[256];
 	bool debug;
 	RenderTexture screen;
 	Texture tileset;
@@ -57,3 +63,5 @@ void _step(struct VM *vm);
 // #define getval(p) _getval(vm, p)
 // #define getaddr(p) _getaddr(vm, p)
 #define step() _step(vm)
+
+#endif
