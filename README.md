@@ -1,4 +1,4 @@
-This is the "rewrite" of gxarch, with a better instruction set and better registers. There is no assembler, save RAM support, etc. For the old gxarch, choose the branch `v1`.
+**This is the "rewrite" of gxarch, with a better instruction set, better registers, etc. There is no assembler yet. For the old gxarch, choose the branch `v1`.**
 
 ## Features
 * 8-bit system with 16-bit arithmetic
