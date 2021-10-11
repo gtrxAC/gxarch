@@ -4,7 +4,7 @@ void err(const char *fmt, ...); // main.c
 
 // Opcode names, used for debugging.
 const u8 *instnames[] = {
-	"nop", "set", "ld ", "st ",
+	"nop", "set", "ld ", "ldi", "st ", "sti",
 	"add", "sub", "mul", "div",
 	"and", "or ", "xor",
 	"equ", "lt ", "gt ",
@@ -69,9 +69,21 @@ void _step(struct VM *vm) {
 			vm->reg[consume()] = vm->mem[consume16()];
 			break;
 
+		case I_LDI:
+			vm->reg[consume()] = vm->mem[get16(consume16())];
+			break;
+
 		case I_ST: {
 			u8 val = vm->reg[consume()];
 			u16 addr = consume16();
+			vm->mem[addr] = val;
+			if (addr == SRAM_TOGGLE && val) load();
+			break;
+		}
+
+		case I_STI: {
+			u8 val = vm->reg[consume()];
+			u16 addr = get16(consume16());
 			vm->mem[addr] = val;
 			if (addr == SRAM_TOGGLE && val) load();
 			break;

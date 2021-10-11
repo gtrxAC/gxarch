@@ -39,7 +39,7 @@ struct VM {
 };
 
 enum Instruction {
-	I_NOP, I_SET, I_LD, I_ST,
+	I_NOP, I_SET, I_LD, I_LDI, I_ST, I_STI,
 	I_ADD, I_SUB, I_MUL, I_DIV,
 	I_AND, I_OR, I_XOR,
 	I_EQ, I_LT, I_GT,
