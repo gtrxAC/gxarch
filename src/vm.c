@@ -70,9 +70,13 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case I_LDI:
-			vm->reg[consume()] = vm->mem[get16(consume16())];
+		case I_LDI: {
+			u8 dest = consume();
+			u8 src = consume();
+			u16 addr = vm->reg[src] << 8 | vm->reg[src + 1];
+			vm->reg[dest] = vm->mem[addr];
 			break;
+		}
 
 		case I_ST: {
 			u8 val = vm->reg[consume()];
@@ -84,7 +88,8 @@ void _step(struct VM *vm) {
 
 		case I_STI: {
 			u8 val = vm->reg[consume()];
-			u16 addr = get16(consume16());
+			u8 reg = consume();
+			u16 addr = vm->reg[reg + 1] >> 8 | vm->reg[reg];
 			vm->mem[addr] = val;
 			if (addr == SRAM_TOGGLE && val) load();
 			break;
@@ -94,14 +99,23 @@ void _step(struct VM *vm) {
 			case I_ ## op: { \
 				u16 result = vm->reg[consume()] sign vm->reg[consume()]; \
 				vm->reg[consume()] = result & 0xFF; \
-				vm->resh = (result & 0xFF00) >> 8; \
+				vm->reg[RESH] = (result & 0xFF00) >> 8; \
 				break; \
 			}
 
 		BINOP16(ADD, +)
 		BINOP16(SUB, -)
 		BINOP16(MUL, *)
-		BINOP16(DIV, /)
+		
+		case I_DIV: { \
+			u8 first = vm->reg[consume()];
+			u8 second = vm->reg[consume()];
+			if (!second) err("Division by zero at 0x%.4X", vm->pc - 3);
+
+			vm->reg[consume()] = first / second;
+			vm->reg[REMAINDER] = first % second;
+			break;
+		}
 		
 		#define BINOP(op, sign) \
 			case I_ ## op: { \
@@ -128,10 +142,12 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case I_JS:
+		case I_JS: {
+			u16 addr = consume16();
 			vm->callstack[vm->sp++] = vm->pc;
-			vm->pc = consume16();
+			vm->pc = addr;
 			break;
+		}
 
 		case I_CJS: {
 			u8 cond = vm->reg[consume()];
@@ -181,6 +197,6 @@ void _step(struct VM *vm) {
 			break;
 	}
 
-	DBGLOG("\nREG: "); for (int i = 0; i < 32; i++) DBGLOG("%.2X " , vm->reg[i]); DBGLOG("  RESH: %.2X", vm->resh);
+	DBGLOG("\nREG: "); for (int i = 0; i < 32; i++) DBGLOG("%.2X " , vm->reg[i]); DBGLOG("  RESH: %.2X", vm->reg[RESH]);
 	DBGLOG("\n");
 }

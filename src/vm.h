@@ -16,12 +16,15 @@
 #define SRAM_TOGGLE 0xFF01
 #define RAND 0xFF02
 
+#define RESH 32
+#define REMAINDER 33
+
 #define DBGLOG(...) if (vm->debug) printf(__VA_ARGS__);
 
 struct VM {
 	u8 mem[0x10000];
-	u8 reg[32];
-	u8 resh;
+	u8 reg[34]; // [32] is result high byte, [33] is division remainder
+	            // in asm you can use %h and %r
 	u16 callstack[0x100];
 	u16 pc;
 	u8 sp;
@@ -35,7 +38,6 @@ struct VM {
 	bool debug;
 	RenderTexture screen;
 	Texture tileset;
-	// u8 addr2str_buf[8];
 };
 
 enum Instruction {
@@ -48,20 +50,11 @@ enum Instruction {
 	I_COUNT
 };
 
-// const u8 *_addr2str(struct VM *vm, u16 addr, u8 digits);
-// void _set16(struct VM *vm, u16 index, u16 val);
-// u8 _consume(struct VM *vm);
-// u8 _getval(struct VM *vm, u8 ptr);
-// u16 _getaddr(struct VM *vm, u8 ptr);
 void _step(struct VM *vm);
 
-// #define addr2str(a, d) _addr2str(vm, a, d)
-// #define set16(i, v) _set16(vm, i, v)
 #define get16(i) vm->mem[i] << 8 | vm->mem[i + 1]
 #define consume() vm->mem[vm->pc++]
 #define consume16() consume() << 8 | consume()
-// #define getval(p) _getval(vm, p)
-// #define getaddr(p) _getaddr(vm, p)
 #define step() _step(vm)
 
 #endif

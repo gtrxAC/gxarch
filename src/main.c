@@ -92,6 +92,7 @@ void cleanup() {
 	UnloadRenderTexture(vm->screen);
 	UnloadTexture(vm->tileset);
 	CloseWindow();
+	free(vm);
 }
 
 // Load a ROM file and tileset, if found.

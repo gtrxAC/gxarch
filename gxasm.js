@@ -8,6 +8,8 @@ const output = [];
 const labels = new Map();
 const labelrefs = new Map();
 
+let run = false;
+
 /**
  * Parses and pushes a number node to the output.
  * @param {Node} digits The node containing the digits.
@@ -58,7 +60,24 @@ semantics.addOperation('eval', {
 		output.push(addr & 0xFF);
 	},
 
-	register(_, num) { pushnum(num); },
+	register(_, reg) {
+		switch (reg.sourceString) {
+			case "h": // result high byte
+				output.push(32);
+				break;
+
+			case "r": // division remainder
+				output.push(33);
+				break;
+
+			default:
+				if (parseInt(reg.sourceString) > 33)
+					throw new Error(`Invalid register, ${reg.sourceString} > 33`);
+
+				pushnum(reg);
+				break;
+		}
+	},
 
 	Instruction_label(ident, _) {
 		ident = ident.sourceString;
@@ -133,7 +152,10 @@ semantics.addOperation('eval', {
 	// snd
 	Instruction_end(_) { output.push(25); },
 
-	string(_, parts, __) { parts.eval().forEach(output.push); },
+	string(_, parts, __) {
+		parts.eval().forEach(c => output.push(c.charCodeAt(0)));
+		output.push(0)
+	},
 	stringpart(c) { return c.sourceString },
 	stringpart_lf(_) { return "\n" },
 	stringpart_cr(_) { return "\r" },
@@ -142,33 +164,53 @@ semantics.addOperation('eval', {
 	stringpart_bs(_) { return "\\" },
 })
 
-if (process.argv.length < 3) {
+function help() {
 	console.log("gxasm: gxarch assembler\n");
-	console.log("Usage: node gxasm.js [file]");
-	console.log("Output file is output.gxa");
+	console.log("Usage: node gxasm.js [options] [file]");
+	console.log("-h, --help  Show this message");
+	console.log("-r, --run   Run the output, gxvm must be in the same directory");
+	process.exit(0);
 }
 
+if (process.argv.length < 3) help();
+
 for (let arg of process.argv.slice(2)) {
-	const src = fs.readFileSync(arg);
-	const match = grammar.match(src);
+	switch (arg) {
+		case '-h': case '--help': help();
+		case '-r': case '--run': run = true; break;
 
-	if (match.succeeded()) {
-		semantics(match).eval();
+		default: {
+			const src = fs.readFileSync(arg);
+			const match = grammar.match(src);
+			
+			if (match.succeeded()) {
+				semantics(match).eval();
+				
+				const outfile = new Uint8Array(output);
+				if (outfile.length > 0xFF00)
+					throw new Error(`Output file too large, 0x${outfile.length.toString(16)} > 0xFF00`);
 		
-		const outfile = new Uint8Array(output);
-		if (outfile.length > 0xFF00)
-			throw new Error(`Output file too large, 0x${outfile.length.toString(16)} > 0xFF00`);
+				labelrefs.forEach((label, addr) => {
+					if (!labels.has(label))
+						throw new Error(`Label ${label} not found`);
+		
+					const val = labels.get(label);
+					outfile.set([(val & 0xFF00) >> 8, val & 0xFF], addr);
+				})
+		
+				// Use same filename as input file, but with gxa extension
+				const outname = arg.replace(/\.\w*$/, ".gxa");
+				fs.writeFileSync(outname, outfile);
 
-		labelrefs.forEach((label, addr) => {
-			if (!labels.has(label))
-				throw new Error(`Label ${label} not found`);
-
-			const val = labels.get(label);
-			outfile.set([(val & 0xFF00) >> 8, val & 0xFF], addr);
-		})
-
-		fs.writeFileSync('output.gxa', outfile);
-	} else {
-		console.error(match.message);
+				if (run) {
+					const cp = require('child_process');
+					cp.spawn(process.platform === 'win32' ? 'gxvm.exe' : './gxvm', [outname]);
+				}
+			} else {
+				console.error(match.message);
+			}
+		}
 	}
+
+
 }

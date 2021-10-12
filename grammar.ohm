@@ -16,7 +16,7 @@ Grammar {
 
   data = value | address | string
 
-  register = "%" digit+
+  register = "%" (digit+ | "h" | "r")
 
   Instruction =
     ident ":"                             -- label
@@ -25,9 +25,9 @@ Grammar {
   | k<"nop">                              -- nop
   | k<"set"> register value               -- set
   | k<"ld"> register address              -- ld
-  | k<"ldi"> register address             -- ldi
+  | k<"ldi"> register register            -- ldi
   | k<"st"> register address              -- st
-  | k<"sti"> register address             -- sti
+  | k<"sti"> register register            -- sti
   | k<"add"> register register register   -- add
   | k<"sub"> register register register   -- sub
   | k<"mul"> register register register   -- mul
