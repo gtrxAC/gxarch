@@ -3,20 +3,17 @@
 
 #include "raylib.h"
 #include <string.h>
+#include <stdlib.h>
 
-const char *name;
+char *name;
 Image img;
 
 int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		img = LoadImage(argv[i]);
-
-		name = GetFileNameWithoutExt(argv[i]);
-		char outname[64] = {0};
-		strcat(outname, name);
-		strcat(outname, ".h");
-		
-		ExportImageAsCode(img, outname);
+		name = TextReplace(argv[i], GetFileExtension(argv[i]), ".h");
+		ExportImageAsCode(img, name);
+		free(name);
 		UnloadImage(img);
 	}
 }

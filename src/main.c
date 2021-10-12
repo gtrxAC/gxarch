@@ -10,9 +10,9 @@
 #include "vm.h"
 #include "sram.h"
 
-#include "../splash.h"
-#include "../tileset.h"
-#include "../icon.h"
+#include "../assets/splash.h"
+#include "../assets/tileset.h"
+#include "../assets/icon.h"
 
 enum {
 	ST_IDLE,
@@ -118,13 +118,21 @@ void loadfile(char *name) {
 	char *imgname = TextReplace(name, GetFileExtension(name), ".png");
 
 	if (FileExists(imgname)) {
-		vm->tileset = LoadTexture(imgname);
+		int palsize;
+		Image tileset = LoadImage(imgname);
 
-		if (vm->tileset.width > 256 || vm->tileset.height > 256)
+		if (tileset.width > 256 || tileset.height > 256)
 			err(
 				"Invalid tileset size, expected below 256 x 256 but got %d x %d",
-				vm->tileset.width, vm->tileset.height
+				tileset.width, tileset.height
 			);
+
+		Color *colors = LoadImagePalette(tileset, 17, &palsize);
+		UnloadImagePalette(colors);
+		if (palsize > 16) err("Tileset has too many colors, max 16");
+
+		vm->tileset = LoadTextureFromImage(tileset);
+		UnloadImage(tileset);
 	} else {
 		// If tileset image was not found, load the default tileset (tileset.h)
 		TraceLog(LOG_WARNING, "%s not found, using default tileset", imgname);
