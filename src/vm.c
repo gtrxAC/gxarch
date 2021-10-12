@@ -7,7 +7,7 @@ const u8 *instnames[] = {
 	"nop", "set", "ld ", "ldi", "st ", "sti",
 	"add", "sub", "mul", "div",
 	"and", "or ", "xor",
-	"equ", "lt ", "gt ",
+	"eq ", "lt ", "gt ",
 	"jmp", "cj ", "js ", "cjs", "ret",
 	"dw ", "at ", "key", "snd", "end"
 };
@@ -43,7 +43,6 @@ void _step(struct VM *vm) {
 	DBGLOG("%5d | 0x%.4X  ", vm->pc, vm->pc);
 
 	vm->mem[RAND] = GetRandomValue(0, 0xFF);
-	vm->mem[KEY] = GetKeyPressed();
 
 	if (vm->pc < 2 || vm->pc >= RESERVED)
 		err("Attempted to execute code at 0x%.4X", vm->pc);
@@ -65,9 +64,11 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case I_LD:
-			vm->reg[consume()] = vm->mem[consume16()];
+		case I_LD: {
+			u8 reg = consume();
+			vm->reg[reg] = vm->mem[consume16()];
 			break;
+		}
 
 		case I_LDI:
 			vm->reg[consume()] = vm->mem[get16(consume16())];
@@ -106,6 +107,7 @@ void _step(struct VM *vm) {
 			case I_ ## op: { \
 				u8 result = vm->reg[consume()] sign vm->reg[consume()]; \
 				vm->reg[consume()] = result; \
+				break; \
 			}
 
 		BINOP(AND, &)
@@ -119,9 +121,12 @@ void _step(struct VM *vm) {
 			vm->pc = consume16();
 			break;
 
-		case I_CJ:
-			if (vm->reg[consume()]) vm->pc = consume16();
+		case I_CJ: {
+			u8 cond = vm->reg[consume()];
+			u16 addr = consume16();
+			if (cond) vm->pc = addr;
 			break;
+		}
 
 		case I_JS:
 			vm->callstack[vm->sp++] = vm->pc;
@@ -172,6 +177,7 @@ void _step(struct VM *vm) {
 
 		case I_END:
 			vm->needdraw = true;
+			vm->mem[KEY] = GetKeyPressed();
 			break;
 	}
 

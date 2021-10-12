@@ -1,0 +1,65 @@
+Grammar {
+  Program = Instruction*
+
+  space += ";" (~"\n" any)* -- comment
+
+  value =
+    "0x" hexDigit+    -- hex
+  | "0b" ("0" | "1")+ -- bin
+  | digit+            -- dec
+
+  address =
+    "0x" hexDigit+    -- hex
+  | "0b" ("0" | "1")+ -- bin
+  | digit+            -- dec
+  | ident ~":"        -- label
+
+  data = value | address | string
+
+  register = "%" digit+
+
+  Instruction =
+    ident ":"                             -- label
+  | k<"dat"> ListOf<data, " ">            -- dat
+  | k<"val"> ident address                -- val
+  | k<"nop">                              -- nop
+  | k<"set"> register value               -- set
+  | k<"ld"> register address              -- ld
+  | k<"ldi"> register address             -- ldi
+  | k<"st"> register address              -- st
+  | k<"sti"> register address             -- sti
+  | k<"add"> register register register   -- add
+  | k<"sub"> register register register   -- sub
+  | k<"mul"> register register register   -- mul
+  | k<"div"> register register register   -- div
+  | k<"and"> register register register   -- and
+  | k<"or"> register register register    -- or
+  | k<"xor"> register register register   -- xor
+  | k<"eq"> register register register    -- eq
+  | k<"lt"> register register register    -- lt
+  | k<"gt"> register register register    -- gt
+  | k<"jmp"> address                      -- jmp
+  | k<"cj"> register address              -- cj
+  | k<"js"> address                       -- js
+  | k<"cjs"> register address             -- cjs
+  | k<"ret">                              -- ret
+  | k<"dw"> register register register    -- dw
+  | k<"at"> register register             -- at
+  | k<"key"> register                     -- key
+  | k<"end">                              -- end
+
+  string = "\"" stringpart* "\""
+
+  stringpart =
+    "\\n"  -- lf
+  | "\\r"  -- cr
+  | "\\t"  -- tab
+  | "\\0"  -- nul
+  | "\\\\" -- bs
+  | (~"\"" ~"\n" any)
+
+  ident = /*~keyword*/ identstart identpart*
+  identstart = letter | "_"    
+  identpart = alnum | "_"
+  k<name> = name ~identpart
+}

@@ -1,0 +1,14 @@
+val KEY 0xFF00
+dat main
+
+main:
+	set %0 0
+
+loop:
+	ld %3 KEY    ; %3 = pressed key
+	eq %3 %0 %2  ; no key pressed?
+	cj %2 skip   ; if so, don't load it to %1
+	ld %1 KEY    ; load pressed key to %1
+skip:
+	end          ; draw frame
+	jmp loop

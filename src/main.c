@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			puts("gxVM: gxarch emulator\n");
-			puts("gxvm [options] [file]");
+			puts("Usage: gxvm [options] [file]");
 			puts("-h, --help    Show this message");
 			puts("-d, --debug   Save memory dump on error");
 			puts("-n, --nosave  Don't create a .sav file\n");
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
 		//
 
 		BeginTextureMode(vm->screen);
-		ClearBackground(BLACK);
+		if (state != ST_PAUSED) ClearBackground(BLACK);
 
 		switch (state) {
 			case ST_IDLE:
