@@ -5,6 +5,7 @@ void err(const char *fmt, ...);
 
 // Saves SRAM data to file.
 void _save(struct VM *vm) {
+	if (vm->nosave) return;
 	char *savename = TextReplace(vm->filename, GetFileExtension(vm->filename), ".sav");
 	bool needsave = false;
 
@@ -18,6 +19,7 @@ void _save(struct VM *vm) {
 
 // Loads SRAM data from file.
 void _load(struct VM *vm) {
+	if (vm->nosave) return;
 	char *savename = TextReplace(vm->filename, GetFileExtension(vm->filename), ".sav");
 	if (!FileExists(savename)) return;
 

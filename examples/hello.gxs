@@ -1,3 +1,8 @@
+; Hello World for gxarch
+; Prints "Hello world!" on the screen using a 4×8 font
+; Date: 2021-10-12
+; Author: gtrxAC
+
 dat main
 dat "Hello world!"
 

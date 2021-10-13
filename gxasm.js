@@ -9,6 +9,7 @@ const labels = new Map();
 const labelrefs = new Map();
 
 let run = false;
+let debug = false;
 
 /**
  * Parses and pushes a number node to the output.
@@ -154,14 +155,15 @@ semantics.addOperation('eval', {
 
 	string(_, parts, __) {
 		parts.eval().forEach(c => output.push(c.charCodeAt(0)));
-		output.push(0)
+		output.push(0);
 	},
-	stringpart(c) { return c.sourceString },
-	stringpart_lf(_) { return "\n" },
-	stringpart_cr(_) { return "\r" },
-	stringpart_tab(_) { return "\t" },
-	stringpart_nul(_) { return "\0" },
-	stringpart_bs(_) { return "\\" },
+	stringpart_char(c) { return c.sourceString; },
+	stringpart_lf(_) { return "\n"; },
+	stringpart_cr(_) { return "\r"; },
+	stringpart_tab(_) { return "\t"; },
+	stringpart_nul(_) { return "\0"; },
+	stringpart_bs(_) { return "\\"; },
+	stringpart_quot(_) { return '"'; }
 })
 
 function help() {
@@ -169,6 +171,7 @@ function help() {
 	console.log("Usage: node gxasm.js [options] [file]");
 	console.log("-h, --help  Show this message");
 	console.log("-r, --run   Run the output, gxvm must be in the same directory");
+	console.log("-d, --debug Enable debugging if used with -r")
 	process.exit(0);
 }
 
@@ -178,6 +181,7 @@ for (let arg of process.argv.slice(2)) {
 	switch (arg) {
 		case '-h': case '--help': help();
 		case '-r': case '--run': run = true; break;
+		case '-d': case '--debug': debug = true; break;
 
 		default: {
 			const src = fs.readFileSync(arg);
@@ -204,7 +208,12 @@ for (let arg of process.argv.slice(2)) {
 
 				if (run) {
 					const cp = require('child_process');
-					cp.spawn(process.platform === 'win32' ? 'gxvm.exe' : './gxvm', [outname]);
+					const vm = cp.spawn(
+						process.platform === 'win32' ? 'gxvm.exe' : './gxvm',
+						debug ? ['--debug', outname] : [outname], 
+					);
+					vm.stdout.on('data', d => console.log(`${d}`));
+					vm.stderr.on('data', d => console.error(`${d}`));
 				}
 			} else {
 				console.error(match.message);

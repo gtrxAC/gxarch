@@ -51,12 +51,13 @@ Grammar {
   string = "\"" stringpart* "\""
 
   stringpart =
-    "\\n"  -- lf
-  | "\\r"  -- cr
-  | "\\t"  -- tab
-  | "\\0"  -- nul
-  | "\\\\" -- bs
-  | (~"\"" ~"\n" any)
+    (~"\"" ~"\n" ~"\\" any) -- char
+  | "\\n"                   -- lf
+  | "\\r"                   -- cr
+  | "\\t"                   -- tab
+  | "\\0"                   -- nul
+  | "\\\\"                  -- bs
+  | "\\\""                  -- quot
 
   ident = /*~keyword*/ identstart identpart*
   identstart = letter | "_"    

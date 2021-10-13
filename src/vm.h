@@ -36,6 +36,7 @@ struct VM {
 
 	char filename[256];
 	bool debug;
+	bool nosave;
 	RenderTexture screen;
 	Texture tileset;
 };

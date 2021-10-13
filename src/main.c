@@ -23,7 +23,6 @@ enum {
 struct VM *vm;
 char message[64] = {0};
 u8 msgtime = 0;
-bool nosave = false;
 
 // _____________________________________________________________________________
 //
@@ -73,6 +72,7 @@ void err(const char *fmt, ...) {
 	}
 	
 	tinyfd_notifyPopup("Error", buf, "error");
+	fprintf(stderr, "%s", buf);
 	exit(EXIT_FAILURE);
 }
 
@@ -121,15 +121,21 @@ void loadfile(char *name) {
 		int palsize;
 		Image tileset = LoadImage(imgname);
 
-		if (tileset.width > 256 || tileset.height > 256)
+		if (tileset.width > 256 || tileset.height > 256) {
+			UnloadImage(tileset);
 			err(
 				"Invalid tileset size, expected below 256 x 256 but got %d x %d",
 				tileset.width, tileset.height
 			);
+		}
 
 		Color *colors = LoadImagePalette(tileset, 17, &palsize);
 		UnloadImagePalette(colors);
-		if (palsize > 16) err("Tileset has too many colors, max 16");
+
+		if (palsize > 16) {
+			UnloadImage(tileset);
+			err("Tileset has too many colors, max 16");
+		}
 
 		vm->tileset = LoadTextureFromImage(tileset);
 		UnloadImage(tileset);
@@ -177,7 +183,7 @@ int main(int argc, char **argv) {
 		} else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			vm->debug = true;
 		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nosave")) {
-			nosave = true;
+			vm->nosave = true;
 		} else {
 			// We can't use loadfile() here because window is not initialized
 			// Instead, the filename string is checked before the main loop.
