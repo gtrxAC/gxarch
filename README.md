@@ -1,4 +1,4 @@
-**This is the "rewrite" of gxarch, with a better instruction set, better registers, etc. There is no assembler yet. For the old gxarch, choose the branch `v1`.**
+**This is the "rewrite" of gxarch, with a better instruction set, better registers, etc. For the old gxarch, choose the branch `v1`.**
 
 ## Features
 * 8-bit system with 16-bit arithmetic
@@ -44,5 +44,9 @@ loop:
 
 * `0xFF00 - 0xFFFF` Reserved
   * `0xFF00` Currently pressed key
-  * `0xFF01` SRAM toggle
-  * `0xFF02` Random number
+  * `0xFF01` Mouse X position
+  * `0xFF02` Mouse Y position
+  * `0xFF03` Is left mouse button pressed? 1 = yes, 0 = no
+  * `0xFF04` Is right mouse button pressed?
+  * `0xFF05` SRAM toggle
+  * `0xFF06` Random number

@@ -13,8 +13,12 @@
 #define SRAM 0xF000
 #define RESERVED 0xFF00
 #define KEY 0xFF00
-#define SRAM_TOGGLE 0xFF01
-#define RAND 0xFF02
+#define MOUSEX 0xFF01
+#define MOUSEY 0xFF02
+#define MOUSEL 0xFF03
+#define MOUSER 0xFF04
+#define SRAM_TOGGLE 0xFF05
+#define RAND 0xFF06
 
 #define RESH 32
 #define REMAINDER 33
@@ -39,6 +43,7 @@ struct VM {
 	bool nosave;
 	RenderTexture screen;
 	Texture tileset;
+	u8 scale;
 };
 
 enum Instruction {

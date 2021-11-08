@@ -191,6 +191,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	vm->scale = 4;
 	InitWindow(512, 512, "gxVM");
 	SetTargetFPS(60);
 
@@ -235,21 +236,16 @@ int main(int argc, char **argv) {
 		}
 
 		if (IsKeyPressed(KEY_PAGE_UP)) {
-			int width = GetScreenWidth() + 128;
-			int height = GetScreenHeight() + 128;
-
-			SetWindowSize(width, height);
-			SHOWMSG("%d x %d", width, height);
+			vm->scale++;
+			SetWindowSize(128 * vm->scale, 128 * vm->scale);
+			SHOWMSG("%d x %d", 128 * vm->scale, 128 * vm->scale);
 		}
 
 		else if (IsKeyPressed(KEY_PAGE_DOWN)) {
-			int width = GetScreenWidth() - 128;
-			int height = GetScreenHeight() - 128;
-
-			if (!width) width = 128, height = 128;
-
-			SetWindowSize(width, height);
-			SHOWMSG("%d x %d", width, height);
+			vm->scale--;
+			if (!vm->scale) vm->scale = 1;
+			SetWindowSize(128 * vm->scale, 128 * vm->scale);
+			SHOWMSG("%d x %d", 128 * vm->scale, 128 * vm->scale);
 		}
 
 		else if (IsKeyPressed(KEY_END) && vm->debug) err("User initiated error");

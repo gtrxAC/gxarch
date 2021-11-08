@@ -45,7 +45,7 @@ Grammar {
   | k<"ret">                              -- ret
   | k<"dw"> register register register    -- dw
   | k<"at"> register register             -- at
-  | k<"key"> register                     -- key
+  | k<"key"> register register            -- key
   | k<"end">                              -- end
 
   string = "\"" stringpart* "\""

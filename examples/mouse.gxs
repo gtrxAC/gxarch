@@ -1,11 +1,15 @@
-; Key for gxarch
-; Saves the last pressed key and shows it on screen
-; Date: 2021-10-13
+; Mouse for gxarch
+; Shows mouse location and mouse buttons pressed
+; Date: 2021-11-07
 ; Author: gtrxAC
 
-val KEY 0xFF00
+val MOUSEX 0xFF01
+val MOUSEY 0xFF02
+val MOUSEL 0xFF03
+val MOUSER 0xFF04
 dat main
-dat "Current key: 000 \" \""
+dat "X: 000  Y: 000   "
+dat "+"
 
 ; Print subroutine
 ; Arguments:
@@ -52,33 +56,83 @@ printdraw:
 	add %0 %h %0
 	jmp print
 
+; Integer to string conversion subroutine
+; Arguments:
+;   %0 = integer to convert
+;   %1 %2 = destination string pointer
+; Uses registers:
+;   %3 = immediate value
+;   %4 = division result
+; Notes:
+;   - A null terminator is not added to the end of the string.
+;   - 3 digits are always used, so 1 is converted into "001".
+int2str:
+	set %3 100     ; divide by 100 to get 3rd digit
+	div %0 %3 %4
+	set %3 0x30    ; number + 0x30 = ASCII digit of number
+	add %4 %3 %4
+	sti %4 %1      ; store digit into string
+
+	set %3 1       ; next character
+	add %2 %3 %2
+	add %1 %h %1
+
+	set %3 10      ; divide remainder by 10 to get 2nd digit
+	div %r %3 %4
+	set %3 0x30    ; ...
+	add %4 %3 %4
+	sti %4 %1
+
+	set %3 1
+	add %2 %3 %2
+	add %1 %h %1
+
+	set %3 0x30
+	add %r %3 %4
+	sti %4 %1
+	ret
+
+mouseldown:
+	set %0 0x4C ; 'L'
+	st %0 17
+	ret
+
+mouserdown:
+	set %0 0x52 ; 'R'
+	st %0 18
+	ret
+
 main:
-	ld %11 KEY      ; %11 = pressed key
-	set %4 0        ; no key pressed?
-	eq %11 %4 %10
-	cj %10 skip     ; if so, don't load it to %9
-	ld %9 KEY       ; load pressed key to %9
-skip:
-	set %13 0x30    ; amount to add to number to make it ASCII digit
-	set %4 100      ; get 3rd digit (100)
-	div %9 %4 %12  
-	add %12 %13 %12 ; convert to ASCII digit
-	st  %12 15      ; store digit into string for printing
+	ld %0 MOUSEX
+	set %1 0
+	set %2 5
+	js int2str
 
-	set %4 10       ; get 2nd digit (10)
-	div %r %4 %12  
-	add %12 %13 %12 ; convert to ASCII digit
-	st  %12 16      ; store digit into string for printing
+	ld %0 MOUSEY
+	set %1 0
+	set %2 13
+	js int2str
 
-	add %r %13 %12  ; convert remainder (last digit)
-	st %12 17       ; store digit into string for printing
+	set %0 20 ; write ASCII spaces to end of string
+	st %0 17
+	st %0 18
 
-	st %9 20       ; store ASCII value of char into string
+	ld %0 MOUSEL      ; if left/right buttons down, replace
+	cjs %0 mouseldown ; spaces with letters L/R
+	ld %0 MOUSER
+	cjs %0 mouserdown
 
-	set %0 0x00     ; draw text
-	set %1 0x02
+	set %0 0 ; draw X/Y location string
+	set %1 2
 	set %2 0
 	set %3 0
 	js print
-	end             ; draw frame
+
+	set %0 0 ; draw a + character at the mouse position
+	set %1 20
+	ld %2 MOUSEX
+	ld %3 MOUSEY
+	js print
+	end
+
 	jmp main

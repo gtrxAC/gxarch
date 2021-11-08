@@ -149,7 +149,9 @@ semantics.addOperation('eval', {
 	Instruction_at(_, reg1, reg2) {
 		output.push(22); reg1.eval(); reg2.eval();
 	},
-	Instruction_key(_, reg) { output.push(23); reg.eval(); },
+	Instruction_key(_, reg1, reg2) {
+		output.push(23); reg1.eval(); reg2.eval();
+	},
 	// snd
 	Instruction_end(_) { output.push(25); },
 

@@ -42,6 +42,10 @@ const u16 keymap[0x100] = {
 void _step(struct VM *vm) {
 	DBGLOG("%5d | 0x%.4X  ", vm->pc, vm->pc);
 
+	vm->mem[MOUSEX] = GetMouseX() / vm->scale;
+	vm->mem[MOUSEY] = GetMouseY() / vm->scale;
+	vm->mem[MOUSEL] = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+	vm->mem[MOUSER] = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
 	vm->mem[RAND] = GetRandomValue(0, 0xFF);
 
 	if (vm->pc < 2 || vm->pc >= RESERVED)
@@ -89,7 +93,7 @@ void _step(struct VM *vm) {
 		case I_STI: {
 			u8 val = vm->reg[consume()];
 			u8 reg = consume();
-			u16 addr = vm->reg[reg + 1] >> 8 | vm->reg[reg];
+			u16 addr = vm->reg[reg] << 8 | vm->reg[reg + 1];
 			vm->mem[addr] = val;
 			if (addr == SRAM_TOGGLE && val) load();
 			break;
