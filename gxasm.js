@@ -38,12 +38,23 @@ semantics.addOperation('parse', {
 	address_hex(_, digits) { return parseInt(digits.sourceString, 16) },
 	address_bin(_, digits) { return parseInt(digits.sourceString, 2) },
 	address_dec(digits) { return parseInt(digits.sourceString, 10) },
+
+	address_label(ident) {
+		ident = ident.sourceString;
+		if (labels.has(ident)) {
+			return labels.get(ident);
+		} else {
+			throw new Error(`Label ${ident} not found. Labels must be defined before lo() or hi() can be used on them.`);
+		}
+	},
 })
 
 semantics.addOperation('eval', {
 	value_hex(_, digits) { pushnum(digits, 16) },
 	value_bin(_, digits) { pushnum(digits, 2) },
 	value_dec(digits) { pushnum(digits, 10) },
+	value_lo(_, __, addr, ___) { output.push(addr.parse() & 0xFF) },
+	value_hi(_, __, addr, ___) { output.push((addr.parse() & 0xFF00) >> 8) },
 
 	address_hex(_, digits) { pushnum(digits, 16, true) },
 	address_bin(_, digits) { pushnum(digits, 2, true) },

@@ -8,8 +8,12 @@ val MOUSEY 0xFF02
 val MOUSEL 0xFF03
 val MOUSER 0xFF04
 dat main
-dat "X: 000  Y: 000   "
-dat "+"
+
+xystr:
+	dat "X: 000  Y: 000   "
+
+plusstr:
+	dat "+"
 
 #include lib/print.gxs
 #include lib/int2str.gxs
@@ -44,14 +48,14 @@ main:
 	ld %0 MOUSER
 	cjs %0 mouserdown
 
-	set %0 0 ; draw X/Y location string
-	set %1 2
+	set %0 hi(xystr) ; draw X/Y location string
+	set %1 lo(xystr)
 	set %2 0
 	set %3 0
 	js print
 
-	set %0 0 ; draw a + character at the mouse position
-	set %1 20
+	set %0 hi(plusstr) ; draw a + character at the mouse position
+	set %1 lo(plusstr)
 	ld %2 MOUSEX
 	ld %3 MOUSEY
 	js print

@@ -4,9 +4,11 @@ Grammar {
   space += ";" (~"\n" any)* -- comment
 
   value =
-    "0x" hexDigit+    -- hex
-  | "0b" ("0" | "1")+ -- bin
-  | digit+            -- dec
+    "0x" hexDigit+          -- hex
+  | "0b" ("0" | "1")+       -- bin
+  | digit+                  -- dec
+  | k<"lo"> "(" address")"  -- lo
+  | k<"hi"> "(" address ")" -- hi
 
   address =
     "0x" hexDigit+    -- hex

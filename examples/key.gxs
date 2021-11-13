@@ -4,38 +4,40 @@
 ; Author: gtrxAC
 
 val KEY 0xFF00
+val SRAM_TOGGLE 0xFF05
+val lastkey 0xF000
 dat main
-dat "Current key: 000 \" \""
+
+string:
+	dat "Last pressed key: 000 \" \""
 
 #include lib/print.gxs
+#include lib/int2str.gxs
 
 main:
-	ld %11 KEY      ; %11 = pressed key
-	set %4 0        ; no key pressed?
-	eq %11 %4 %10
-	cj %10 skip     ; if so, don't load it to %9
-	ld %9 KEY       ; load pressed key to %9
+	set %0 1          ; enable SRAM
+	st %0 SRAM_TOGGLE
+
+loop:
+	ld %0 KEY       ; %0 = pressed key
+	set %1 0        ; no key pressed?
+	eq %0 %1 %1
+	cj %1 skip      ; if so, don't update last key
+	ld %8 KEY       ; update last key
+	st %8 lastkey
 skip:
-	set %13 0x30    ; amount to add to number to make it ASCII digit
-	set %4 100      ; get 3rd digit (100)
-	div %9 %4 %12  
-	add %12 %13 %12 ; convert to ASCII digit
-	st  %12 15      ; store digit into string for printing
+	ld %0 lastkey   ; update string with the last key's keycode
+	set %1 0
+	set %2 20
+	js int2str
 
-	set %4 10       ; get 2nd digit (10)
-	div %r %4 %12  
-	add %12 %13 %12 ; convert to ASCII digit
-	st  %12 16      ; store digit into string for printing
+	st %0 25        ; update string with last key's ASCII value
 
-	add %r %13 %12  ; convert remainder (last digit)
-	st %12 17       ; store digit into string for printing
-
-	st %9 20       ; store ASCII value of char into string
-
-	set %0 0x00     ; draw text
-	set %1 0x02
+	set %0 hi(string)
+	set %1 lo(string)
 	set %2 0
 	set %3 0
 	js print
+
 	end             ; draw frame
-	jmp main
+	jmp loop
