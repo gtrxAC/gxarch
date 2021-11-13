@@ -186,7 +186,24 @@ for (let arg of process.argv.slice(2)) {
 		case '-d': case '--debug': debug = true; break;
 
 		default: {
-			const src = fs.readFileSync(arg);
+			let src = fs.readFileSync(arg)
+				.toString()
+				.split(/\r\n|\r|\n/);
+
+			let ln = 0;
+			while (ln < src.length) {
+				let line = src[ln].trim().split(/\s+/);
+				if (line[0] === '#include') {
+					const included = fs.readFileSync(line[1])
+						.toString()
+						.split(/\r\n|\r|\n/);
+
+					src.splice(ln, 1, included);
+					src = src.flat();
+				} else ln++;
+			}
+
+			src = src.join('\n');
 			const match = grammar.match(src);
 			
 			if (match.succeeded()) {
@@ -222,6 +239,4 @@ for (let arg of process.argv.slice(2)) {
 			}
 		}
 	}
-
-
 }

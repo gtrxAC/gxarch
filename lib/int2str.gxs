@@ -1,0 +1,35 @@
+; Integer to string conversion subroutine
+; Arguments:
+;   %0 = integer to convert
+;   %1 %2 = destination string pointer
+; Uses registers:
+;   %3 = immediate value
+;   %4 = division result
+; Notes:
+;   - A null terminator is not added to the end of the string.
+;   - 3 digits are always used, so 1 is converted into "001".
+int2str:
+	set %3 100     ; divide by 100 to get 3rd digit
+	div %0 %3 %4
+	set %3 0x30    ; number + 0x30 = ASCII digit of number
+	add %4 %3 %4
+	sti %4 %1      ; store digit into string
+
+	set %3 1       ; next character
+	add %2 %3 %2
+	add %1 %h %1
+
+	set %3 10      ; divide remainder by 10 to get 2nd digit
+	div %r %3 %4
+	set %3 0x30    ; ...
+	add %4 %3 %4
+	sti %4 %1
+
+	set %3 1
+	add %2 %3 %2
+	add %1 %h %1
+
+	set %3 0x30
+	add %r %3 %4
+	sti %4 %1
+	ret

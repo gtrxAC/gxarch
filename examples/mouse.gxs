@@ -11,86 +11,8 @@ dat main
 dat "X: 000  Y: 000   "
 dat "+"
 
-; Print subroutine
-; Arguments:
-;   %0 %1 = string pointer
-;   %2 = X position
-;   %3 = Y position
-; Uses registers:
-;   %4 = immediate value
-;   %5 = current character being printed
-;   %6 = source X position
-;   %7 = source Y position
-; Notes:
-;   - In the tileset, the characters must start at (0, 0), in ASCII order,
-;     starting at null.
-;   - This subroutine takes advantage of integer overflow and the %h register,
-;     so the tileset must be 256 pixels wide.
-;   - This subroutine is written for double tall fonts (e.g. 4×8), it can
-;     be made to work with square character fonts by removing/commenting some
-;     lines, read the comments for more info.
-;   - 256 must be divisible by the character width (4 or 8 is recommended).
-;   - This subroutine doesn't do line wrapping, everything is drawn on one line.
-print:
-	ldi %5 %0           ; load current char into %5
-	cj %5 printdraw     ; if not null term, continue
-	ret
-printdraw:
-	set %4 4     ; width of each char, if using square fonts this is also height
-	mul %5 %4 %6 ; calculate X and Y position of current char
-	set %4 8     ; height of each char, remove if using square fonts
-	mul %h %4 %7
-	set %4 4     ; width of each char again
-	dw %6 %7 %4  ; draw top half of character
-	at %2 %3
-
-	add %7 %4 %7 ; draw bottom half of character
-	add %3 %4 %3 ; you can remove these 5 instructions if you're
-	dw %6 %7 %4  ; using a square character font
-	at %2 %3
-	sub %3 %4 %3
-
-	add %2 %4 %2  ; next character cell
-	set %4 1      ; next source character
-	add %1 %4 %1
-	add %0 %h %0
-	jmp print
-
-; Integer to string conversion subroutine
-; Arguments:
-;   %0 = integer to convert
-;   %1 %2 = destination string pointer
-; Uses registers:
-;   %3 = immediate value
-;   %4 = division result
-; Notes:
-;   - A null terminator is not added to the end of the string.
-;   - 3 digits are always used, so 1 is converted into "001".
-int2str:
-	set %3 100     ; divide by 100 to get 3rd digit
-	div %0 %3 %4
-	set %3 0x30    ; number + 0x30 = ASCII digit of number
-	add %4 %3 %4
-	sti %4 %1      ; store digit into string
-
-	set %3 1       ; next character
-	add %2 %3 %2
-	add %1 %h %1
-
-	set %3 10      ; divide remainder by 10 to get 2nd digit
-	div %r %3 %4
-	set %3 0x30    ; ...
-	add %4 %3 %4
-	sti %4 %1
-
-	set %3 1
-	add %2 %3 %2
-	add %1 %h %1
-
-	set %3 0x30
-	add %r %3 %4
-	sti %4 %1
-	ret
+#include lib/print.gxs
+#include lib/int2str.gxs
 
 mouseldown:
 	set %0 0x4C ; 'L'
