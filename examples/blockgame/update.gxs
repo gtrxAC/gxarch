@@ -1,0 +1,153 @@
+update:
+	ld %0 framecount  ; only allow moving every 4th frame
+	set %1 lo(SPEED)
+	div %0 %1 %31
+	set %0 0
+	cj %r getmouseblock
+
+	set %1 0
+	set %2 1
+	set %5 lo(WWIDTH)
+	set %7 lo(BLOCKCOUNT)
+	set %8 lo(WHEIGHT)
+	set %9 13
+	sub %5 %9 %5
+	sub %8 %9 %8
+
+	set %0 87  ; if W is down, go up
+	key %0 %3
+	eq %3 %1 %3
+	cj %3 nomoveup
+
+	ld %4 playery
+	eq %4 %1 %6
+	cj %6 nomoveup
+	sub %4 %2 %4
+	st %4 playery
+
+nomoveup:
+	set %0 65  ; if A is down, go left
+	key %0 %3
+	eq %3 %1 %3
+	cj %3 nomoveleft
+
+	ld %4 playerx
+	eq %4 %1 %6
+	cj %6 nomoveleft
+	sub %4 %2 %4
+	st %4 playerx
+
+nomoveleft:
+	set %0 83  ; if S is down, go down
+	key %0 %3
+	eq %3 %1 %3
+	cj %3 nomovedown
+	
+	ld %4 playery
+	add %4 %2 %4
+	gt %4 %8 %6
+	cj %6 nomovedown
+	st %4 playery
+
+nomovedown:
+	set %0 68  ; if D is down, go right
+	key %0 %3
+	eq %3 %1 %3
+	cj %3 checkprevblock
+
+	ld %4 playerx
+	add %4 %2 %4
+	gt %4 %5 %6
+	cj %6 checkprevblock
+	st %4 playerx
+
+checkprevblock:
+	set %0 90  ; if Z is pressed, select previous block
+	key %0 %3
+	cj %3 prevblock
+	jmp noprevblock
+prevblock:
+	ld %0 zdowntime
+	cj %0 checknextblock
+
+	ld %4 curblock
+	eq %4 %2 %0
+	cj %0 checknextblock
+	sub %4 %2 %4
+	st %4 curblock
+
+	ld %0 zdowntime  ; increment counter
+	add %0 %2 %0
+	st %0 zdowntime
+	jmp checknextblock
+noprevblock:
+	st %1 zdowntime
+
+checknextblock:
+	set %0 88  ; if X is pressed, select next block
+	key %0 %3
+	cj %3 nextblock
+	jmp nonextblock
+nextblock:
+	ld %0 xdowntime
+	cj %0 getmouseblock
+
+	ld %4 curblock
+	add %4 %2 %4
+	eq %4 %7 %6
+	cj %6 getmouseblock
+	st %4 curblock
+
+	ld %0 xdowntime  ; increment counter
+	add %0 %2 %0
+	st %0 xdowntime
+	jmp getmouseblock
+nonextblock:
+	st %1 xdowntime
+
+getmouseblock:
+	set %2 lo(BLOCKSIZE)  ; get the block that the mouse is pointing at
+	ld %0 MOUSEX
+	div %0 %2 %0
+	ld %1 playerx
+	add %0 %1 %0
+	st %0 mousexblock
+
+	ld %0 MOUSEY
+	div %0 %2 %0
+	ld %1 playery
+	add %0 %1 %0
+	st %0 mouseyblock
+
+	ld %0 LMOUSE        ; if left mouse is down, replace pointed block with air
+	cjs %0 removeblock
+	ld %0 RMOUSE        ; if right mouse is down, replace pointed block with current block
+	cjs %0 placeblock
+	jmp render
+
+removeblock:
+	js getblockaddr
+	set %4 0
+	sti %4 %0
+	ret
+
+placeblock:
+	js getblockaddr
+	ld %4 curblock
+	sti %4 %0
+	ret
+
+getblockaddr:
+	set %0 hi(blocks)  ; block address = starting address
+	set %1 lo(blocks)
+
+	ld %2 mouseyblock  ; block address += mouse y block * world width
+	set %3 lo(WWIDTH)
+	mul %2 %3 %2
+	add %0 %h %0
+	add %1 %2 %1
+
+	ld %2 mousexblock  ; block address += mouse x block
+	add %1 %2 %1
+	add %0 %h %0
+	ret

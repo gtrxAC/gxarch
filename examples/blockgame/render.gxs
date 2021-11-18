@@ -1,0 +1,143 @@
+render:
+	ld %0 scrollcount  ; draw clouds at current scroll count
+	set %1 16
+	set %2 128
+	dw %0 %1 %2
+	set %1 0
+	at %1 %1
+
+	ld %0 framecount  ; increment frame count
+	set %1 1
+	add %0 %1 %3
+	st %3 framecount
+
+	set %0 lo(CLOUDSPEED)  ; if framecount is divisible by CLOUDSPEED,
+	div %3 %0 %31          ; increment cloud scroll count
+	set %0 0
+	eq %r %0 %3
+	cj %3 incscroll
+	jmp noincscroll
+
+incscroll:
+	ld %0 scrollcount
+	set %1 1
+	add %0 %1 %3
+	st %3 scrollcount
+
+noincscroll:
+	set %4 0  ; iterator X/Y
+	set %5 0
+	ld %6 playerx  ; player X/Y
+	ld %7 playery
+	; %8 %9 = current block address
+	; %10 = current block value
+	set %11 1              ; constants
+	set %12 lo(BLOCKSIZE)
+	set %13 13
+	set %14 lo(WWIDTH)
+	set %15 144
+	; %16 = immediate
+	; %17 %18 = current draw location
+	; %19 = current tileset X to draw
+	ld %20 mousexblock
+	ld %21 mouseyblock
+	set %22 0
+
+renderyloop:
+	set %4 0
+
+renderxloop:
+	set %8 hi(blocks)  ; block address = starting address
+	set %9 lo(blocks)
+
+	add %5 %7 %16   ; block address += (iterator y + player y) * world width
+	mul %16 %14 %16
+	add %8 %h %8
+	add %9 %16 %9
+
+	add %9 %4 %9  ; block address += iterator x + player x
+	add %8 %h %8
+	add %9 %6 %9
+	add %8 %h %8
+
+	ldi %10 %8       ; load current block, skip drawing if it's air
+	set %16 0
+	eq %10 %16 %16
+	cj %16 renderskip
+
+	set %16 lo(BLOCKCOUNT)  ; skip drawing if block id exceeds block count
+	sub %16 %11 %16
+	gt %10 %16 %16
+	cj %16 renderskip
+
+	mul %10 %12 %19  ; multiply the block's id by block size
+	dw %19 %15 %12   ; to get the tileset coordinate to draw from
+
+	mul %4 %12 %17  ; destination X/Y = iterator X/Y * block size
+	mul %5 %12 %18
+	at %17 %18      ; draw tile at destination X/Y
+
+renderskip:
+	add %4 %6 %16      ; is this block being pointed at?
+	eq %16 %20 %16     ; in X direction
+	cj %16 pointedatx
+	jmp notpointedat
+
+pointedatx:
+	add %5 %7 %16      ; in Y direction
+	eq %16 %21 %16
+	cj %16 pointedaty
+	jmp notpointedat
+
+pointedaty:
+	set %0 12             ; if pointed at, draw an indicator
+	set %1 154
+	set %2 lo(BLOCKSIZE)
+	dw %0 %1 %2
+	mul %4 %12 %23
+	mul %5 %12 %24
+	at %23 %24
+
+notpointedat:
+	add %4 %11 %4  ; next X iteration if row isn't done
+	lt %4 %13 %16
+	cj %16 renderxloop
+
+	add %5 %11 %5  ; next Y iteration if render not finished
+	lt %5 %13 %16
+	cj %16 renderyloop
+
+	ld %0 playerx         ; format player X/Y into coordinate string
+	set %1 hi(COORDSTRX)
+	set %2 lo(COORDSTRX)
+	js int2str
+	ld %0 playery
+	set %1 hi(COORDSTRY)
+	set %2 lo(COORDSTRY)
+	js int2str
+
+	set %0 hi(coordstr)  ; print coordinate string in the top left corner
+	set %1 lo(coordstr)
+	set %2 0
+	set %3 2
+	js print
+
+	set %0 0  ; draw border for current block
+	set %1 154
+	set %2 12
+	dw %0 %1 %2
+	set %0 78
+	set %1 0
+	at %0 %1
+
+	ld %0 curblock  ; draw current block
+	mul %0 %12 %0
+	set %1 144
+	set %2 lo(BLOCKSIZE)
+	dw %0 %1 %2
+	set %0 79
+	set %1 1
+	at %0 %1
+
+	end
+	jmp update

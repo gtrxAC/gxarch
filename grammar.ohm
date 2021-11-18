@@ -7,7 +7,7 @@ Grammar {
     "0x" hexDigit+          -- hex
   | "0b" ("0" | "1")+       -- bin
   | digit+                  -- dec
-  | k<"lo"> "(" address")"  -- lo
+  | k<"lo"> "(" address ")" -- lo
   | k<"hi"> "(" address ")" -- hi
 
   address =
@@ -22,7 +22,7 @@ Grammar {
 
   Instruction =
     ident ":"                             -- label
-  | k<"dat"> ListOf<data, " ">            -- dat
+  | k<"dat"> ListOf<data, ",">            -- dat
   | k<"val"> ident address                -- val
   | k<"nop">                              -- nop
   | k<"set"> register value               -- set

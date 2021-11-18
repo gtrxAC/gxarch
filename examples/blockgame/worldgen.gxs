@@ -1,0 +1,44 @@
+ylayers:
+	dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 6, 6
+
+genworld:
+	set %4 0  ; iterator X/Y
+	set %5 0
+	; %8 %9 = current block address
+	set %11 1              ; constants
+	set %12 lo(BLOCKSIZE)
+	set %13 lo(WWIDTH)
+	set %14 lo(WHEIGHT)
+	; %16 = immediate
+
+genyloop:
+	set %4 0
+
+genxloop:
+	set %8 hi(blocks)  ; block address = starting address
+	set %9 lo(blocks)
+
+	mul %5 %13 %16  ; block address += iterator y * world width
+	add %8 %h %8
+	add %9 %16 %9
+	add %9 %4 %9  ; block address += iterator x
+	add %8 %h %8
+
+	set %6 hi(ylayers)  ; get the current block to write at this Y level
+	set %7 lo(ylayers)  ; from ylayers
+	add %7 %5 %7
+	add %6 %h %6
+	ldi %16 %6
+	sti %16 %8  ; write the block
+
+	add %4 %11 %4  ; next X iteration if row isn't done
+	lt %4 %13 %16
+	cj %16 genxloop
+
+	add %5 %11 %5  ; next Y iteration if generation not finished
+	lt %5 %14 %16
+	cj %16 genyloop
+
+	set %0 1
+	st %0 worldready
+	ret

@@ -173,16 +173,12 @@ void _step(struct VM *vm) {
 			vm->drawsize = vm->reg[consume()];
 			break;
 			
-		case I_AT:	
-			if (!vm->drawsize) err("Draw size is 0 or DW not used before AT at 0x%.4X", vm->pc - 1);
-			
+		case I_AT:
 			DrawTextureRec(
 				vm->tileset,
 				(Rectangle){vm->drawX, vm->drawY, vm->drawsize, vm->drawsize},
 				(Vector2){vm->reg[consume()], vm->reg[consume()]}, WHITE
 			);
-
-			vm->drawX = vm->drawY = vm->drawsize = 0;
 			break;
 
 		case I_KEY: {

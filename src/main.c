@@ -21,6 +21,7 @@ enum {
 } state;
 
 struct VM *vm;
+bool showfps = false;
 char message[64] = {0};
 u8 msgtime = 0;
 
@@ -275,6 +276,10 @@ int main(int argc, char **argv) {
 				char *file = tinyfd_openFileDialog("Open ROM", NULL, 0, NULL, NULL, 0);
 				if (file != NULL) loadfile(file);
 			}
+
+			if (IsKeyPressed(KEY_F)) {
+				showfps = !showfps;
+			}
 		}
 
 		// _____________________________________________________________________
@@ -310,6 +315,16 @@ int main(int argc, char **argv) {
 			}
 			DrawText(message, 1, 1, 10, YELLOW);
 			msgtime++;
+		}
+
+		if (showfps) {
+			const char *fps = TextFormat("%d", GetFPS());
+			for (int x = 0; x < 3; x++) {
+				for (int y = 0; y < 3; y++) {
+					DrawText(fps, x, 117 + y, 10, BLACK);
+				}
+			}
+			DrawText(fps, 1, 118, 10, YELLOW);
 		}
 
 		EndTextureMode();
