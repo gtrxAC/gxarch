@@ -167,7 +167,8 @@ void loadfile(char *name) {
 
 int main(int argc, char **argv) {
 	vm = malloc(sizeof(struct VM));
-
+	if (vm == NULL) err("Failed to allocate virtual machine");
+	
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			puts("gxVM: gxarch emulator\n");
@@ -195,6 +196,10 @@ int main(int argc, char **argv) {
 	vm->scale = 4;
 	InitWindow(512, 512, "gxVM");
 	SetTargetFPS(60);
+
+	// ESC is a keycode in gxarch, it is also used to exit a raylib app by default
+	// End can be used to exit gxarch, it also creates a memory dump in debug mode
+	SetExitKey(0);
 
 	Image icon = {
 		ICON_DATA,
@@ -249,7 +254,10 @@ int main(int argc, char **argv) {
 			SHOWMSG("%d x %d", 128 * vm->scale, 128 * vm->scale);
 		}
 
-		else if (IsKeyPressed(KEY_END) && vm->debug) err("User initiated error");
+		else if (IsKeyPressed(KEY_END)) {
+			if (vm->debug) err("User initiated error");
+			else exit(EXIT_SUCCESS);
+		}
 
 		else if (IsKeyPressed(KEY_PAUSE)) {
 			switch (state) {

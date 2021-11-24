@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <ctype.h>
 #include "raylib.h"
 
 #define u8 uint8_t
@@ -12,7 +13,6 @@
 #define ENTRY 0x0000
 #define SRAM 0xF000
 #define RESERVED 0xFF00
-#define KEY 0xFF00
 #define MOUSEX 0xFF01
 #define MOUSEY 0xFF02
 #define MOUSEL 0xFF03

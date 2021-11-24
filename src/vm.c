@@ -13,40 +13,64 @@ const u8 *instnames[] = {
 };
 
 // gxvm to raylib key mappings
-const u16 keymap[0x100] = {
-	0, 0, 0, 0, 0, 0, 0, 0, // 0x07
-	0, KEY_BACKSPACE, KEY_TAB, KEY_ENTER, 0, 0, 0, 0, // 0x0F
-	0, KEY_LEFT_CONTROL, KEY_LEFT_SUPER, KEY_LEFT_ALT, 0, 0, 0, 0, // 0x17
-	0, 0, 0, KEY_ESCAPE, 0, 0, 0, 0, // 0x1F
-	' ', 0, 0, 0, 0, 0, 0, '\'',
-	0, 0, 0, 0, ',', '-', '.', '/',
-	'0', '1', '2', '3', '4', '5', '6', '7',
-	'8', '9', 0, ';', 0, '=', 0, 0,
-	0, 'A', 'B', 'C', 'D', 'E', 'F', 'G',
-	'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-	'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-	'X', 'Y', 'Z', '[', '\\', ']', 0, 0,
-	'`', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x6F
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x7F
-	KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, // 0x87
-	KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_UP, KEY_LEFT, KEY_DOWN, KEY_RIGHT, // 0x8F
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x9F
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xAF
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xBF
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xCF
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xDF
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xEF
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xFF
+// raylib keycodes go beyond 255 but gxarch only uses one byte
+// Most keycodes are based on en_US layout but some keys are remapped, e.g. F1..F12 is 0x80..0x8b
+const u16 gx2rl[0x100] = {
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x00
+	KEY_BACKSPACE, KEY_TAB, KEY_ENTER, 0, 0, 0, 0, 0, // 0x08
+	0, KEY_LEFT_CONTROL, KEY_LEFT_SUPER, KEY_LEFT_ALT, 0, 0, 0, 0, // 0x10
+	0, 0, 0, KEY_ESCAPE, 0, 0, 0, 0, // 0x18
+	' ', '1', '\'', '3', '4', '5', '7', '\'', // 0x20
+	'9', '0', '8', '=', ',', '-', '.', '/', // 0x28
+	'0', '1', '2', '3', '4', '5', '6', '7', // 0x30
+	'8', '9', ';', ';', ',', '=', '.', '/', // 0x38
+	'2', 'A', 'B', 'C', 'D', 'E', 'F', 'G', // 0x40
+	'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', // 0x48
+	'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', // 0x50
+	'X', 'Y', 'Z', '[', '\\', ']', '6', '-', // 0x58
+	'`', 'A', 'B', 'C', 'D', 'E', 'F', 'G', // 0x60
+	'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', // 0x68
+	'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', // 0x70
+	'X', 'Y', 'Z', '[', '\\', ']', '`', 0, // 0x78
+	KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, // 0x80
+	KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_UP, KEY_LEFT, KEY_DOWN, KEY_RIGHT, // 0x88
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x90
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xA0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xB0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xC0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xD0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xE0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xF0
 };
+
+const bool needshift[0x100] = {
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
+	0, 1, 1, 1, 1, 1, 1, 0, // 0x20
+	1, 1, 1, 1, 0, 0, 0, 0, // 0x28
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x30
+	0, 0, 1, 0, 1, 0, 1, 1, // 0x38
+	1, 1, 1, 1, 1, 1, 1, 1, // 0x40
+	1, 1, 1, 1, 1, 1, 1, 1, // 0x48
+	1, 1, 1, 1, 1, 1, 1, 1, // 0x50
+	1, 1, 1, 0, 0, 0, 1, 1, // 0x58
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x60
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x68
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x70
+	0, 0, 0, 1, 1, 1, 1, 0, // 0x78
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x80
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x90
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xA0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xB0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xC0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xD0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xE0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xF0
+};
+
 
 void _step(struct VM *vm) {
 	DBGLOG("%5d | 0x%.4X  ", vm->pc, vm->pc);
-
-	vm->mem[MOUSEX] = GetMouseX() / vm->scale;
-	vm->mem[MOUSEY] = GetMouseY() / vm->scale;
-	vm->mem[MOUSEL] = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-	vm->mem[MOUSER] = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-	vm->mem[RAND] = GetRandomValue(0, 0xFF);
 
 	if (vm->pc < 2 || vm->pc >= RESERVED)
 		err("Attempted to execute code at 0x%.4X", vm->pc);
@@ -61,8 +85,6 @@ void _step(struct VM *vm) {
 		case I_NOP: break;
 
 		case I_SET: {
-			// A one liner like vm->reg[consume()] = consume(); doesn't work for
-			// me, the consume()s are done in the opposite order??
 			u8 reg = consume();
 			vm->reg[reg] = consume();
 			break;
@@ -70,7 +92,9 @@ void _step(struct VM *vm) {
 
 		case I_LD: {
 			u8 reg = consume();
-			vm->reg[reg] = vm->mem[consume16()];
+			u16 addr = consume16();
+			vm->reg[reg] = vm->mem[addr];
+			if (addr == RAND) vm->mem[RAND] = GetRandomValue(0, 0xFF);
 			break;
 		}
 
@@ -183,7 +207,8 @@ void _step(struct VM *vm) {
 
 		case I_KEY: {
 			u8 key = vm->reg[consume()];
-			vm->reg[consume()] = IsKeyDown(keymap[key]);
+			bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+			vm->reg[consume()] = shift == needshift[key] && IsKeyDown(gx2rl[key]);
 			break;
 		}
 		
@@ -193,10 +218,17 @@ void _step(struct VM *vm) {
 
 		case I_END:
 			vm->needdraw = true;
-			vm->mem[KEY] = GetKeyPressed();
+			vm->mem[MOUSEX] = GetMouseX() / vm->scale;
+			vm->mem[MOUSEY] = GetMouseY() / vm->scale;
+			vm->mem[MOUSEL] = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+			vm->mem[MOUSER] = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
 			break;
 	}
 
-	DBGLOG("\nREG: "); for (int i = 0; i < 32; i++) DBGLOG("%.2X " , vm->reg[i]); DBGLOG("  RESH: %.2X", vm->reg[RESH]);
-	DBGLOG("\n");
+	// Print all registers in debug mode
+	DBGLOG("\nREG: ");
+	for (int i = 0; i < 32; i++) {
+		DBGLOG("%.2X ", vm->reg[i]);
+	}
+	DBGLOG("  RESH: %.2X  REM: %.2X\n", vm->reg[RESH], vm->reg[REMAINDER]);
 }

@@ -14,7 +14,7 @@ update:
 	sub %5 %9 %5
 	sub %8 %9 %8
 
-	set %0 87  ; if W is down, go up
+	set %0 0x77  ; if W is down, go up
 	key %0 %3
 	eq %3 %1 %3
 	cj %3 nomoveup
@@ -26,7 +26,7 @@ update:
 	st %4 playery
 
 nomoveup:
-	set %0 65  ; if A is down, go left
+	set %0 0x61  ; if A is down, go left
 	key %0 %3
 	eq %3 %1 %3
 	cj %3 nomoveleft
@@ -38,7 +38,7 @@ nomoveup:
 	st %4 playerx
 
 nomoveleft:
-	set %0 83  ; if S is down, go down
+	set %0 0x73  ; if S is down, go down
 	key %0 %3
 	eq %3 %1 %3
 	cj %3 nomovedown
@@ -50,7 +50,7 @@ nomoveleft:
 	st %4 playery
 
 nomovedown:
-	set %0 68  ; if D is down, go right
+	set %0 0x64  ; if D is down, go right
 	key %0 %3
 	eq %3 %1 %3
 	cj %3 checkprevblock
@@ -62,7 +62,7 @@ nomovedown:
 	st %4 playerx
 
 checkprevblock:
-	set %0 90  ; if Z is pressed, select previous block
+	set %0 0x7a  ; if Z is pressed, select previous block
 	key %0 %3
 	cj %3 prevblock
 	jmp noprevblock
@@ -84,7 +84,7 @@ noprevblock:
 	st %1 zdowntime
 
 checknextblock:
-	set %0 88  ; if X is pressed, select next block
+	set %0 0x78  ; if X is pressed, select next block
 	key %0 %3
 	cj %3 nextblock
 	jmp nonextblock
@@ -119,9 +119,9 @@ getmouseblock:
 	add %0 %1 %0
 	st %0 mouseyblock
 
-	ld %0 LMOUSE        ; if left mouse is down, replace pointed block with air
+	ld %0 MOUSEL        ; if left mouse is down, replace pointed block with air
 	cjs %0 removeblock
-	ld %0 RMOUSE        ; if right mouse is down, replace pointed block with current block
+	ld %0 MOUSER        ; if right mouse is down, replace pointed block with current block
 	cjs %0 placeblock
 	jmp render
 

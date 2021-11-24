@@ -1,16 +1,17 @@
 ; Key for gxarch
 ; Saves the last pressed key and shows it on screen
-; Date: 2021-10-13
+; Date: 2021-11-21
 ; Author: gtrxAC
 
-val KEY 0xFF00
-val SRAM_TOGGLE 0xFF05
-val lastkey 0xF000
 dat main
 
 string:
 	dat "Last pressed key: 000 \" \""
 
+val FORMATNUM 20    ; addresses of where numeric/ASCII values are
+val FORMATASCII 25  ; formatted into the string
+
+#include lib/common.gxs
 #include lib/print.gxs
 #include lib/int2str.gxs
 
@@ -19,25 +20,33 @@ main:
 	st %0 SRAM_TOGGLE
 
 loop:
-	ld %0 KEY       ; %0 = pressed key
-	set %1 0        ; no key pressed?
-	eq %0 %1 %1
-	cj %1 skip      ; if so, don't update last key
-	ld %8 KEY       ; update last key
-	st %8 lastkey
-skip:
-	ld %0 lastkey   ; update string with the last key's keycode
-	set %1 0
-	set %2 20
+	key %0 %1       ; is current key pressed?
+	cj %1 keyfound  ; then store it in SRAM
+
+	set %1 1             ; next key
+	add %0 %1 %0
+	set %1 lo(KEYCOUNT)
+	lt %0 %1 %1
+	cj %1 loop
+
+loopend:
+	ld %0 SRAM            ; update string with last key's numeric value
+	set %1 hi(FORMATNUM)
+	set %2 lo(FORMATNUM)
 	js int2str
 
-	st %0 25        ; update string with last key's ASCII value
+	st %0 FORMATASCII  ; update string with last key's ASCII value
 
-	set %0 hi(string)
+	set %0 hi(string)  ; print string on screen
 	set %1 lo(string)
 	set %2 0
 	set %3 0
 	js print
 
-	end             ; draw frame
+	end       ; draw frame and loop
+	set %0 0
 	jmp loop
+
+keyfound:
+	st %0 SRAM
+	jmp loopend

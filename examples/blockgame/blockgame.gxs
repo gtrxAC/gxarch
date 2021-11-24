@@ -10,6 +10,7 @@ dat main
 coordstr: dat "X:000 yY:000  Block:"  ; in the font, the lowercase y is the
                                       ; black border for the uppercase Y
 
+#include lib/common.gxs
 #include lib/int2str.gxs
 #include lib/print.gxs
 
@@ -21,12 +22,6 @@ val BLOCKCOUNT 12
 val CLOUDSPEED 10  ; clouds move by 1 pixel every CLOUDSPEED frames
 val COORDSTRX 4    ; addresses of where numbers are placed into the coordstr string
 val COORDSTRY 11
-
-val MOUSEX 0xFF01
-val MOUSEY 0xFF02
-val LMOUSE 0xFF03
-val RMOUSE 0xFF04
-val SRAM_TOGGLE 0xFF05
 
 val playerx 0xF000
 val playery 0xF001
