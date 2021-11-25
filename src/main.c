@@ -109,6 +109,7 @@ void loadfile(char *name) {
 	memcpy(&vm->mem, file, size);
 	for (int i = size; i < 0x10000; i++) vm->mem[i] = 0;
 	load();
+	vm->mem[RAND] = GetRandomValue(0, 0xFF);
 
 	vm->pc = get16(0x0000);
 
@@ -178,7 +179,8 @@ int main(int argc, char **argv) {
 			puts("-n, --nosave  Don't create a .sav file\n");
 			puts("Keybinds:");
 			puts("Ctrl + O      Open ROM");
-			puts("End           Trigger an error, only works with --debug");
+			puts("Ctrl + F      Show/hide FPS");
+			puts("End           Exit, creates a memory dump in debug mode");
 			puts("Page Up/Down  Resize screen");
 			puts("Pause         Pause/continue emulation");
 			exit(EXIT_SUCCESS);
@@ -210,7 +212,7 @@ int main(int argc, char **argv) {
 
 	SetWindowIcon(icon);
 
-	vm->screen = LoadRenderTexture(128, 128);
+	vm->screen = LoadRenderTexture(SCREENW, SCREENH);
 
 	// Load splash screen from header file
 	// Default tileset is loaded if a ROM doesn't have a tileset, see loadfile()
@@ -243,15 +245,15 @@ int main(int argc, char **argv) {
 
 		if (IsKeyPressed(KEY_PAGE_UP)) {
 			vm->scale++;
-			SetWindowSize(128 * vm->scale, 128 * vm->scale);
-			SHOWMSG("%d x %d", 128 * vm->scale, 128 * vm->scale);
+			SetWindowSize(SCREENW * vm->scale, SCREENH * vm->scale);
+			SHOWMSG("%d x %d", SCREENW * vm->scale, SCREENH * vm->scale);
 		}
 
 		else if (IsKeyPressed(KEY_PAGE_DOWN)) {
 			vm->scale--;
 			if (!vm->scale) vm->scale = 1;
-			SetWindowSize(128 * vm->scale, 128 * vm->scale);
-			SHOWMSG("%d x %d", 128 * vm->scale, 128 * vm->scale);
+			SetWindowSize(SCREENW * vm->scale, SCREENH * vm->scale);
+			SHOWMSG("%d x %d", SCREENW * vm->scale, SCREENH * vm->scale);
 		}
 
 		else if (IsKeyPressed(KEY_END)) {
@@ -285,9 +287,7 @@ int main(int argc, char **argv) {
 				if (file != NULL) loadfile(file);
 			}
 
-			if (IsKeyPressed(KEY_F)) {
-				showfps = !showfps;
-			}
+			if (IsKeyPressed(KEY_F)) showfps = !showfps;
 		}
 
 		// _____________________________________________________________________
@@ -341,7 +341,7 @@ int main(int argc, char **argv) {
 		ClearBackground(BLACK);
 		DrawTexturePro(
 			vm->screen.texture,
-			(Rectangle){0, 0, vm->screen.texture.width, -vm->screen.texture.height},
+			(Rectangle){0, 0, SCREENW, -SCREENH},
 			(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
 			(Vector2){0, 0}, 0.0f, WHITE
 		);

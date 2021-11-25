@@ -10,17 +10,14 @@
 ## Example
 
 ```
-; %0 = scroll counter
-; %1 = 1 (scroll increment)
-; %2 = 0 (draw location)
-; %3 = 128 (screen size)
+; %0: scroll counter
 
 dat main         ; program entry point
 
-main:
-	set %1 1
-	set %2 0
-	set %3 128
+main:            ; define constants
+	set %1 1     ; %1: scroll increment
+	set %2 0     ; %2: draw location
+	set %3 128   ; %3: screen size
 
 loop:
 	add %0 %1 %0 ; increment scroll counter
@@ -30,23 +27,3 @@ loop:
 	jmp loop
 ```
 ![](assets/example.gif)
-
-
-## Memory Map
-* `0x0000 - 0xEFFF` Shared ROM/RAM
-  * ROM is loaded at `0x0000`.
-  * The first two bytes of ROM indicate the entry point address.
-
-* `0xF000 - 0xFEFF` Save RAM
-  * The contents of SRAM are saved to a file when exiting.
-  * Must be enabled by setting the SRAM toggle `0xFF01` to 1.
-  * If disabled, this is just part of ROM/RAM.
-
-* `0xFF00 - 0xFFFF` Reserved
-  * `0xFF00` Currently pressed key
-  * `0xFF01` Mouse X position
-  * `0xFF02` Mouse Y position
-  * `0xFF03` Is left mouse button pressed? 1 = yes, 0 = no
-  * `0xFF04` Is right mouse button pressed?
-  * `0xFF05` SRAM toggle
-  * `0xFF06` Random number

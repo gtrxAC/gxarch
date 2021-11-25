@@ -23,6 +23,9 @@
 #define RESH 32
 #define REMAINDER 33
 
+#define SCREENW 128
+#define SCREENH 128
+
 #define DBGLOG(...) if (vm->debug) printf(__VA_ARGS__);
 
 struct VM {
@@ -47,13 +50,13 @@ struct VM {
 };
 
 enum Instruction {
-	I_NOP, I_SET, I_LD, I_LDI, I_ST, I_STI,
-	I_ADD, I_SUB, I_MUL, I_DIV,
-	I_AND, I_OR, I_XOR,
-	I_EQ, I_LT, I_GT,
-	I_JMP, I_CJ, I_JS, I_CJS, I_RET,
-	I_DW, I_AT, I_KEY, I_SND, I_END,
-	I_COUNT
+	OP_NOP, OP_SET, OP_LD, OP_LDI, OP_ST, OP_STI,
+	OP_ADD, OP_SUB, OP_MUL, OP_DIV,
+	OP_AND, OP_OR, OP_XOR,
+	OP_EQ, OP_LT, OP_GT,
+	OP_JMP, OP_CJ, OP_JS, OP_CJS, OP_RET,
+	OP_DW, OP_AT, OP_KEY, OP_SND, OP_END,
+	OP_COUNT
 };
 
 void _step(struct VM *vm);

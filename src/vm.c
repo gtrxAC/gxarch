@@ -3,7 +3,7 @@
 void err(const char *fmt, ...); // main.c
 
 // Opcode names, used for debugging.
-const u8 *instnames[] = {
+const char *opnames[] = {
 	"nop", "set", "ld ", "ldi", "st ", "sti",
 	"add", "sub", "mul", "div",
 	"and", "or ", "xor",
@@ -13,8 +13,11 @@ const u8 *instnames[] = {
 };
 
 // gxvm to raylib key mappings
-// raylib keycodes go beyond 255 but gxarch only uses one byte
-// Most keycodes are based on en_US layout but some keys are remapped, e.g. F1..F12 is 0x80..0x8b
+// raylib keycodes for some function keys go beyond 255 but gxarch only uses one
+// byte, so they are remapped
+// raylib doesn't have separate keycodes for upper/lowercase or most special
+// characters, but gxarch does, so we also need to check if shift is down using
+// the needshift array
 const u16 gx2rl[0x100] = {
 	0, 0, 0, 0, 0, 0, 0, 0, // 0x00
 	KEY_BACKSPACE, KEY_TAB, KEY_ENTER, 0, 0, 0, 0, 0, // 0x08
@@ -75,22 +78,22 @@ void _step(struct VM *vm) {
 	if (vm->pc < 2 || vm->pc >= RESERVED)
 		err("Attempted to execute code at 0x%.4X", vm->pc);
 
-	u8 inst = consume();
-	DBGLOG("%s ", instnames[inst]);
+	u8 op = consume();
+	DBGLOG("%s ", opnames[op]);
 
-	if (inst >= I_COUNT)
-		err("Invalid opcode at 0x%.4X: %d", vm->pc - 1, inst);
+	if (op >= OP_COUNT)
+		err("Invalid opcode at 0x%.4X: %d", vm->pc - 1, op);
 
-	switch (inst) {
-		case I_NOP: break;
+	switch (op) {
+		case OP_NOP: break;
 
-		case I_SET: {
+		case OP_SET: {
 			u8 reg = consume();
 			vm->reg[reg] = consume();
 			break;
 		}
 
-		case I_LD: {
+		case OP_LD: {
 			u8 reg = consume();
 			u16 addr = consume16();
 			vm->reg[reg] = vm->mem[addr];
@@ -98,7 +101,7 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case I_LDI: {
+		case OP_LDI: {
 			u8 dest = consume();
 			u8 src = consume();
 			u16 addr = vm->reg[src] << 8 | vm->reg[src + 1];
@@ -106,7 +109,7 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case I_ST: {
+		case OP_ST: {
 			u8 val = vm->reg[consume()];
 			u16 addr = consume16();
 			vm->mem[addr] = val;
@@ -114,7 +117,7 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case I_STI: {
+		case OP_STI: {
 			u8 val = vm->reg[consume()];
 			u8 reg = consume();
 			u16 addr = vm->reg[reg] << 8 | vm->reg[reg + 1];
@@ -124,7 +127,7 @@ void _step(struct VM *vm) {
 		}
 
 		#define BINOP16(op, sign) \
-			case I_ ## op: { \
+			case OP_ ## op: { \
 				u16 result = vm->reg[consume()] sign vm->reg[consume()]; \
 				vm->reg[consume()] = result & 0xFF; \
 				vm->reg[RESH] = (result & 0xFF00) >> 8; \
@@ -135,7 +138,7 @@ void _step(struct VM *vm) {
 		BINOP16(SUB, -)
 		BINOP16(MUL, *)
 		
-		case I_DIV: { \
+		case OP_DIV: { \
 			u8 first = vm->reg[consume()];
 			u8 second = vm->reg[consume()];
 			if (!second) err("Division by zero at 0x%.4X", vm->pc - 3);
@@ -146,7 +149,7 @@ void _step(struct VM *vm) {
 		}
 		
 		#define BINOP(op, sign) \
-			case I_ ## op: { \
+			case OP_ ## op: { \
 				u8 result = vm->reg[consume()] sign vm->reg[consume()]; \
 				vm->reg[consume()] = result; \
 				break; \
@@ -159,25 +162,25 @@ void _step(struct VM *vm) {
 		BINOP(LT, <)
 		BINOP(GT, >)
 
-		case I_JMP:
+		case OP_JMP:
 			vm->pc = consume16();
 			break;
 
-		case I_CJ: {
+		case OP_CJ: {
 			u8 cond = vm->reg[consume()];
 			u16 addr = consume16();
 			if (cond) vm->pc = addr;
 			break;
 		}
 
-		case I_JS: {
+		case OP_JS: {
 			u16 addr = consume16();
 			vm->callstack[vm->sp++] = vm->pc;
 			vm->pc = addr;
 			break;
 		}
 
-		case I_CJS: {
+		case OP_CJS: {
 			u8 cond = vm->reg[consume()];
 			u16 addr = consume16();
 			if (cond) {
@@ -187,17 +190,17 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case I_RET:
+		case OP_RET:
 			vm->pc = vm->callstack[--vm->sp];
 			break;
 
-		case I_DW:
+		case OP_DW:
 			vm->drawX = vm->reg[consume()];
 			vm->drawY = vm->reg[consume()];
 			vm->drawsize = vm->reg[consume()];
 			break;
 			
-		case I_AT:
+		case OP_AT:
 			DrawTextureRec(
 				vm->tileset,
 				(Rectangle){vm->drawX, vm->drawY, vm->drawsize, vm->drawsize},
@@ -205,18 +208,18 @@ void _step(struct VM *vm) {
 			);
 			break;
 
-		case I_KEY: {
+		case OP_KEY: {
 			u8 key = vm->reg[consume()];
 			bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
 			vm->reg[consume()] = shift == needshift[key] && IsKeyDown(gx2rl[key]);
 			break;
 		}
 		
-		case I_SND:
+		case OP_SND:
 			err("SND not implemented, used at 0x%.4X", vm->pc - 1);
 			break;
 
-		case I_END:
+		case OP_END:
 			vm->needdraw = true;
 			vm->mem[MOUSEX] = GetMouseX() / vm->scale;
 			vm->mem[MOUSEY] = GetMouseY() / vm->scale;
