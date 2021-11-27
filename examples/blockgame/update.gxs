@@ -16,63 +16,52 @@ update:
 
 	set %0 0x77  ; if W is down, go up
 	key %0 %3
-	eq %3 %1 %3
-	cj %3 nomoveup
+	.eqj %3 %1 nomoveup
 
 	ld %4 playery
-	eq %4 %1 %6
-	cj %6 nomoveup
+	.eqj %4 %1 nomoveup
 	sub %4 %2 %4
 	st %4 playery
 
 nomoveup:
 	set %0 0x61  ; if A is down, go left
 	key %0 %3
-	eq %3 %1 %3
-	cj %3 nomoveleft
+	.eqj %3 %1 nomoveleft
 
 	ld %4 playerx
-	eq %4 %1 %6
-	cj %6 nomoveleft
+	.eqj %4 %1 nomoveleft
 	sub %4 %2 %4
 	st %4 playerx
 
 nomoveleft:
 	set %0 0x73  ; if S is down, go down
 	key %0 %3
-	eq %3 %1 %3
-	cj %3 nomovedown
+	.eqj %3 %1 nomovedown
 	
 	ld %4 playery
 	add %4 %2 %4
-	gt %4 %8 %6
-	cj %6 nomovedown
+	.gtj %4 %8 nomovedown
 	st %4 playery
 
 nomovedown:
 	set %0 0x64  ; if D is down, go right
 	key %0 %3
-	eq %3 %1 %3
-	cj %3 checkprevblock
+	.eqj %3 %1 checkprevblock
 
 	ld %4 playerx
 	add %4 %2 %4
-	gt %4 %5 %6
-	cj %6 checkprevblock
+	.gtj %4 %5 checkprevblock
 	st %4 playerx
 
 checkprevblock:
-	set %0 0x7a  ; if Z is pressed, select previous block
-	key %0 %3
-	cj %3 prevblock
+	.keyj 0x7a prevblock  ; if Z is pressed, select previous block
 	jmp noprevblock
 prevblock:
 	ld %0 zdowntime
 	cj %0 checknextblock
 
 	ld %4 curblock
-	eq %4 %2 %0
-	cj %0 checknextblock
+	.eqj %4 %2 checknextblock
 	sub %4 %2 %4
 	st %4 curblock
 
@@ -84,9 +73,7 @@ noprevblock:
 	st %1 zdowntime
 
 checknextblock:
-	set %0 0x78  ; if X is pressed, select next block
-	key %0 %3
-	cj %3 nextblock
+	.keyj 0x78 nextblock  ; if X is pressed, select next block
 	jmp nonextblock
 nextblock:
 	ld %0 xdowntime
@@ -94,8 +81,7 @@ nextblock:
 
 	ld %4 curblock
 	add %4 %2 %4
-	eq %4 %7 %6
-	cj %6 getmouseblock
+	.eqj %4 %7 getmouseblock
 	st %4 curblock
 
 	ld %0 xdowntime  ; increment counter

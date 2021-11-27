@@ -31,13 +31,11 @@ genxloop:
 	ldi %16 %6
 	sti %16 %8  ; write the block
 
-	add %4 %11 %4  ; next X iteration if row isn't done
-	lt %4 %13 %16
-	cj %16 genxloop
+	add %4 %11 %4         ; next X iteration if row isn't done
+	.ltj %4 %13 genxloop
 
-	add %5 %11 %5  ; next Y iteration if generation not finished
-	lt %5 %14 %16
-	cj %16 genyloop
+	add %5 %11 %5         ; next Y iteration if generation isn't finished
+	.ltj %5 %14 genyloop
 
 	set %0 1
 	st %0 worldready

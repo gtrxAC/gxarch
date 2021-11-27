@@ -15,8 +15,8 @@ xystr:
 plusstr:
 	dat "+"
 
-#include lib/print.gxs
-#include lib/int2str.gxs
+.include lib/print.gxs
+.include lib/int2str.gxs
 
 mouseldown:
 	set %0 0x4C ; 'L'

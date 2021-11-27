@@ -10,9 +10,9 @@ dat main
 coordstr: dat "X:000 yY:000  Block:"  ; in the font, the lowercase y is the
                                       ; black border for the uppercase Y
 
-#include lib/common.gxs
-#include lib/int2str.gxs
-#include lib/print.gxs
+.include lib/common.gxs
+.include lib/int2str.gxs
+.include lib/print.gxs
 
 val WWIDTH 127     ; save RAM is 4K(0xFxxx) - 256(reserved 0xFFxx) = 3840 bytes
 val WHEIGHT 30     ; we use the first 30 bytes for variables
@@ -35,7 +35,7 @@ val xdowntime 0xE001
 val mousexblock 0xE002  ; what block is the mouse pointing at
 val mouseyblock 0xE003
 
-#include examples/blockgame/worldgen.gxs
+.include examples/blockgame/worldgen.gxs
 
 main:
 	set %0 1           ; enable SRAM to save worlds
@@ -43,8 +43,7 @@ main:
 
 	ld %0 worldready   ; generate world if not generated yet
 	set %1 0
-	eq %0 %1 %3
-	cjs %3 genworld
+	.eqjs %0 %1 genworld
 
-#include examples/blockgame/update.gxs
-#include examples/blockgame/render.gxs
+.include examples/blockgame/update.gxs
+.include examples/blockgame/render.gxs

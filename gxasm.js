@@ -1,5 +1,7 @@
 const ohm = require('ohm-js');
 const fs = require('fs');
+const macros = require('./macros');
+
 const contents = fs.readFileSync('grammar.ohm');
 const grammar = ohm.grammar(contents);
 const semantics = grammar.createSemantics();
@@ -204,12 +206,8 @@ for (let arg of process.argv.slice(2)) {
 			let ln = 0;
 			while (ln < src.length) {
 				let line = src[ln].trim().split(/\s+/);
-				if (line[0] === '#include') {
-					const included = fs.readFileSync(line[1])
-						.toString()
-						.split(/\r\n|\r|\n/);
-
-					src.splice(ln, 1, included);
+				if (line[0][0] === '.') {
+					src.splice(ln, 1, macros(line.shift().slice(1), line));
 					src = src.flat();
 				} else ln++;
 			}

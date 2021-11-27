@@ -14,8 +14,7 @@ render:
 	set %0 lo(CLOUDSPEED)  ; if framecount is divisible by CLOUDSPEED,
 	div %3 %0 %31          ; increment cloud scroll count
 	set %0 0
-	eq %r %0 %3
-	cj %3 incscroll
+	.eqj %r %0 incscroll
 	jmp noincscroll
 
 incscroll:
@@ -60,15 +59,13 @@ renderxloop:
 	add %9 %6 %9
 	add %8 %h %8
 
-	ldi %10 %8       ; load current block, skip drawing if it's air
+	ldi %10 %8               ; load current block, skip drawing if it's air
 	set %16 0
-	eq %10 %16 %16
-	cj %16 renderskip
+	.eqj %10 %16 renderskip
 
-	set %16 lo(BLOCKCOUNT)  ; skip drawing if block id exceeds block count
+	set %16 lo(BLOCKCOUNT)   ; skip drawing if block id exceeds block count
 	sub %16 %11 %16
-	gt %10 %16 %16
-	cj %16 renderskip
+	.gtj %10 %16 renderskip
 
 	mul %10 %12 %19  ; multiply the block's id by block size
 	dw %19 %15 %12   ; to get the tileset coordinate to draw from
@@ -78,15 +75,13 @@ renderxloop:
 	at %17 %18      ; draw tile at destination X/Y
 
 renderskip:
-	add %4 %6 %16      ; is this block being pointed at?
-	eq %16 %20 %16     ; in X direction
-	cj %16 pointedatx
+	add %4 %6 %16            ; is this block being pointed at?
+	.eqj %16 %20 pointedatx  ; in X direction
 	jmp notpointedat
 
 pointedatx:
-	add %5 %7 %16      ; in Y direction
-	eq %16 %21 %16
-	cj %16 pointedaty
+	add %5 %7 %16            ; in Y direction
+	.eqj %16 %21 pointedaty
 	jmp notpointedat
 
 pointedaty:
@@ -99,13 +94,11 @@ pointedaty:
 	at %23 %24
 
 notpointedat:
-	add %4 %11 %4  ; next X iteration if row isn't done
-	lt %4 %13 %16
-	cj %16 renderxloop
+	add %4 %11 %4            ; next X iteration if row isn't done
+	.ltj %4 %13 renderxloop
 
-	add %5 %11 %5  ; next Y iteration if render not finished
-	lt %5 %13 %16
-	cj %16 renderyloop
+	add %5 %11 %5            ; next Y iteration if render not finished
+	.ltj %5 %13 renderyloop
 
 	ld %0 playerx         ; format player X/Y into coordinate string
 	set %1 hi(COORDSTRX)

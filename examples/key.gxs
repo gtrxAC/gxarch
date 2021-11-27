@@ -11,9 +11,9 @@ string:
 val FORMATNUM 20    ; addresses of where numeric/ASCII values are
 val FORMATASCII 25  ; formatted into the string
 
-#include lib/common.gxs
-#include lib/print.gxs
-#include lib/int2str.gxs
+.include lib/common.gxs
+.include lib/print.gxs
+.include lib/int2str.gxs
 
 main:
 	set %0 1          ; enable SRAM
@@ -26,8 +26,7 @@ loop:
 	set %1 1             ; next key
 	add %0 %1 %0
 	set %1 lo(K_COUNT)
-	lt %0 %1 %1
-	cj %1 loop
+	.ltj %0 %1 loop
 
 loopend:
 	ld %0 SRAM            ; update string with last key's numeric value
