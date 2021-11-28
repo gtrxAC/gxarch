@@ -49,6 +49,14 @@ semantics.addOperation('parse', {
 			throw new Error(`Label ${ident} not found. Labels must be defined before lo() or hi() can be used on them.`);
 		}
 	},
+
+	stringpart_char(c) { return c.sourceString; },
+	stringpart_lf(_) { return "\n"; },
+	stringpart_cr(_) { return "\r"; },
+	stringpart_tab(_) { return "\t"; },
+	stringpart_nul(_) { return "\0"; },
+	stringpart_bs(_) { return "\\"; },
+	stringpart_quot(_) { return '"'; }
 })
 
 semantics.addOperation('eval', {
@@ -169,16 +177,9 @@ semantics.addOperation('eval', {
 	Instruction_end(_) { output.push(25); },
 
 	string(_, parts, __) {
-		parts.eval().forEach(c => output.push(c.charCodeAt(0)));
+		parts.parse().forEach(c => output.push(c.charCodeAt(0)));
 		output.push(0);
-	},
-	stringpart_char(c) { return c.sourceString; },
-	stringpart_lf(_) { return "\n"; },
-	stringpart_cr(_) { return "\r"; },
-	stringpart_tab(_) { return "\t"; },
-	stringpart_nul(_) { return "\0"; },
-	stringpart_bs(_) { return "\\"; },
-	stringpart_quot(_) { return '"'; }
+	}
 })
 
 function help() {
@@ -203,6 +204,8 @@ for (let arg of process.argv.slice(2)) {
 				.toString()
 				.split(/\r\n|\r|\n/);
 
+			// Check each line for macros and run them.
+			// All macros are stored in macros.js.
 			let ln = 0;
 			while (ln < src.length) {
 				let line = src[ln].trim().split(/\s+/);
