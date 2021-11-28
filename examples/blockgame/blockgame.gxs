@@ -10,9 +10,9 @@ dat main
 coordstr: dat "X:000 yY:000  Block:"  ; in the font, the lowercase y is the
                                       ; black border for the uppercase Y
 
-.include lib/common.gxs
-.include lib/int2str.gxs
-.include lib/print.gxs
+.include std/common.gxs
+.include std/int2str.gxs
+.include std/print.gxs
 
 val WWIDTH 127     ; save RAM is 4K(0xFxxx) - 256(reserved 0xFFxx) = 3840 bytes
 val WHEIGHT 30     ; we use the first 30 bytes for variables

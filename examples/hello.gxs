@@ -8,7 +8,7 @@ dat main            ; all programs must start with "dat" and the label where the
 string:
 	dat "Hello world!"
 
-.include lib/print.gxs
+.include std/print.gxs
 
 main:
 	set %0 hi(string) ; address of the string we want to print (high and low byte)

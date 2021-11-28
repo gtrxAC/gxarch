@@ -11,9 +11,9 @@ string:
 val FORMATNUM 20    ; addresses of where numeric/ASCII values are
 val FORMATASCII 25  ; formatted into the string
 
-.include lib/common.gxs
-.include lib/print.gxs
-.include lib/int2str.gxs
+.include std/common.gxs
+.include std/print.gxs
+.include std/int2str.gxs
 
 main:
 	set %0 1          ; enable SRAM
