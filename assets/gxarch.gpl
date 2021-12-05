@@ -1,0 +1,22 @@
+GIMP Palette
+Name: gxarch
+Columns: 15
+
+# Note: gxarch support max 16 colors, this palette only has 15 so you can use
+#       transparent as one color
+
+  0   0   0	Black
+ 96 112 128	Gray
+255 255 255	White
+128   0  32	Dark Red
+255   0  48	Red
+  0 128  64	Dark Green
+  0 255  64	Green
+255  96   0	Dark Yellow
+255 192   0	Yellow
+ 32   0 128	Dark Blue
+ 32   0 255	Blue
+ 96   0 128	Dark Purple
+255   0 192	Purple
+  0 128 128	Dark Cyan
+  0 255 255	Cyan
