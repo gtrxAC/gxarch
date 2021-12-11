@@ -20,8 +20,8 @@
 #define SRAM_TOGGLE 0xFF05
 #define RAND 0xFF06
 
-#define RESH 32
-#define REMAINDER 33
+#define RESH 30
+#define REMAINDER 31
 
 #define SCREENW 128
 #define SCREENH 128
@@ -30,7 +30,7 @@
 
 struct VM {
 	u8 mem[0x10000];
-	u8 reg[34]; // [32] is result high byte, [33] is division remainder
+	u8 reg[32]; // [30] is result high byte, [31] is division remainder
 	            // in asm you can use %h and %r
 	u16 callstack[0x100];
 	u16 pc;

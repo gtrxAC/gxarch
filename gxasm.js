@@ -83,18 +83,18 @@ semantics.addOperation('eval', {
 	},
 
 	register(_, reg) {
-		switch (reg.sourceString) {
+		switch (reg.sourceString.toLowerCase()) {
 			case "h": // result high byte
-				output.push(32);
+				output.push(30);
 				break;
 
 			case "r": // division remainder
-				output.push(33);
+				output.push(31);
 				break;
 
 			default:
-				if (parseInt(reg.sourceString) > 33)
-					throw new Error(`Invalid register, ${reg.sourceString} > 33`);
+				if (parseInt(reg.sourceString) > 31)
+					throw new Error(`Invalid register, ${reg.sourceString} > 31`);
 
 				pushnum(reg);
 				break;

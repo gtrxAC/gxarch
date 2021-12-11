@@ -1,7 +1,7 @@
 update:
 	ld %0 framecount  ; only allow moving every 4th frame
 	set %1 lo(SPEED)
-	div %0 %1 %31
+	div %0 %1 %29
 	set %0 0
 	cj %r getmouseblock
 

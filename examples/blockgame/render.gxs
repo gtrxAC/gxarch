@@ -12,7 +12,7 @@ render:
 	st %3 framecount
 
 	set %0 lo(CLOUDSPEED)  ; if framecount is divisible by CLOUDSPEED,
-	div %3 %0 %31          ; increment cloud scroll count
+	div %3 %0 %29          ; increment cloud scroll count
 	set %0 0
 	.eqj %r %0 incscroll
 	jmp noincscroll
