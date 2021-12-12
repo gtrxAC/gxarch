@@ -1,0 +1,60 @@
+val MOUSELTIME 0xFF07   ; how many frames has left/right mouse been down
+val MOUSERTIME 0xFF08
+val MOUSELPRESS 0xFF09  ; has left/right mouse been released this frame
+val MOUSERPRESS 0xFF0A
+
+; Update mouse subroutine
+; Uses registers:
+;   %0 %1 = immediate value
+; Notes:
+;   - This subroutine should be called every frame to update MOUSE L/R TIME/PRESS
+;     variables
+updatemouse:
+	set %0 0
+	st %0 MOUSELPRESS
+	st %0 MOUSERPRESS
+
+	ld %0 MOUSEL           ; if left mouse down, increase its down time
+	cj %0 updmouse_ldown
+
+	ld %0 MOUSELTIME         ; if left mouse was released, set MOUSELPRESS
+	cjs %0 updmouse_lrelease
+
+	set %0 0               ; if not down, reset down time
+	st %0 MOUSELTIME
+	jmp updmouse_lnotdown
+
+updmouse_ldown:
+	ld %1 MOUSELTIME
+	add %0 %1 %1
+	st %1 MOUSELTIME
+
+updmouse_lnotdown:
+	ld %0 MOUSER           ; if right mouse down, increase its down time
+	cj %0 updmouse_rdown
+
+	ld %0 MOUSERTIME         ; if right mouse was released, set MOUSERPRESS
+	cjs %0 updmouse_rrelease
+
+	set %0 0               ; if not down, reset down time
+	st %0 MOUSERTIME
+	jmp updmouse_rnotdown
+
+updmouse_rdown:
+	ld %1 MOUSERTIME
+	add %0 %1 %1
+	st %1 MOUSERTIME
+
+updmouse_rnotdown:
+	ret
+
+
+updmouse_lrelease:
+	set %0 1
+	st %0 MOUSELPRESS
+	ret
+
+updmouse_rrelease:
+	set %0 1
+	st %0 MOUSERPRESS
+	ret

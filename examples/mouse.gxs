@@ -9,56 +9,93 @@ val MOUSEL 0xFF03
 val MOUSER 0xFF04
 dat main
 
-xystr:
-	dat "X: 000  Y: 000   "
+xystr: dat "X: 000  Y: 000"
+ldownstr: dat "Left down time: 000"
+lpressstr: dat "Left pressed? 000"
+rdownstr: dat "Right down time: 000"
+rpressstr: dat "Right pressed? 000"
+plusstr: dat "+"
 
-plusstr:
-	dat "+"
+val FORMATX 5        ; addresses where numbers are placed in the strings
+val FORMATY 13
+val FORMATLTIME 33
+val FORMATLPRESS 51
+val FORMATRTIME 72
+val FORMATRPRESS 91
 
 .include std/print.gxs
 .include std/int2str.gxs
-
-mouseldown:
-	set %0 0x4C ; 'L'
-	st %0 17
-	ret
-
-mouserdown:
-	set %0 0x52 ; 'R'
-	st %0 18
-	ret
+.include std/mouse.gxs
 
 main:
-	ld %0 MOUSEX
-	set %1 0
-	set %2 5
+	js updatemouse   ; call updatemouse from std/mouse.gxs to update
+	                 ; MOUSE L/R TIME/PRESS variables
+
+	ld %0 MOUSEX        ; format mouse values into strings
+	set %1 hi(FORMATX)
+	set %2 lo(FORMATX)
 	js int2str
 
 	ld %0 MOUSEY
-	set %1 0
-	set %2 13
+	set %1 hi(FORMATY)
+	set %2 lo(FORMATY)
 	js int2str
 
-	set %0 20 ; write ASCII spaces to end of string
-	st %0 17
-	st %0 18
+	ld %0 MOUSELTIME
+	set %1 hi(FORMATLTIME)
+	set %2 lo(FORMATLTIME)
+	js int2str
 
-	ld %0 MOUSEL      ; if left/right buttons down, replace
-	cjs %0 mouseldown ; spaces with letters L/R
-	ld %0 MOUSER
-	cjs %0 mouserdown
+	ld %0 MOUSELPRESS
+	set %1 hi(FORMATLPRESS)
+	set %2 lo(FORMATLPRESS)
+	js int2str
 
-	set %0 hi(xystr) ; draw X/Y location string
+	ld %0 MOUSERTIME
+	set %1 hi(FORMATRTIME)
+	set %2 lo(FORMATRTIME)
+	js int2str
+
+	ld %0 MOUSERPRESS
+	set %1 hi(FORMATRPRESS)
+	set %2 lo(FORMATRPRESS)
+	js int2str
+
+	set %0 hi(xystr)  ; draw strings
 	set %1 lo(xystr)
 	set %2 0
 	set %3 0
 	js print
 
-	set %0 hi(plusstr) ; draw a + character at the mouse position
+	set %0 hi(ldownstr)
+	set %1 lo(ldownstr)
+	set %2 0
+	set %3 8
+	js print
+
+	set %0 hi(lpressstr)
+	set %1 lo(lpressstr)
+	set %2 0
+	set %3 16
+	js print
+
+	set %0 hi(rdownstr)
+	set %1 lo(rdownstr)
+	set %2 0
+	set %3 24
+	js print
+
+	set %0 hi(rpressstr)
+	set %1 lo(rpressstr)
+	set %2 0
+	set %3 32
+	js print
+
+	set %0 hi(plusstr)  ; draw a + character at the mouse position
 	set %1 lo(plusstr)
 	ld %2 MOUSEX
 	ld %3 MOUSEY
 	js print
-	end
 
+	end
 	jmp main
