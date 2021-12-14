@@ -1,0 +1,144 @@
+;wip
+
+; Window Manager for gxarch
+; Date: 2021-12-12
+; Author: gtrxAC
+
+dat main
+
+;      __ Window slot
+;     |
+;     v
+; 0xE0_0: X position
+; 0xE0_1: Y position
+; 0xE0_2: width
+; 0xE0_3: height
+; 0xE0_4: is window slot in use?
+; 0xE0_5: address of window update subroutine (2 bytes)
+; 0xE0_7: title (8 bytes + null terminator)
+
+val WINCOUNT 16
+val WINADDR 0xF000
+val WINSTRUCTSIZE 16
+
+val WINY 1
+val WINW 2
+val WINH 3
+val WINACTIVE 4
+val WINFUNC 5
+val WINTITLE 7
+
+val PRINT_CHARSPERLINE 16
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
+.include std/common.gxs
+;.include std/int2str.gxs
+.include std/print.gxs
+.include std/mouse.gxs
+
+; ______________________________________________________________________________
+;
+
+main:
+	set %0 1
+	st %0 SRAM_TOGGLE
+
+loop:
+
+
+; ______________________________________________________________________________
+;
+;  Draw wallpaper
+;
+;  %4 = X iterator
+;  %5 = Y iterator
+;  %6 = increment and draw size (constant 16)
+;  %7 = maximum (constant 128)
+;  %8 = wallpaper X in tileset (constant 40)
+;  %9 = wallpaper Y in tileset (constant 88)
+; ______________________________________________________________________________
+;
+	set %5 0
+	set %6 16
+	set %7 128
+	set %8 40
+	set %9 88
+
+drawwpyloop:
+	set %4 0
+
+drawwpxloop:
+	dw %8 %9 %6
+	at %4 %5
+
+	add %4 %6 %4
+	.ltj %4 %7 drawwpxloop
+
+	add %5 %6 %5
+	.ltj %5 %7 drawwpyloop
+
+
+; ______________________________________________________________________________
+;
+;  Window drawing loop
+;
+;  %4 = current window being drawn (iterator)
+;  %5 = constant 1
+;  %6 = loop total (window count)
+;  %7 %8 = current address being read
+;  %9 = size of window data structure (constant 16)
+;
+;  %10 = current window X
+;  %11 = current window Y
+;  %12 = current window width
+;  %13 = current window height
+;  %14 = current window active flag
+;  %15 %16 = current window update subroutine
+; ______________________________________________________________________________
+;
+	set %4 0
+	set %5 1
+	set %6 lo(WINCOUNT)
+	set %9 lo(WINSTRUCTSIZE)
+drawloop:
+	set %7 hi(WINADDR)  ; get current window's data structure's address
+	set %8 lo(WINADDR)
+	mul %4 %9 %3
+	add %8 %3 %8
+
+	ldi %10 %7     ; load window properties into registers: X
+	add %8 %5 %8
+	ldi %11 %7     ; Y
+	add %8 %5 %8   
+	ldi %12 %7     ; width
+	add %8 %5 %8   
+	ldi %13 %7     ; height
+	add %8 %5 %8   
+	ldi %14 %7     ; active flag
+
+	; if window is not active, skip it
+	cj %14 drawloopcontinue
+	jmp drawloopskip
+
+drawloopcontinue:
+	add %8 %5 %8   
+	ldi %15 %7     ; update sub (high)
+	add %8 %5 %8   
+	ldi %16 %7     ; update sub (low)
+	add %8 %5 %8
+
+	set %0 0        ; draw window title
+	add %7 %0 %20
+	add %8 %0 %21
+	add %10 %0 %22
+	add %11 %0 %23
+	js print
+
+drawloopskip:
+	add %4 %5 %4
+	.ltj %4 %6 drawloop
+
+
+
+	end
+	jmp loop

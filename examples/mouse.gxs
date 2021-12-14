@@ -23,6 +23,9 @@ val FORMATLPRESS 51
 val FORMATRTIME 72
 val FORMATRPRESS 91
 
+val PRINT_CHARSPERLINE 16
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
 .include std/print.gxs
 .include std/int2str.gxs
 .include std/mouse.gxs
@@ -31,70 +34,70 @@ main:
 	js updatemouse   ; call updatemouse from std/mouse.gxs to update
 	                 ; MOUSE L/R TIME/PRESS variables
 
-	ld %0 MOUSEX        ; format mouse values into strings
-	set %1 hi(FORMATX)
-	set %2 lo(FORMATX)
+	ld %20 MOUSEX        ; format mouse values into strings
+	set %21 hi(FORMATX)
+	set %22 lo(FORMATX)
 	js int2str
 
-	ld %0 MOUSEY
-	set %1 hi(FORMATY)
-	set %2 lo(FORMATY)
+	ld %20 MOUSEY
+	set %21 hi(FORMATY)
+	set %22 lo(FORMATY)
 	js int2str
 
-	ld %0 MOUSELTIME
-	set %1 hi(FORMATLTIME)
-	set %2 lo(FORMATLTIME)
+	ld %20 MOUSELTIME
+	set %21 hi(FORMATLTIME)
+	set %22 lo(FORMATLTIME)
 	js int2str
 
-	ld %0 MOUSELPRESS
-	set %1 hi(FORMATLPRESS)
-	set %2 lo(FORMATLPRESS)
+	ld %20 MOUSELPRESS
+	set %21 hi(FORMATLPRESS)
+	set %22 lo(FORMATLPRESS)
 	js int2str
 
-	ld %0 MOUSERTIME
-	set %1 hi(FORMATRTIME)
-	set %2 lo(FORMATRTIME)
+	ld %20 MOUSERTIME
+	set %21 hi(FORMATRTIME)
+	set %22 lo(FORMATRTIME)
 	js int2str
 
-	ld %0 MOUSERPRESS
-	set %1 hi(FORMATRPRESS)
-	set %2 lo(FORMATRPRESS)
+	ld %20 MOUSERPRESS
+	set %21 hi(FORMATRPRESS)
+	set %22 lo(FORMATRPRESS)
 	js int2str
 
-	set %0 hi(xystr)  ; draw strings
-	set %1 lo(xystr)
-	set %2 0
-	set %3 0
+	set %20 hi(xystr)  ; draw strings
+	set %21 lo(xystr)
+	set %22 0
+	set %23 0
 	js print
 
-	set %0 hi(ldownstr)
-	set %1 lo(ldownstr)
-	set %2 0
-	set %3 8
+	set %20 hi(ldownstr)
+	set %21 lo(ldownstr)
+	set %22 0
+	set %23 8
 	js print
 
-	set %0 hi(lpressstr)
-	set %1 lo(lpressstr)
-	set %2 0
-	set %3 16
+	set %20 hi(lpressstr)
+	set %21 lo(lpressstr)
+	set %22 0
+	set %23 16
 	js print
 
-	set %0 hi(rdownstr)
-	set %1 lo(rdownstr)
-	set %2 0
-	set %3 24
+	set %20 hi(rdownstr)
+	set %21 lo(rdownstr)
+	set %22 0
+	set %23 24
 	js print
 
-	set %0 hi(rpressstr)
-	set %1 lo(rpressstr)
-	set %2 0
-	set %3 32
+	set %20 hi(rpressstr)
+	set %21 lo(rpressstr)
+	set %22 0
+	set %23 32
 	js print
 
-	set %0 hi(plusstr)  ; draw a + character at the mouse position
-	set %1 lo(plusstr)
-	ld %2 MOUSEX
-	ld %3 MOUSEY
+	set %20 hi(plusstr)  ; draw a + character at the mouse position
+	set %21 lo(plusstr)
+	ld %22 MOUSEX
+	ld %23 MOUSEY
 	js print
 
 	end

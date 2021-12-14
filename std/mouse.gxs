@@ -3,12 +3,15 @@ val MOUSERTIME 0xFF08
 val MOUSELPRESS 0xFF09  ; has left/right mouse been released this frame
 val MOUSERPRESS 0xFF0A
 
-; Update mouse subroutine
-; Uses registers:
-;   %0 %1 = immediate value
-; Notes:
-;   - This subroutine should be called every frame to update MOUSE L/R TIME/PRESS
-;     variables
+; ______________________________________________________________________________
+;
+;  Update mouse subroutine
+;
+;  Notes:
+;    - This subroutine should be called every frame to update
+;      MOUSE L/R TIME/PRESS variables
+; ______________________________________________________________________________
+;
 updatemouse:
 	set %0 0
 	st %0 MOUSELPRESS

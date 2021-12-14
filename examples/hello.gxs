@@ -3,18 +3,22 @@
 ; Date: 2021-10-12
 ; Author: gtrxAC
 
-dat main            ; all programs must start with "dat" and the label where the program starts
+dat main  ; all programs must start with "dat" and the label where the program starts
+          ; "dat" inserts data into the output program, this inserts the address
+		  ; of the "main" subroutine to the start of the program
 
-string:
-	dat "Hello world!"
+string: dat "Hello world!"
 
+val PRINT_CHARSPERLINE 16
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
 .include std/print.gxs
 
 main:
-	set %0 hi(string) ; address of the string we want to print (high and low byte)
-	set %1 lo(string)
-	set %2 0          ; draw it at 0, 0
-	set %3 0
+	set %20 hi(string) ; address of the string we want to print (high and low byte)
+	set %21 lo(string)
+	set %22 0          ; draw it at 0, 0
+	set %23 0
 	js print          ; call print subroutine
 	end               ; draw frame
 	jmp main

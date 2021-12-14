@@ -123,10 +123,10 @@ void loadfile(char *name) {
 		int palsize;
 		Image tileset = LoadImage(imgname);
 
-		if (tileset.width > 256 || tileset.height > 256) {
+		if (tileset.width > 128 || tileset.height > 128) {
 			UnloadImage(tileset);
 			err(
-				"Invalid tileset size, expected below 256 x 256 but got %d x %d",
+				"Invalid tileset size, expected 128 × 128 but got %d x %d",
 				tileset.width, tileset.height
 			);
 		}

@@ -5,12 +5,14 @@
 
 dat main
 
-string:
-	dat "Last pressed key: 000 \" \""
+string: dat "Last pressed key: 000 \" \""
 
 val FORMATNUM 20    ; addresses of where numeric/ASCII values are
 val FORMATASCII 25  ; formatted into the string
 
+val PRINT_CHARSPERLINE 16
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
 .include std/common.gxs
 .include std/print.gxs
 .include std/int2str.gxs
@@ -29,17 +31,17 @@ loop:
 	.ltj %0 %1 loop
 
 loopend:
-	ld %0 SRAM            ; update string with last key's numeric value
-	set %1 hi(FORMATNUM)
-	set %2 lo(FORMATNUM)
+	ld %20 SRAM           ; update string with last key's numeric value
+	set %21 hi(FORMATNUM)
+	set %22 lo(FORMATNUM)
 	js int2str
 
-	st %0 FORMATASCII  ; update string with last key's ASCII value
+	st %20 FORMATASCII  ; update string with last key's ASCII value
 
-	set %0 hi(string)  ; print string on screen
-	set %1 lo(string)
-	set %2 0
-	set %3 0
+	set %20 hi(string)  ; print string on screen
+	set %21 lo(string)
+	set %22 0
+	set %23 0
 	js print
 
 	end       ; draw frame and loop
