@@ -6,6 +6,27 @@
 
 dat main
 
+; Computed jumps (uses self modifying code)
+; Note: these should be placed right after "dat main"
+
+compjmp:    ; Jump to a computed address (replace %x %y):
+	jmp     ; st %x compjmph
+	0x0000  ; st %y compjmpl
+	        ; jmp compjmp
+
+compjs:     ; Call a sub at a computed address (replace %x %y):
+	js      ; st %x compjsh
+	0x0000  ; st %y compjsl
+	ret     ; js compjs
+
+val compjmph 0x0003
+val compjmpl 0x0004
+val compjsh 0x0006
+val compjsl 0x0007
+
+; ______________________________________________________________________________
+;
+
 ;      __ Window slot
 ;     |
 ;     v
@@ -35,6 +56,7 @@ val PRINT_HEIGHT 8
 ;.include std/int2str.gxs
 .include std/print.gxs
 .include std/mouse.gxs
+.include std/button.gxs
 
 ; ______________________________________________________________________________
 ;
@@ -134,11 +156,44 @@ drawloopcontinue:
 	add %11 %0 %23
 	js print
 
+
+
+	; draw window buttons
+	; %17 = current X to draw at
+
+	add %10 %12 %17
+	set %0 24
+	sub %17 %0 %17
+
+	set %0 0
+	add %17 %0 %20
+	add %11 %0 %21
+	set %22 60
+	set %23 64
+	set %24 8
+	set %25 8
+	js button
+	cj %26 closewindow
+
+
+
+	st %15 compjsh  ; call window update subroutine
+	st %16 compjsl  ; note: subroutine should not modify registers %4 - %9
+	js compjs
+
 drawloopskip:
 	add %4 %5 %4
 	.ltj %4 %6 drawloop
 
-
-
 	end
 	jmp loop
+
+closewindow:
+	set %7 hi(WINADDR)  ; get current window's data structure's address
+	set %8 lo(WINADDR)
+	mul %4 %9 %3
+	add %8 %3 %8
+
+	set %0 0          ; set window's active flag to 0
+	sti %0 %7
+	jmp drawloopskip

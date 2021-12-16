@@ -1,0 +1,50 @@
+; ______________________________________________________________________________
+;
+; Button
+; Draws a button with a different image depending on if it's hovered or pressed,
+; and returns true if it's pressed.
+;
+; Arguments:
+;   %20 = X location
+;   %21 = Y location
+;   %22 = image source X
+;   %23 = image source Y
+;   %24 = image source width
+;   %25 = image source height
+;   %26 = return value (has the button been pressed)
+;
+; Notes:
+; - The button images should be stacked on top of each other in the tileset, the
+;   hovered button under the normal button and the pressed button under the
+;   hovered button.
+; ______________________________________________________________________________
+;
+button:
+	ld %0 MOUSEX
+	.ltj %0 %20 button_draw
+	
+	add %20 %24 %3
+	.gtj %0 %3 button_draw
+
+	ld %0 MOUSEY
+	.ltj %0 %21 button_draw
+
+	add %21 %25 %3
+	.gtj %0 %3 button_draw
+
+	ld %0 MOUSELPRESS
+	cj %0 button_press
+
+	add %23 %25 %23
+	jmp button_draw
+
+button_press:
+	add %23 %25 %23
+	add %23 %25 %23
+	set %26 1
+	jmp button_draw
+
+button_draw:
+	dw %22 %23 %24
+	at %20 %21
+	ret
