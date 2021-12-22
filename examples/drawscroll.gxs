@@ -2,11 +2,18 @@
 ; Draws a vertically and horizontally scrolling image
 ; Date: 2021-10-12
 ; Author: gtrxAC
-
+;
+; If the dw instruction is run with a size that exceeds the remaining tileset
+; size starting from the draw origin, it will loop back to the other side of the
+; tileset. We can use dw with a constantly increasing origin (first two
+; arguments for the instruction) to create a scrolling background.
+;
+; The best way to understand it is by running this example.
+;
 ; %0 = scroll counter
-; %1 = 1 (scroll increment)
-; %2 = 0 (draw location)
-; %3 = 128 (screen size)
+; %1 = increment (constant 1)
+; %2 = draw location (constant 0)
+; %3 = screen and tileset size (constant 128)
 
 dat main         ; program entry point
 

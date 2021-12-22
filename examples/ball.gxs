@@ -1,0 +1,87 @@
+; Ball for gxarch
+; Draws a bouncing ball on screen, which can be moved using the mouse
+; Date: 2021-12-22
+; Author: gtrxAC
+
+dat main
+
+.include std/common.gxs
+
+; Main memory is not used, all variables are stored in registers:
+; %10 = X position (randomized at start)
+; %11 = Y position
+; %12 = X delta (how many pixels the ball moves each frame)
+; %13 = Y delta
+; %14 = coordinates of screen right edge (constant 126)
+; %15 = coordinates of screen bottom edge (constant 118)
+; %16 = current animation frame (changes when hitting edges)
+; %17 = constant 0
+; %18 = ball size (constant 3)
+; %19 = tileset size (constant 24)
+
+main:
+	set %0 2
+	ld %10 RAND     ; generate random start position
+	ld %11 RAND
+	div %10 %0 %10  ; RAND is 0-255, but screen is only 128 pixels, so divide by 2
+	div %11 %0 %11
+
+	set %12 1
+	set %13 1
+	set %14 126  ; screen edges are not the same as screen resolution, because:
+	set %15 118  ; - if it were 128, the ball would be partially off screen when
+	set %18 3    ;   hitting the bottom and right edges
+				 ; - if both X and Y were the same, the ball's movement would
+				 ;   always be the same
+
+update:
+	ld %0 MOUSEL
+	cjs %0 gotomouse
+
+	add %10 %12 %10      ; ball X += X delta
+	.gtjs %10 %14 right  ; if hit right edge, set delta X to -1 (255 in unsigned)
+	.eqjs %10 %17 left   ; if hit left edge, set delta X to 1
+	add %11 %13 %11      ; ball Y += Y delta
+	.gtjs %11 %15 down   ; if hit bottom edge, set delta Y to -1
+	.eqjs %11 %17 up     ; if hit top edge, set delta Y to 1
+
+draw:
+	dw %16 %17 %18 %18
+	at %10 %11
+	end
+	jmp update
+
+right:
+	set %12 255
+	js nextframe
+	ret
+
+left:
+	set %12 1
+	js nextframe
+	ret
+
+down:
+	set %13 255
+	js nextframe
+	ret
+
+up:
+	set %13 1
+	; js nextframe
+	; ret
+
+nextframe:
+	set %1 24
+	add %16 %18 %16
+	.eqj %16 %1 resetframe
+	ret
+
+resetframe:
+	set %16 0
+	ret
+
+gotomouse:
+	ld %10 MOUSEX
+	ld %11 MOUSEY
+	ret

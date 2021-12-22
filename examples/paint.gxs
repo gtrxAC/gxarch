@@ -138,7 +138,7 @@ drawxloop:
 
 	mul %9 %5 %9  ; multiply color value by scale to get the source X from tileset
 
-	dw %9 %8 %5    ; draw pixel
+	dw %9 %8 %5 %5  ; draw pixel
 	mul %0 %5 %10
 	mul %1 %5 %11
 	at %10 %11
@@ -155,7 +155,7 @@ drawnext:
 	mul %0 %1 %0
 	set %1 lo(SCALE)
 	set %2 8
-	dw %0 %1 %2
+	dw %0 %1 %2 %2
 	set %0 120
 	at %8 %0          ; %8 is always zero
 

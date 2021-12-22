@@ -9,6 +9,9 @@ dat main
 coordstr: dat "X:000 yY:000  Block:"  ; in the font, the lowercase y is the
                                       ; black border for the uppercase Y
 
+val PRINT_CHARSPERLINE 32
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
 .include std/common.gxs
 .include std/int2str.gxs
 .include std/print.gxs

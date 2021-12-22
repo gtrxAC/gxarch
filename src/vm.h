@@ -38,7 +38,8 @@ struct VM {
 
 	u8 drawX; // for DW instruction
 	u8 drawY;
-	u8 drawsize;
+	u8 drawwidth;
+	u8 drawheight;
 	bool needdraw;
 
 	char filename[256];

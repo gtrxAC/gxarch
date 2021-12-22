@@ -49,7 +49,7 @@ val WINACTIVE 4
 val WINFUNC 5
 val WINTITLE 7
 
-val PRINT_CHARSPERLINE 16
+val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
 .include std/common.gxs
@@ -66,6 +66,7 @@ main:
 	st %0 SRAM_TOGGLE
 
 loop:
+	js updatemouse
 
 
 ; ______________________________________________________________________________
@@ -76,21 +77,21 @@ loop:
 ;  %5 = Y iterator
 ;  %6 = increment and draw size (constant 16)
 ;  %7 = maximum (constant 128)
-;  %8 = wallpaper X in tileset (constant 40)
-;  %9 = wallpaper Y in tileset (constant 88)
+;  %8 = wallpaper X in tileset (constant 112)
+;  %9 = wallpaper Y in tileset (constant 32)
 ; ______________________________________________________________________________
 ;
 	set %5 0
 	set %6 16
 	set %7 128
-	set %8 40
-	set %9 88
+	set %8 112
+	set %9 32
 
 drawwpyloop:
 	set %4 0
 
 drawwpxloop:
-	dw %8 %9 %6
+	dw %8 %9 %6 %6
 	at %4 %5
 
 	add %4 %6 %4
@@ -169,7 +170,7 @@ drawloopcontinue:
 	add %17 %0 %20
 	add %11 %0 %21
 	set %22 60
-	set %23 64
+	set %23 32
 	set %24 8
 	set %25 8
 	js button
@@ -179,7 +180,7 @@ drawloopcontinue:
 
 	st %15 compjsh  ; call window update subroutine
 	st %16 compjsl  ; note: subroutine should not modify registers %4 - %9
-	js compjs
+;	js compjs
 
 drawloopskip:
 	add %4 %5 %4
@@ -193,6 +194,9 @@ closewindow:
 	set %8 lo(WINADDR)
 	mul %4 %9 %3
 	add %8 %3 %8
+
+	set %0 4      ; get the address of the window's active flag
+	add %8 %0 %8
 
 	set %0 0          ; set window's active flag to 0
 	sti %0 %7

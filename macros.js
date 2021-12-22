@@ -70,5 +70,12 @@ module.exports = function (name, args) {
 				`key %29 %29`,
 				`cjs %29 ${args[1]}`
 			]
+
+		case 'mov':
+			needargs('mov', 2);
+			return [
+				`set %29 0`,
+				`add ${args[0]} %29 ${args[1]}`
+			]
 	}
 }

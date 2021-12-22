@@ -79,10 +79,11 @@ void _step(struct VM *vm) {
 		err("Attempted to execute code at 0x%.4X", vm->pc);
 
 	u8 op = consume();
-	DBGLOG("%s ", opnames[op]);
 
 	if (op >= OP_COUNT)
 		err("Invalid opcode at 0x%.4X: %d", vm->pc - 1, op);
+
+	DBGLOG("%s ", opnames[op]);
 
 	switch (op) {
 		case OP_NOP: break;
@@ -197,13 +198,14 @@ void _step(struct VM *vm) {
 		case OP_DW:
 			vm->drawX = vm->reg[consume()];
 			vm->drawY = vm->reg[consume()];
-			vm->drawsize = vm->reg[consume()];
+			vm->drawwidth = vm->reg[consume()];
+			vm->drawheight = vm->reg[consume()];
 			break;
 			
 		case OP_AT:
 			DrawTextureRec(
 				vm->tileset,
-				(Rectangle){vm->drawX, vm->drawY, vm->drawsize, vm->drawsize},
+				(Rectangle){vm->drawX, vm->drawY, vm->drawwidth, vm->drawheight},
 				(Vector2){vm->reg[consume()], vm->reg[consume()]}, WHITE
 			);
 			break;
@@ -230,7 +232,7 @@ void _step(struct VM *vm) {
 
 	// Print all registers in debug mode
 	DBGLOG("\nREG: ");
-	for (int i = 0; i < 32; i++) {
+	for (int i = 0; i < 30; i++) {
 		DBGLOG("%.2X ", vm->reg[i]);
 	}
 	DBGLOG("  RESH: %.2X  REM: %.2X\n", vm->reg[RESH], vm->reg[REMAINDER]);

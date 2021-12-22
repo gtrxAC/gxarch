@@ -164,8 +164,8 @@ semantics.addOperation('eval', {
 		output.push(19); reg.eval(); addr.eval();
 	},
 	Instruction_ret(_) { output.push(20); },
-	Instruction_dw(_, reg1, reg2, reg3) {
-		output.push(21); reg1.eval(); reg2.eval(); reg3.eval();
+	Instruction_dw(_, reg1, reg2, reg3, reg4) {
+		output.push(21); reg1.eval(); reg2.eval(); reg3.eval(); reg4.eval();
 	},
 	Instruction_at(_, reg1, reg2) {
 		output.push(22); reg1.eval(); reg2.eval();

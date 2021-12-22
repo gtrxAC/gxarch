@@ -10,7 +10,7 @@ string: dat "Last pressed key: 000 \" \""
 val FORMATNUM 20    ; addresses of where numeric/ASCII values are
 val FORMATASCII 25  ; formatted into the string
 
-val PRINT_CHARSPERLINE 16
+val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
 .include std/common.gxs

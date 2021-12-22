@@ -21,14 +21,6 @@
 ;   - In the tileset, the characters must start at (0, 0), in ASCII order,
 ;     starting at null.
 ;   - This subroutine doesn't do line wrapping, everything is drawn on one line.
-;   - gxarch can only draw square parts from the tileset, not rectangles, so for
-;     example for 4×8 fonts, a 8×8 tile is actually drawn for each character.
-;     Each drawn character cell is still 4 pixels wide, but the remaining 4
-;     pixels of each character in the tileset should be blank
-;     (see assets/tileset.png to see how this is done)
-;   - The character height is used as the source size when drawing, so if the
-;     font's width is greater than the height, part of each character will be
-;     cut off.
 ; ______________________________________________________________________________
 ;
 print:
@@ -41,17 +33,17 @@ printdraw:
 	set %0 0                       ; source X = division remainder
 	add %r %0 %25
 
-	set %0 lo(PRINT_HEIGHT)
-	mul %25 %0 %25           ; source X *= character height
-	mul %26 %0 %26           ; source Y *= character height
+	set %0 lo(PRINT_WIDTH)
+	set %1 lo(PRINT_HEIGHT)
+	mul %25 %0 %25           ; source X *= character width
+	mul %26 %1 %26           ; source Y *= character height
 
-	dw %25 %26 %0   ; draw character
+	dw %25 %26 %0 %1  ; draw character
 	at %22 %23
 
-	set %0 1        ; go to next character
-	add %21 %0 %21
+	set %2 1        ; go to next character
+	add %21 %2 %21
 	add %20 %h %20
 
-	set %0 lo(PRINT_WIDTH)  ; next character cell
-	add %22 %0 %22
+	add %22 %0 %22  ; next character cell
 	jmp print
