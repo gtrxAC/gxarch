@@ -16,3 +16,5 @@ dump.txt
 screenshot*.png
 *.gxa
 *.sav
+examples/*.html
+examples/*/*.html

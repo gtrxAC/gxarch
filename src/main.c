@@ -126,7 +126,7 @@ void loadfile(char *name) {
 		if (tileset.width > 128 || tileset.height > 128) {
 			UnloadImage(tileset);
 			err(
-				"Invalid tileset size, expected 128 × 128 but got %d x %d",
+				"Invalid tileset size, expected 128 × 128 but got %d × %d",
 				tileset.width, tileset.height
 			);
 		}

@@ -23,8 +23,8 @@ main:
 	set %3 128
 
 loop:
-	add %0 %1 %0 ; increment scroll counter
-	dw  %0 %0 %3 ; take a 128×128 area from the tileset at %0, %0
-	at  %2 %2    ; and draw it at 0, 0
-	end          ; draw frame
+	add %0 %1 %0    ; increment scroll counter
+	dw  %0 %0 %3 %3 ; take a 128×128 area from the tileset at %0, %0
+	at  %2 %2       ; and draw it at 0, 0
+	end             ; draw frame
 	jmp loop

@@ -2,30 +2,30 @@
 
 ## Features
 * 8-bit system with [16-bit arithmetic](https://github.com/gtrxAC/gxarch/wiki/Instructions#add-reg1-reg2-reg3-add)
-* [64K shared RAM/ROM, 4K save file support](https://github.com/gtrxAC/gxarch/wiki/Memory-Map)
+* [64K shared RAM/ROM, 4K save file](https://github.com/gtrxAC/gxarch/wiki/Memory-Map)
 * 32 registers
 * [24 instructions](https://github.com/gtrxAC/gxarch/wiki/Instructions)
 * 128 × 128 screen, 16 colors
-* [6 example programs and counting!](https://github.com/gtrxAC/gxarch/tree/main/examples)
+* [8 example programs and counting!](https://github.com/gtrxAC/gxarch/tree/main/examples)
 
 
 ## Example
-
+This example is further explained [here](https://github.com/gtrxAC/gxarch/blob/main/examples/drawscroll.gxs).
 ```
 ; %0: scroll counter
 
-dat main         ; program entry point
+dat main            ; program entry point
 
-main:            ; define constants
-    set %1 1     ; %1: scroll increment
-    set %2 0     ; %2: draw location
-    set %3 128   ; %3: screen size
+main:               ; define constants
+    set %1 1        ; %1: scroll increment
+    set %2 0        ; %2: draw location
+    set %3 128      ; %3: screen size
 
 loop:
-    add %0 %1 %0 ; increment scroll counter
-    dw  %0 %0 %3 ; take a 128×128 area from the tileset at %0, %0
-    at  %2 %2    ; and draw it at 0, 0
-    end          ; draw frame
+    add %0 %1 %0    ; increment scroll counter
+    dw  %0 %0 %3 %3 ; take a 128×128 area from the tileset at %0, %0
+    at  %2 %2       ; and draw it at 0, 0
+    end             ; draw frame
     jmp loop
 ```
 ![example](assets/example.gif)
