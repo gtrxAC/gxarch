@@ -1,5 +1,5 @@
 const fs = require('fs');
-const index = fs.readFileSync('gxvm.html')
+let index = fs.readFileSync('gxvm.html')
 	.toString()
 	.split(/\r\n|\r|\n/)
 	.filter(l => !l.includes('gxa_builder_remove'));
@@ -22,12 +22,7 @@ const codeline = index.findIndex(l => l.includes('gxa_builder_code_here'));
 const imgline = index.findIndex(l => l.includes('gxa_builder_tileset_here'));
 
 index.splice(codeline, 1, array);
-index.splice(imgline, 1, `<img src="${filenamebase}.png"></img>`)
+index.splice(imgline, 1, `<img id="tileset" src="${filenamebase}.png"></img>`)
+index = index.join('\n').replace('<!-- gxa_builder_filename_here -->', filenamebase);
 
-fs.writeFileSync(`${filenamenoext}.html`, index.join('\n'));
-
-try {
-	fs.accessSync(`${filenamenoext}.png`);
-} catch (e) {
-	console.log(`${filenamebase}.png tileset not found! If this program uses the default tileset, copy assets/tileset.png to ${filenamenoext}.png.`)
-}
+fs.writeFileSync(`${filenamenoext}.html`, index);

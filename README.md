@@ -49,3 +49,12 @@ loop:
 4. Extract the `include` and `lib` folders from raylib into this directory.
 5. Extract w64devkit and run `w64devkit.exe`.
 6. Inside w64devkit, go to the directory where you cloned gxarch and run `build_win.sh`.
+
+## Web
+`build_web.js` can generate HTML files out of gxarch programs, using `gxvm.html` as a template. The HTML file contains everything needed to run the program, except the tileset (and audio files in the future).
+1. Install [Node.js](https://nodejs.org). (If you use the assembler you should already have this)
+2. Open a command prompt/terminal and run `node build_web.js program.gxa`.
+  * On some systems, it may be `nodejs` instead of `node`.
+  * Replace `program.gxa` with your program's name. Try it on the examples: `examples/hello.gxa`.
+3. The output file is generated in the same directory as the gxa file.
+4. The desktop version of gxVM has a built-in tileset, but gxVM for web doesn't. If the program uses the default tileset, you'll need to copy the default tileset from `assets/tileset.png` to the same directory as the output HTML file. The build script tells you if you need to do this.
