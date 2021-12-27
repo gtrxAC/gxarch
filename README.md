@@ -51,7 +51,7 @@ loop:
 6. Inside w64devkit, go to the directory where you cloned gxarch and run `build_win.sh`.
 
 ## Web
-`build_web.js` can generate HTML files out of gxarch programs, using `gxvm.html` as a template. The HTML file contains everything needed to run the program, except the tileset (and audio files in the future).
+`build_web.js` can generate HTML files out of gxarch programs, using `gxvm.html` as a template. The HTML file contains everything needed to run the program, [except the tileset](https://github.com/gtrxAC/gxarch/wiki/Tilesets#default-tileset-in-gxvmhtml) (and audio files in the future).
 1. Install [Node.js](https://nodejs.org). (If you use the assembler you should already have this)
 2. Open a command prompt/terminal and run `node build_web.js program.gxa`.
   * On some systems, it may be `nodejs` instead of `node`.
