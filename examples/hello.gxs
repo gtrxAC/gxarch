@@ -16,13 +16,15 @@ string: dat "Hello world!"  ; Embed the hello world string into the executable.
 val PRINT_CHARSPERLINE 32  ; We need the print subroutine from the standard library.
 val PRINT_WIDTH 4          ; Before including it we need to specify the font's properties.
 val PRINT_HEIGHT 8         ; The default tileset assets/tileset.png has 32 characters
-.include std/print.gxs     ; per line and each character is 4×8 pixels.
-
+.include std/print.gxs     ; per line and each character is 4×8 pixels. See
+                           ; https://github.com/gtrxAC/gxarch/wiki/Tilesets to learn more
+						   ; about how tilesets work.
+						   
 main:
-	set %20 hi(string) ; address of the string we want to print (high and low byte)
-	set %21 lo(string)
-	set %22 0          ; draw it at 0, 0
+	set %20 hi(string)  ; Print (and many other subroutines) need us to put parameters
+	set %21 lo(string)  ; in registers, starting at %20. Check std/print.gxs to see what
+	set %22 0           ; these parameters are.
 	set %23 0
-	js print          ; call print subroutine
-	end               ; draw frame
-	jmp main          ; we need to do this again every frame
+	js print            ; call print subroutine
+	end                 ; The end instruction draws a frame and clears the next frame with
+	jmp main            ; black, so we need to run our program in an infinite loop.

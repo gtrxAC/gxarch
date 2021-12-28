@@ -4,6 +4,13 @@
 ; Date: 2021-12-12
 ; Author: gtrxAC
 
+; What works: drawing and closing windows
+; What doesn't work: moving, resizing, focusing and creating new windows
+; Note: You'll need to create your own save file to use this! Otherwise you'll
+;       just get a tiled wallpaper. There is a wm.sav.bin which you can rename
+;       to wm.sav.
+; Note: doesn't work on web for some reason
+
 dat main
 
 ; Computed jumps (uses self modifying code)
@@ -99,8 +106,6 @@ drawwpxloop:
 
 	add %5 %6 %5
 	.ltj %5 %7 drawwpyloop
-
-
 ; ______________________________________________________________________________
 ;
 ;  Window drawing loop
@@ -139,8 +144,7 @@ drawloop:
 	add %8 %5 %8   
 	ldi %14 %7     ; active flag
 
-	; if window is not active, skip it
-	cj %14 drawloopcontinue
+	cj %14 drawloopcontinue  ; if window is not active, skip it
 	jmp drawloopskip
 
 drawloopcontinue:
@@ -150,37 +154,71 @@ drawloopcontinue:
 	ldi %16 %7     ; update sub (low)
 	add %8 %5 %8
 
-	set %0 0        ; draw window title
-	add %7 %0 %20
-	add %8 %0 %21
-	add %10 %0 %22
-	add %11 %0 %23
+	set %0 0         ; draw window titlebar
+	set %1 119
+	set %2 8
+	dw %0 %1 %12 %2
+	at %10 %11
+; ______________________________________________________________________________
+;
+;  Draw window background
+;  Draws a white strip (bottom pixel of tileset) for each pixel of window height
+;  
+;  %0 = loop increment and source height (constant 1)
+;  %1 = source X (constant 0)
+;  %2 = source Y (constant 127)
+;  %3 = titlebar height (constant 8)
+;  %17 = loop iterator (window Y + 8)
+;  %18 = loop maximum (window Y + height)
+; ______________________________________________________________________________
+;
+	set %0 1
+	set %1 0
+	set %2 127
+	set %3 8
+	.mov %11 %17
+	.mov %11 %18
+	add %17 %3 %17
+	add %18 %13 %18
+drawbgloop:
+	dw %1 %2 %12 %0  ; draw a window width × 1 area from (0, 127)
+	at %10 %17       ; at (window X, iterator)
+
+	add %17 %0 %17           ; next loop iteration
+	.ltj %17 %18 drawbgloop
+   
+	.mov %7 %20   ; draw window title
+	.mov %8 %21
+	.mov %10 %22
+	.mov %11 %23
 	js print
-
-
-
-	; draw window buttons
-	; %17 = current X to draw at
-
-	add %10 %12 %17
-	set %0 24
+; ______________________________________________________________________________
+;
+;  Draw close button, call window update subroutine, next loop iteration
+; ______________________________________________________________________________
+;
+	add %10 %12 %17  ; draw close button
+	set %0 8
 	sub %17 %0 %17
 
-	set %0 0
-	add %17 %0 %20
-	add %11 %0 %21
-	set %22 60
-	set %23 32
-	set %24 8
-	set %25 8
-	js button
-	cj %26 closewindow
+	.mov %17 %20        ; X: window X + window width - 8 (calculated above)
+	.mov %11 %21        ; Y: window Y
+	set %22 60          ; sprite source X: 60
+	set %23 32          ; sprite source Y: 32
+	set %24 8           ; width: 8
+	set %25 8           ; height: 8
+	js button           ; create button
+	cj %26 closewindow  ; if button was pressed, close window
 
-
+	set %0 0            ; if window subroutine address is 0x0000, don't call it
+	eq %15 %0 %1
+	eq %16 %0 %2
+	and %1 %2 %0
+	cj %0 drawloopskip
 
 	st %15 compjsh  ; call window update subroutine
 	st %16 compjsl  ; note: subroutine should not modify registers %4 - %9
-;	js compjs
+	js compjs
 
 drawloopskip:
 	add %4 %5 %4
@@ -188,6 +226,8 @@ drawloopskip:
 
 	end
 	jmp loop
+; ______________________________________________________________________________
+;
 
 closewindow:
 	set %7 hi(WINADDR)  ; get current window's data structure's address

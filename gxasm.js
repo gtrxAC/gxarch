@@ -13,6 +13,19 @@ const labelrefs = new Map();
 let run = false;
 let debug = false;
 
+// _____________________________________________________________________________
+//
+
+/**
+ * Adds spaces after a string to make it a certain length.
+ * @param {string} str The string to pad
+ * @param {number} len The length to pad to
+ * @returns The string padded to len length.
+ */
+function rpad(str, len) {
+	return str + ' '.repeat(len - `${str}`.length);
+}
+
 /**
  * Parses and pushes a number node to the output.
  * @param {Node} digits The node containing the digits.
@@ -31,6 +44,9 @@ function pushnum(digits, radix = 10, double = false) {
 		output.push(num);
 	}
 }
+
+// _____________________________________________________________________________
+//
 
 semantics.addOperation('parse', {
 	value_hex(_, digits) { return parseInt(digits.sourceString, 16) },
@@ -182,73 +198,104 @@ semantics.addOperation('eval', {
 	}
 })
 
+// _____________________________________________________________________________
+//
+//  Read command line arguments
+// _____________________________________________________________________________
+//
+
 function help() {
 	console.log("gxasm: gxarch assembler\n");
 	console.log("Usage: node gxasm.js [options] [file]");
 	console.log("-h, --help  Show this message");
 	console.log("-r, --run   Run the output, gxvm must be in the same directory");
-	console.log("-d, --debug Enable debugging if used with -r")
+	console.log("-d, --debug Create debug symbols and enable debugging if used with -r")
 	process.exit(0);
 }
 
 if (process.argv.length < 3) help();
+let file;
 
 for (let arg of process.argv.slice(2)) {
 	switch (arg) {
 		case '-h': case '--help': help();
 		case '-r': case '--run': run = true; break;
 		case '-d': case '--debug': debug = true; break;
+		case '-rd': run = true; debug = true; break;
 
-		default: {
-			let src = fs.readFileSync(arg)
-				.toString()
-				.split(/\r\n|\r|\n/);
-
-			// Check each line for macros and run them.
-			// All macros are stored in macros.js.
-			let ln = 0;
-			while (ln < src.length) {
-				let line = src[ln].trim().split(/\s+/);
-				if (line[0][0] === '.') {
-					src.splice(ln, 1, macros(line.shift().slice(1), line));
-					src = src.flat();
-				} else ln++;
-			}
-
-			src = src.join('\n');
-			const match = grammar.match(src);
-			
-			if (match.succeeded()) {
-				semantics(match).eval();
-				
-				const outfile = new Uint8Array(output);
-				if (outfile.length > 0xFF00)
-					throw new Error(`Output file too large, 0x${outfile.length.toString(16)} > 0xFF00`);
-		
-				labelrefs.forEach((label, addr) => {
-					if (!labels.has(label))
-						throw new Error(`Label ${label} not found`);
-		
-					const val = labels.get(label);
-					outfile.set([(val & 0xFF00) >> 8, val & 0xFF], addr);
-				})
-		
-				// Use same filename as input file, but with gxa extension
-				const outname = arg.replace(/\.\w*$/, ".gxa");
-				fs.writeFileSync(outname, outfile);
-
-				if (run) {
-					const cp = require('child_process');
-					const vm = cp.spawn(
-						process.platform === 'win32' ? 'gxvm.exe' : './gxvm',
-						debug ? ['--debug', outname] : [outname], 
-					);
-					vm.stdout.on('data', d => console.log(`${d}`));
-					vm.stderr.on('data', d => console.error(`${d}`));
-				}
-			} else {
-				console.error(match.message);
-			}
-		}
+		default:
+			if (file)
+				throw new Error("Only one file can be specified (use .include to include other files)");
+			file = arg;
+			break;
 	}
+}
+
+// _____________________________________________________________________________
+//
+//  Expand macros (preprocessor)
+// _____________________________________________________________________________
+//
+
+let src = fs.readFileSync(file)
+	.toString()
+	.split(/\r\n|\r|\n/);
+
+// Check each line for macros and run them.
+// All macros are stored in macros.js.
+let ln = 0;
+while (ln < src.length) {
+	let line = src[ln].trim().split(/\s+/);
+	if (line[0][0] === '.') {
+		src.splice(ln, 1, macros(line.shift().slice(1), line));
+		src = src.flat();
+	} else ln++;
+}
+
+// _____________________________________________________________________________
+//
+//  Parse and assemble
+// _____________________________________________________________________________
+//
+
+src = src.join('\n');
+const match = grammar.match(src);
+
+if (match.succeeded()) {
+	semantics(match).eval();
+
+	const outfile = new Uint8Array(output);
+	if (outfile.length > 0xFF00)
+		throw new Error(`Output file too large, 0x${outfile.length.toString(16)} > 0xFF00`);
+
+	labelrefs.forEach((label, addr) => {
+		if (!labels.has(label))
+			throw new Error(`Label ${label} not found`);
+
+		const val = labels.get(label);
+		outfile.set([(val & 0xFF00) >> 8, val & 0xFF], addr);
+	})
+
+	// Use same filename as input file, but with gxa extension
+	const outname = file.replace(/\.\w*$/, ".gxa");
+	fs.writeFileSync(outname, outfile);
+
+	if (debug) {
+		let symbols = [...labels.entries()]  // [['key1', 1], ['key2', 2], ...]
+			.sort((a, b) => a[1] - b[1])   // sort in increasing value order
+			.map(sym => `0x${rpad(sym[1].toString(16), 4)} (${rpad(sym[1], 5)}) ${sym[0]}`); // "0xff   (255  ) label"
+
+		fs.writeFileSync(file.replace(/\.\w*$/, ".sym.txt"), symbols.join('\n'));
+	}
+
+	if (run) {
+		const cp = require('child_process');
+		const vm = cp.spawn(
+			process.platform === 'win32' ? 'gxvm.exe' : './gxvm',
+			debug ? ['--debug', outname] : [outname],
+			{stdio: 'inherit'}
+		);
+	}
+} else {
+	console.error(match.message);
 }
