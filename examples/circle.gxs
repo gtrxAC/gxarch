@@ -1,0 +1,167 @@
+; Circle for gxarch
+; Circle drawing using Bresenham's circle algorithm
+; Ported from http://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#D
+; Date: 2021-12-31
+; Author: gtrxAC
+
+dat main
+
+radstr: dat "Radius: 000px"
+helpstr: dat "Use arrow keys to change radius"
+
+val FMTRADSTR 0x000A  ; address of "000" in radstr, for int2str formatting
+
+val PRINT_CHARSPERLINE 32
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
+.include std/common.gxs
+.include std/print.gxs
+.include std/int2str.gxs
+
+; ______________________________________________________________________________
+;
+;  Circle drawing algorithm
+;  I don't really know how this works, I just blindly ported it
+;
+;  Arguments:
+;    %20 = X of center
+;    %21 = Y of center
+;    %22 = radius
+;
+;  Uses registers:
+;    %23-27 = variables
+;    %28-29 = immediates
+; ______________________________________________________________________________
+;
+circle:
+	set %0 0        ; set up immediate values
+	set %1 1        ; %28 will be another immediate
+	set %2 2
+	set %3 254      ; unsigned -2
+	dw %0 %0 %1 %1
+
+	sub %1 %22 %23
+	set %24 1
+	mul %3 %22 %25
+	set %26 0
+	.mov %22 %27
+
+	add %21 %22 %28
+	at %20 %28
+	sub %21 %22 %28
+	at %20 %28
+	add %20 %22 %28
+	at %28 %21
+	sub %20 %22 %28
+	at %28 %21
+
+circleloop:
+	set %28 129                 ; original checks if >= 0 but signed numbers not supported
+	.ltjs %23 %28 circleifstmt  ; so we're checking if < 129 (screen size)
+
+	add %26 %1 %26
+	add %24 %2 %24
+	add %23 %24 %23
+
+	; we don't use macros in these plot commands so %29 is safe to use
+	; https://github.com/gtrxAC/gxarch/wiki/Beginner-Tips#register-management
+	add %20 %26 %28
+	add %21 %27 %29
+	at %28 %29
+	sub %20 %26 %28
+	at %28 %29
+	add %20 %26 %28
+	sub %21 %27 %29
+	at %28 %29
+	sub %20 %26 %28
+	at %28 %29
+	add %20 %27 %28
+	add %21 %26 %29
+	at %28 %29
+	sub %20 %27 %28
+	at %28 %29
+	add %20 %27 %28
+	sub %21 %26 %29
+	at %28 %29
+	sub %20 %27 %28
+	at %28 %29
+
+	.ltj %26 %27 circleloop
+
+circleifstmt:
+	sub %27 %1 %27
+	add %25 %2 %25
+	add %23 %25 %23
+	ret
+
+; ______________________________________________________________________________
+;
+;  Update loop
+;
+;  %4 = current radius
+; ______________________________________________________________________________
+;
+main:
+	set %4 30  ; set initial radius value to 30px
+
+loop:
+	set %0 lo(K_LEFT)  ; left/down arrow keys: decrease radius
+	key %0 %0
+	set %1 lo(K_DOWN)
+	key %1 %1
+	or %0 %1 %2
+	cjs %2 decradius
+
+	set %0 lo(K_RIGHT)  ; right/up arrow keys: increase radius
+	key %0 %0
+	set %1 lo(K_UP)
+	key %1 %1
+	or %0 %1 %2
+	cjs %2 incradius
+; ______________________________________________________________________________
+;
+;  Rendering loop
+; ______________________________________________________________________________
+;
+draw:
+	set %20 64
+	set %21 64
+	.mov %4 %22
+	js circle
+
+	.mov %4 %20            ; format current radius into radstr
+	set %21 hi(FMTRADSTR)
+	set %22 lo(FMTRADSTR)
+	js int2str
+
+	set %20 hi(helpstr)  ; print strings
+	set %21 lo(helpstr)
+	set %22 0
+	set %23 0
+	js print
+
+	set %20 hi(radstr)
+	set %21 lo(radstr)
+	set %22 0
+	set %23 8
+	js print
+
+	end
+	jmp loop
+
+; ______________________________________________________________________________
+;
+;  Input subroutines
+;  Called when arrow keys are pressed
+; ______________________________________________________________________________
+;
+
+incradius: 
+	set %0 1
+	add %4 %0 %4
+	ret
+
+decradius:
+	set %0 1
+	sub %4 %0 %4
+	ret
