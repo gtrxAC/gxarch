@@ -1,0 +1,44 @@
+; Noise for gxarch
+; Draws white noise on the screen, random black or white for each pixel.
+; Date: 2021-12-31
+; Author: gtrxAC
+
+dat main
+.include std/common.gxs
+
+; This example doesn't operate on main memory, it only uses 6 registers:
+; %0 = increment and draw size (constant 1)
+; %1 = screen size and random value division (constant 128)
+; %2 = draw source Y (constant 0), initial value is 0 so we don't need to set it
+; %3 = draw source X (random value 0-1)
+; %4 = X iterator
+; %5 = Y iterator
+
+main:
+	reg INC %0   ; set names for registers
+	reg SIZE %1
+	reg SY %2
+	reg sx %3
+	reg x %4
+	reg y %5
+
+	set INC 1     ; set constants
+	set SIZE 128
+loop:
+	set y 0
+loopy:
+	set x 0
+loopx:
+	ld sx RAND         ; generate random value 0-1 for %3
+	div sx SIZE sx     ; RAND has 0-255, divide by 128 to get 0-1
+	dw sx SY INC INC   ; draw the pixel from the tileset
+	at x y             ; at the coordinates of the current iterator
+
+	add x INC x        ; next X iteration
+	.ltj x SIZE loopx
+
+	add y INC y        ; next Y iteration
+	.ltj y SIZE loopy
+
+	end       ; draw frame and loop
+	jmp loop

@@ -73,7 +73,7 @@ void err(const char *fmt, ...) {
 	}
 	
 	tinyfd_notifyPopup("Error", buf, "error");
-	fprintf(stderr, "%s", buf);
+	fprintf(stderr, "%s\n", buf);
 	exit(EXIT_FAILURE);
 }
 
@@ -196,6 +196,7 @@ int main(int argc, char **argv) {
 	}
 
 	vm->scale = 4;
+	SetTraceLogLevel(vm->debug ? LOG_INFO : LOG_WARNING);
 	InitWindow(512, 512, "gxVM");
 	SetTargetFPS(60);
 

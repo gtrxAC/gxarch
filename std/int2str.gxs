@@ -14,28 +14,31 @@
 ;    - 3 digits are always used, so 1 is converted into "001".
 ; ______________________________________________________________________________
 ;
-int2str:
-	set %0 100      ; divide by 100 to get 3rd digit
-	div %20 %0 %23
-	set %0 0x30     ; number + 0x30 = ASCII digit of number
-	add %23 %0 %23
-	sti %23 %21     ; store digit into string
+int2str: {
+	reg divr %23
 
-	set %0 1        ; next character
+	set %0 100        ; divide by 100 to get 3rd digit
+	div %20 %0 divr
+	set %0 0x30       ; number + 0x30 = ASCII digit of number
+	add divr %0 divr
+	sti divr %21      ; store digit into string
+
+	set %0 1          ; next character
 	add %22 %0 %22
 	add %21 %h %21
 
-	set %0 10       ; divide remainder by 10 to get 2nd digit
-	div %r %0 %23
-	set %0 0x30     ; ...
-	add %23 %0 %23
-	sti %23 %21
+	set %0 10         ; divide remainder by 10 to get 2nd digit
+	div %r %0 divr
+	set %0 0x30       ; ...
+	add divr %0 divr
+	sti divr %21
 
 	set %0 1
 	add %22 %0 %22
 	add %21 %h %21
 
 	set %0 0x30
-	add %r %0 %23
-	sti %23 %21
+	add %r %0 divr
+	sti divr %21
 	ret
+}

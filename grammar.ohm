@@ -9,6 +9,7 @@ Grammar {
   | digit+                  -- dec
   | k<"lo"> "(" address ")" -- lo
   | k<"hi"> "(" address ")" -- hi
+  | ident ~":"              -- label
 
   address =
     "0x" hexDigit+    -- hex
@@ -16,14 +17,23 @@ Grammar {
   | digit+            -- dec
   | ident ~":"        -- label
 
-  data = value | address | string
+  data =
+  | ident ~":"  -- label
+  | value
+  | string
 
-  register = "%" (digit+ | "h" | "r" | "H" | "R")
+  register =
+    "%" (digit+ | "h" | "r" | "H" | "R")  -- reg
+  | ident                                 -- ident
 
   Instruction =
-    ident ":"                                    -- label
+    "{" Instruction* "}"                         -- block
+  | ident ":"                                    -- label
   | k<"dat"> ListOf<data, ",">                   -- dat
-  | k<"val"> ident address                       -- val
+  | k<"val"> ident value                         -- val
+  | k<"addr"> ident address                      -- addr
+  | k<"reg"> ident register                      -- reg
+
   | k<"nop">                                     -- nop
   | k<"set"> register value                      -- set
   | k<"ld"> register address                     -- ld
@@ -61,7 +71,7 @@ Grammar {
   | "\\\\"                  -- bs
   | "\\\""                  -- quot
 
-  ident = /*~keyword*/ identstart identpart*
+  ident = identstart identpart*
   identstart = letter | "_"    
   identpart = alnum | "_"
   k<name> = name ~identpart

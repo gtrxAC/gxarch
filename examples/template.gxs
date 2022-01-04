@@ -18,6 +18,8 @@ main:
 	; Startup code, only run once
 
 loop:
+	updatemouse  ; requires mouse.gxs
+	
 	; Update loop
 
 draw:

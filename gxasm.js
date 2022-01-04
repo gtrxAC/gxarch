@@ -7,14 +7,31 @@ const grammar = ohm.grammar(contents);
 const semantics = grammar.createSemantics();
 
 const output = [];
-const labels = new Map();
+const vars = [new Map()];
 const labelrefs = new Map();
 
 let run = false;
 let debug = false;
+let lastlabel;
 
 // _____________________________________________________________________________
 //
+
+function err(msg, pos) {
+	console.error(`Error ${pos ?? getpos()}: ${msg}`);
+	console.error(`Assembled: ${output.length} bytes`);
+	if (debug) {
+		console.log(output);
+		vars.forEach((scope, i) => {
+			console.log(`\nscope ${i}:`);
+			console.log(scope)
+		});
+		console.log((new Error()).stack);
+	} else {
+		console.error(`Tip: use --debug to dump output and variables`);
+	}
+	process.exit(1);
+}
 
 /**
  * Adds spaces after a string to make it a certain length.
@@ -22,49 +39,111 @@ let debug = false;
  * @param {number} len The length to pad to
  * @returns The string padded to len length.
  */
-function rpad(str, len) {
-	return str + ' '.repeat(len - `${str}`.length);
+// function rpad(str, len) {
+// 	console.log(len, `${str}`.length);
+// 	return str + ' '.repeat(len - `${str}`.length);
+// }
+
+function getpos() {
+	return lastlabel ?
+		`at ${lastlabel} + ${output.length - arr2num(vars[0].get(lastlabel).val)}` :
+		'before any labels';
+}
+
+function arr2num(arr) {
+	return arr[0] << 8 | arr[1];
 }
 
 /**
- * Parses and pushes a number node to the output.
+ * Parses a number node.
  * @param {Node} digits The node containing the digits.
  * @param {number} radix The number base, 10 for decimal, 16 for hex, etc.
- * @param {boolean} double If true, a 16-bit value (address) is pushed.
+ * @param {boolean} double If true, a 16-bit value (address) is parsed.
+ * @param {boolean} push If true, the value is also pushed to the output.
  */
-function pushnum(digits, radix = 10, double = false) {
+function parsenum(digits, radix = 10, double = false, push) {
+	let result;
 	const num = parseInt(digits.sourceString, radix);
-	if (num > 65535) throw new Error(`Number too large, ${num} > 65535`);
+	if (num > 65535) err(`Number too large, ${num} > 65535`);
+	if (!isFinite(num)) err(`Invalid number ${num}`);
 
 	if (double) {
-		output.push((num & 0xFF00) >> 8);
-		output.push(num & 0xFF);
+		result = [(num & 0xFF00) >> 8, num & 0xFF];
 	} else {
-		if (num > 255) throw new Error(`Number too large for one byte, ${num} > 255`);
-		output.push(num);
+		if (num > 255) err(`Number too large for one byte, ${num} > 255`);
+		result = [num];
 	}
+
+	if (push) output.push(...result);
+	return result;
+}
+
+function getvar(name, type, error = true, pos) {
+	if (name.sourceString) name = name.sourceString;
+	let value;
+	for (let i = vars.length - 1; i >= 0; i--) {
+		if (!vars[i].has(name)) continue;
+		value = vars[i].get(name);
+		break;
+	}
+
+	if (value) {
+		if (value.type !== type)
+			err(`Variable ${name} is of type '${value.type}', expected '${type}'`, pos);
+
+		if (type === 'register' && value.val[0] > 31)
+			err(`Invalid register, ${value.val[0]} > 31`, pos)
+
+		return value.val;
+	} else if (error) {
+		err(`Variable ${name} not found. Variables must be defined before using them. (looking for type '${type}')`, pos);
+	} else {
+		return undefined;
+	}
+}
+
+function setvar(name, val, type) {
+	if (name.sourceString) name = name.sourceString;
+	vars[vars.length - 1].set(name, {val, type});
+}
+
+function setgvar(name, val, type) {
+	if (name.sourceString) name = name.sourceString;
+	vars[0].set(name, {val, type});
 }
 
 // _____________________________________________________________________________
 //
 
 semantics.addOperation('parse', {
-	value_hex(_, digits) { return parseInt(digits.sourceString, 16) },
-	value_bin(_, digits) { return parseInt(digits.sourceString, 2) },
-	value_dec(digits) { return parseInt(digits.sourceString, 10) },
+	value_hex(_, digits) { return parsenum(digits, 16) },
+	value_bin(_, digits) { return parsenum(digits, 2) },
+	value_dec(digits) { return parsenum(digits) },
 
-	address_hex(_, digits) { return parseInt(digits.sourceString, 16) },
-	address_bin(_, digits) { return parseInt(digits.sourceString, 2) },
-	address_dec(digits) { return parseInt(digits.sourceString, 10) },
+	address_hex(_, digits) { return parsenum(digits, 16, true) },
+	address_bin(_, digits) { return parsenum(digits, 2, true) },
+	address_dec(digits) { return parsenum(digits, 10, true) },
+	address_label(ident) { return getvar(ident, 'address') },
 
-	address_label(ident) {
-		ident = ident.sourceString;
-		if (labels.has(ident)) {
-			return labels.get(ident);
-		} else {
-			throw new Error(`Label ${ident} not found. Labels must be defined before lo() or hi() can be used on them.`);
+	register_reg(_, reg) {
+		switch (reg.sourceString.toLowerCase()) {
+			case "h": // result high byte
+				return [30];
+
+			case "r": // division remainder
+				return [31];
+
+			default: {
+				const result = parseInt(reg.sourceString);
+				if (result > 31)
+					err(`Invalid register, ${reg.sourceString} > 31`);
+
+				return [result];
+			}
 		}
 	},
+
+	register_ident(ident) { return getvar(ident, 'register') },
 
 	stringpart_char(c) { return c.sourceString; },
 	stringpart_lf(_) { return "\n"; },
@@ -76,29 +155,42 @@ semantics.addOperation('parse', {
 })
 
 semantics.addOperation('eval', {
-	value_hex(_, digits) { pushnum(digits, 16) },
-	value_bin(_, digits) { pushnum(digits, 2) },
-	value_dec(digits) { pushnum(digits, 10) },
-	value_lo(_, __, addr, ___) { output.push(addr.parse() & 0xFF) },
-	value_hi(_, __, addr, ___) { output.push((addr.parse() & 0xFF00) >> 8) },
+	value_hex(_, digits) { parsenum(digits, 16, false, true) },
+	value_bin(_, digits) { parsenum(digits, 2, false, true) },
+	value_dec(digits) { parsenum(digits, 10, false, true) },
+	value_lo(_, __, addr, ___) { output.push(addr.parse()[1]) },
+	value_hi(_, __, addr, ___) { output.push(addr.parse()[0]) },
+	value_label(ident) { output.push(...getvar(ident, 'value')) },
 
-	address_hex(_, digits) { pushnum(digits, 16, true) },
-	address_bin(_, digits) { pushnum(digits, 2, true) },
-	address_dec(digits) { pushnum(digits, 10, true) },
+	address_hex(_, digits) { parsenum(digits, 16, true, true) },
+	address_bin(_, digits) { parsenum(digits, 2, true, true) },
+	address_dec(digits) { parsenum(digits, 10, true, true) },
 
 	address_label(ident) {
-		let addr = 0xFFFF;
-		ident = ident.sourceString;
-		if (labels.has(ident)) {
-			addr = labels.get(ident);
-		} else {
-			labelrefs.set(output.length, ident);
+		let addr = getvar(ident, 'address', false);
+
+		if (addr === undefined) {
+			addr = [0xFF, 0xFF];
+			labelrefs.set(output.length, {ident: ident.sourceString, pos: getpos()});
 		}
-		output.push((addr & 0xFF00) >> 8);
-		output.push(addr & 0xFF);
+		output.push(...addr);
 	},
 
-	register(_, reg) {
+	data_label(ident) {
+		let val = getvar(ident, 'value', false);
+
+		if (val === undefined) {
+			val = getvar(ident, 'address', false);
+
+			if (val === undefined) {
+				val = [0xFF, 0xFF];
+				labelrefs.set(output.length, {ident: ident.sourceString, pos: getpos()});
+			}
+		}
+		output.push(...val);
+	},
+
+	register_reg(_, reg) {
 		switch (reg.sourceString.toLowerCase()) {
 			case "h": // result high byte
 				output.push(30);
@@ -108,23 +200,37 @@ semantics.addOperation('eval', {
 				output.push(31);
 				break;
 
-			default:
-				if (parseInt(reg.sourceString) > 31)
-					throw new Error(`Invalid register, ${reg.sourceString} > 31`);
+			default: {
+				const result = parseInt(reg.sourceString);
+				if (result > 31)
+					err(`Invalid register, ${reg.sourceString} > 31`);
 
-				pushnum(reg);
-				break;
+				output.push(result);
+			}
 		}
 	},
 
-	Instruction_label(ident, _) {
-		ident = ident.sourceString;
-		labels.set(ident, output.length);
+	register_ident(ident) { output.push(...getvar(ident, 'register')) },
+
+	Instruction_block(_, insts, __) {
+		vars.push(new Map());  // create a scope for this block
+		insts.eval();
+		vars.pop();
 	},
-	Instruction_dat(_, data) { data.asIteration().eval(); }, // ???
-	Instruction_val(_, ident, val) {
-		labels.set(ident.sourceString, val.parse());
+
+	Instruction_label(ident, _) {  // currently labels are global to make stuff simpler
+		if (output.length < 256) {
+			setgvar(ident, [0, output.length], 'address');
+		} else {
+			setgvar(ident, [(output.length & 0xFF00) >> 8, output.length & 0xFF], 'address');
+		}
+		lastlabel = ident.sourceString;
 	},
+	Instruction_dat(_, data) { data.asIteration().eval() },
+	Instruction_val(_, ident, val) { setvar(ident, val.parse(), 'value') },
+	Instruction_addr(_, ident, addr) { setvar(ident, addr.parse(), 'address') },
+	Instruction_reg(_, ident, reg) { setvar(ident, reg.parse(), 'register') },
+
 	Instruction_nop(_) { output.push(0); },
 	Instruction_set(_, reg, val) {
 		output.push(1); reg.eval(); val.eval();
@@ -209,7 +315,7 @@ function help() {
 	console.log("Usage: node gxasm.js [options] [file]");
 	console.log("-h, --help  Show this message");
 	console.log("-r, --run   Run the output, gxvm must be in the same directory");
-	console.log("-d, --debug Create debug symbols and enable debugging if used with -r")
+	console.log("-d, --debug Enable debugging if used with --run")
 	process.exit(0);
 }
 
@@ -221,11 +327,11 @@ for (let arg of process.argv.slice(2)) {
 		case '-h': case '--help': help();
 		case '-r': case '--run': run = true; break;
 		case '-d': case '--debug': debug = true; break;
-		case '-rd': run = true; debug = true; break;
+		case '-rd': case '-dr': run = true; debug = true; break;
 
 		default:
 			if (file)
-				throw new Error("Only one file can be specified (use .include to include other files)");
+				err("Only one file can be specified (use .include to include other files)");
 			file = arg;
 			break;
 	}
@@ -266,31 +372,32 @@ if (match.succeeded()) {
 
 	const outfile = new Uint8Array(output);
 	if (outfile.length > 0xFF00)
-		throw new Error(`Output file too large, 0x${outfile.length.toString(16)} > 0xFF00`);
+		err(`Output file too large, 0x${outfile.length.toString(16)} > 0xFF00`);
 
 	labelrefs.forEach((label, addr) => {
-		if (!labels.has(label))
-			throw new Error(`Label ${label} not found`);
-
-		const val = labels.get(label);
-		outfile.set([(val & 0xFF00) >> 8, val & 0xFF], addr);
+		const val = getvar(label.ident, 'address', true, label.pos);
+		if (val.length === 1) val.unshift(0x00);
+		outfile.set(val, addr);
 	})
 
 	// Use same filename as input file, but with gxa extension
 	const outname = file.replace(/\.\w*$/, ".gxa");
 	fs.writeFileSync(outname, outfile);
 
-	if (debug) {
-		let symbols = [...labels.entries()]  // [['key1', 1], ['key2', 2], ...]
-			.sort((a, b) => a[1] - b[1])   // sort in increasing value order
-			.map(sym => `0x${rpad(sym[1].toString(16), 4)} (${rpad(sym[1], 5)}) ${sym[0]}`); // "0xff   (255  ) label"
+	if (debug) console.log(vars[0]);
 
-		fs.writeFileSync(file.replace(/\.\w*$/, ".sym.txt"), symbols.join('\n'));
-	}
+	// Debug symbols need some work to get working again
+	// if (debug) {
+	// 	let symbols = [...vars[0].entries()]  // [['key1', 1], ['key2', 2], ...]
+	// 		.sort((a, b) => a[1] - b[1])   // sort in increasing value order
+	// 		.map(sym => `0x${rpad(sym[1].toString(16), 4)} (${rpad(sym[1], 5)}) ${sym[0]}`); // "0xff   (255  ) label"
+
+	// 	fs.writeFileSync(file.replace(/\.\w*$/, ".sym.txt"), symbols.join('\n'));
+	// }
 
 	if (run) {
 		const cp = require('child_process');
-		const vm = cp.spawn(
+		cp.spawn(
 			process.platform === 'win32' ? 'gxvm.exe' : './gxvm',
 			debug ? ['--debug', outname] : [outname],
 			{stdio: 'inherit'}

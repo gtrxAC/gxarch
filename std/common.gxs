@@ -1,13 +1,22 @@
-val SRAM 0xF000
-val RESERVED 0xFF00
-val MOUSEX 0xFF01
-val MOUSEY 0xFF02
-val MOUSEL 0xFF03
-val MOUSER 0xFF04
-val SRAM_TOGGLE 0xFF05
-val RAND 0xFF06
+; ______________________________________________________________________________
+;
+;  Reserved addresses
+; ______________________________________________________________________________
+;
+addr SRAM 0xF000
+addr RESERVED 0xFF00
+addr MOUSEX 0xFF01
+addr MOUSEY 0xFF02
+addr MOUSEL 0xFF03
+addr MOUSER 0xFF04
+addr SRAM_TOGGLE 0xFF05
+addr RAND 0xFF06
 
-
+; ______________________________________________________________________________
+;
+;  Keyboard keys
+; ______________________________________________________________________________
+;
 val K_BACKSPACE 0x08
 val K_TAB 0x09
 val K_RETURN 0x0A    val K_ENTER 0x0A
@@ -80,3 +89,19 @@ val K_DOWN 0x8E
 val K_RIGHT 0x8F
 
 val K_COUNT 0x90
+
+; ______________________________________________________________________________
+;
+;  Register names
+; ______________________________________________________________________________
+;
+reg arg0 %20
+reg arg1 %21
+reg arg2 %22
+reg arg3 %23
+reg arg4 %24
+reg arg5 %25
+reg arg6 %26
+reg arg7 %27
+reg arg8 %28
+reg arg9 %29

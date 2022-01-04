@@ -6,7 +6,7 @@
 * 32 registers
 * [24 instructions](https://github.com/gtrxAC/gxarch/wiki/Instructions)
 * 128 × 128 screen, 16 colors
-* [8 example programs and counting!](https://github.com/gtrxAC/gxarch/tree/main/examples)
+* [11 example programs and counting!](https://github.com/gtrxAC/gxarch/tree/main/examples)
 
 
 ## Example

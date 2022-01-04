@@ -12,19 +12,23 @@
 ;
 ; %0 = scroll counter
 ; %1 = increment (constant 1)
-; %2 = draw location (constant 0)
+; %2 = draw location (constant 0, doesn't need to be set)
 ; %3 = screen and tileset size (constant 128)
 
 dat main         ; program entry point
 
 main:
-	set %1 1
-	set %2 0
-	set %3 128
+	reg scr %0
+	reg inc %1
+	reg loc %2
+	reg sz %3
+
+	set inc 1
+	set sz 128
 
 loop:
-	add %0 %1 %0    ; increment scroll counter
-	dw  %0 %0 %3 %3 ; take a 128×128 area from the tileset at %0, %0
-	at  %2 %2       ; and draw it at 0, 0
-	end             ; draw frame
+	add scr inc scr   ; increment scroll counter
+	dw scr scr sz sz  ; take a 128×128 area from the tileset at %0, %0
+	at loc loc        ; and draw it at 0, 0
+	end               ; draw frame
 	jmp loop

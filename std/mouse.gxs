@@ -1,7 +1,7 @@
-val MOUSELTIME 0xFF07   ; how many frames has left/right mouse been down
-val MOUSERTIME 0xFF08
-val MOUSELPRESS 0xFF09  ; has left/right mouse been released this frame
-val MOUSERPRESS 0xFF0A
+addr MOUSELTIME 0xFF07   ; how many frames has left/right mouse been down
+addr MOUSERTIME 0xFF08
+addr MOUSELPRESS 0xFF09  ; has left/right mouse been released this frame
+addr MOUSERPRESS 0xFF0A
 
 ; ______________________________________________________________________________
 ;

@@ -17,25 +17,25 @@ val PRINT_HEIGHT 8
 .include std/print.gxs
 
 val WWIDTH 128     ; save RAM is 4K(0xFxxx) - 256(reserved 0xFFxx) = 3840 bytes
-val WHEIGHT 30     ; we use the first 30 bytes of SRAM for variables, so 128 × 30 world size
+val WHEIGHT 29     ; we use the first 30 bytes of SRAM for variables, so 128 × 29 world size
 val BLOCKSIZE 10
 val SPEED 2        ; player can move every SPEED frames (1 block per frame is too fast)
 val BLOCKCOUNT 12
 val CLOUDSPEED 10  ; clouds move by 1 pixel every CLOUDSPEED frames
-val COORDSTRX 4    ; addresses of where numbers are placed into the coordstr string
-val COORDSTRY 11
+addr COORDSTRX 0x0004    ; addresses of where numbers are placed into the coordstr string
+addr COORDSTRY 0x000B
 
-val playerx 0xF000
-val playery 0xF001
-val curblock 0xF002
-val worldready 0xF003   ; if 0, world is not ready and needs to be generated
-val framecount 0xF004
-val scrollcount 0xF005  ; for scrolling clouds
-val blocks 0xF01D       ; starting address of block array
-val zdowntime 0xE000    ; how long Z/X have been down for (to prevent key repeat)
-val xdowntime 0xE001
-val mousexblock 0xE002  ; what block coordinates is the mouse pointing at
-val mouseyblock 0xE003
+addr playerx 0xF000
+addr playery 0xF001
+addr curblock 0xF002
+addr worldready 0xF003   ; if 0, world is not ready and needs to be generated
+addr framecount 0xF004
+addr scrollcount 0xF005  ; for scrolling clouds
+addr blocks 0xF01D       ; starting address of block array
+addr zdowntime 0xE000    ; how long Z/X have been down for (to prevent key repeat)
+addr xdowntime 0xE001
+addr mousexblock 0xE002  ; what block coordinates is the mouse pointing at
+addr mouseyblock 0xE003
 
 .include examples/blockgame/worldgen.gxs
 

@@ -13,20 +13,20 @@ val BG2_H 16
 
 render:
 	ld %0 scrollcount  ; draw clouds at current scroll count
-	set %1 lo(BG_Y)    ; this works similarly to the drawscroll example, but
-	set %2 lo(BG_W)    ; only horizontally scrolling and much slower, using
-	set %3 lo(BG_H)    ; two counters (framecount and scrollcount), see
+	set %1 BG_Y        ; this works similarly to the drawscroll example, but
+	set %2 BG_W        ; only horizontally scrolling and much slower, using
+	set %3 BG_H        ; two counters (framecount and scrollcount), see
 	dw %0 %1 %2 %3     ; renderbg2loop
 	set %1 0
 	at %1 %1
 
 	set %0 0
-	set %1 lo(BG2_Y)
-	set %2 lo(BG2_W)
-	set %3 lo(BG2_H)
+	set %1 BG2_Y
+	set %2 BG2_W
+	set %3 BG2_H
 	dw %0 %1 %2 %3
 
-	set %1 lo(BG_H)
+	set %1 BG_H
 	set %2 128
 renderbg2loop:
 	at %0 %1
@@ -38,8 +38,8 @@ renderbg2loop:
 	add %0 %1 %3
 	st %3 framecount
 
-	set %0 lo(CLOUDSPEED)  ; if framecount is divisible by CLOUDSPEED,
-	div %3 %0 %29          ; increment cloud scroll count
+	set %0 CLOUDSPEED     ; if framecount is divisible by CLOUDSPEED,
+	div %3 %0 %29         ; increment cloud scroll count
 	set %0 0
 	.eqj %r %0 incscroll
 	jmp noincscroll
@@ -58,10 +58,10 @@ noincscroll:
 	; %8 %9 = current block address
 	; %10 = current block value
 	set %11 1              ; constants
-	set %12 lo(BLOCKSIZE)
+	set %12 BLOCKSIZE
 	set %13 13
-	set %14 lo(WWIDTH)
-	set %15 lo(BLOCKS_Y)
+	set %14 WWIDTH
+	set %15 BLOCKS_Y
 	; %16 = immediate
 	; %17 %18 = current draw location
 	; %19 = current tileset X to draw
@@ -75,7 +75,7 @@ renderxloop:
 	set %8 hi(blocks)  ; block address = starting address
 	set %9 lo(blocks)
 
-	add %5 %7 %16   ; block address += (iterator y + player y) * world width
+	add %5 %7 %16    ; block address += (iterator y + player y) * world width
 	mul %16 %14 %16
 	add %8 %h %8
 	add %9 %16 %9
@@ -89,7 +89,7 @@ renderxloop:
 	set %16 0
 	.eqj %10 %16 renderskip
 
-	set %16 lo(BLOCKCOUNT)   ; skip drawing if block id exceeds block count
+	set %16 BLOCKCOUNT       ; skip drawing if block id exceeds block count
 	sub %16 %11 %16
 	.gtj %10 %16 renderskip
 
@@ -111,9 +111,9 @@ pointedatx:
 	jmp notpointedat
 
 pointedaty:
-	set %0 lo(SEL_BORDER_X)  ; if pointed at, draw an indicator
-	set %1 lo(SEL_BORDER_Y)
-	set %2 lo(BLOCKSIZE)
+	set %0 SEL_BORDER_X  ; if pointed at, draw an indicator
+	set %1 SEL_BORDER_Y
+	set %2 BLOCKSIZE
 	dw %0 %1 %2 %2
 	mul %4 %12 %23
 	mul %5 %12 %24
@@ -126,33 +126,33 @@ notpointedat:
 	add %5 %11 %5            ; next Y iteration if render not finished
 	.ltj %5 %13 renderyloop
 
-	ld %20 playerx         ; format player X/Y into coordinate string
-	set %21 hi(COORDSTRX)
-	set %22 lo(COORDSTRX)
+	ld arg0 playerx         ; format player X/Y into coordinate string
+	set arg1 hi(COORDSTRX)
+	set arg2 lo(COORDSTRX)
 	js int2str
-	ld %20 playery
-	set %21 hi(COORDSTRY)
-	set %22 lo(COORDSTRY)
+	ld arg0 playery
+	set arg1 hi(COORDSTRY)
+	set arg2 lo(COORDSTRY)
 	js int2str
 
-	set %20 hi(coordstr)  ; print coordinate string in the top left corner
-	set %21 lo(coordstr)
-	set %22 0
-	set %23 2
+	set arg0 hi(coordstr)  ; print coordinate string in the top left corner
+	set arg1 lo(coordstr)
+	set arg2 0
+	set arg3 2
 	js print
 
-	set %0 lo(BLOCK_BORDER_X)  ; draw border for current block
-	set %1 lo(BLOCK_BORDER_Y)
-	set %2 lo(BLOCK_BORDER_SIZE)
+	set %0 BLOCK_BORDER_X     ; draw border for current block
+	set %1 BLOCK_BORDER_Y
+	set %2 BLOCK_BORDER_SIZE
 	dw %0 %1 %2 %2
 	set %0 78
 	set %1 0
 	at %0 %1
 
-	ld %0 curblock  ; draw current block
+	ld %0 curblock    ; draw current block
 	mul %0 %12 %0
-	set %1 lo(BLOCKS_Y)
-	set %2 lo(BLOCKSIZE)
+	set %1 BLOCKS_Y
+	set %2 BLOCKSIZE
 	dw %0 %1 %2 %2
 	set %0 79
 	set %1 1

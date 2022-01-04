@@ -18,11 +18,14 @@ val CANVASH 30
 val SCALE 4        ; pixels are always 4× scaled (128 × 120)
 val COLORCOUNT 15
 
-val ldowntime 0xE000  ; how long have left/right keys been pressed
-val rdowntime 0xE001
-val curcolor 0xE002
+addr ldowntime 0xE000  ; how long have left/right keys been pressed
+addr rdowntime 0xE001
+addr curcolor 0xE002
 
 dat main
+
+; ______________________________________________________________________________
+;
 main:
 	set %0 1           ; enable SRAM
 	st %0 SRAM_TOGGLE
@@ -31,7 +34,7 @@ main:
 
 
 update:
-	.keyj lo(K_LEFT) moveleft  ; if left key down, select previous color
+	.keyj K_LEFT moveleft  ; if left key down, select previous color
 	jmp nomoveleft
 
 moveleft:
@@ -55,7 +58,7 @@ nomoveleft:
 
 
 checkmoveright:
-	.keyj lo(K_RIGHT) moveright  ; if right key down, select next color
+	.keyj K_RIGHT moveright  ; if right key down, select next color
 	jmp nomoveright
 
 moveright:
@@ -63,7 +66,7 @@ moveright:
 	cj %0 checkmouse
 
 	ld %0 curcolor         ; if color is already COLORCOUNT - 1, ignore
-	set %1 lo(COLORCOUNT)
+	set %1 COLORCOUNT
 	set %2 1
 	sub %1 %2 %1
 	.eqj %0 %1 checkmouse
@@ -92,11 +95,11 @@ mousedown:
 
 	ld %2 MOUSEX      ; get mouse coordinates divided by scale
 	ld %3 MOUSEY      ; to get X/Y of pixel pointed at
-	set %4 lo(SCALE)
+	set %4 SCALE
 	div %2 %4 %2
 	div %3 %4 %3
 
-	set %5 lo(CANVASW)  ; add (pixel Y * canvas width) to address
+	set %5 CANVASW  ; add (pixel Y * canvas width) to address
 	mul %3 %5 %1
 	add %0 %h %0
 
@@ -105,59 +108,72 @@ mousedown:
 
 	ld %2 curcolor  ; write current color to address
 	sti %2 %0
-
-
-draw:
-	set %0 0            ; iterator X/Y
-	set %1 0
-	set %2 0            ; current pixel address
-	set %3 0
-	set %4 1            ; constants
-	set %5 lo(SCALE)
-	set %6 lo(CANVASW)
-	set %7 lo(CANVASH)
+; ______________________________________________________________________________
+;
+draw: {
+	reg x %0
+	reg y %1
+	reg curh %2
+	reg curl %3
+	reg _1 %4
+	reg scale %5
+	reg w %6
+	reg h %7
+	reg _0 %8
+	reg px %9
+	reg dstx %10
+	reg dsty %11
+	
+	set x 0            ; iterator X/Y
+	set y 0
+	set curh 0            ; current pixel address
+	set curl 0
+	set _1 1            ; constants
+	set scale SCALE
+	set w CANVASW
+	set h CANVASH
 	; %8 = constant 0
 	; %9 = loaded pixel value
 	; %10 %11 = iterator X/Y * scale (draw destination)
 
 drawyloop:
-	set %0 0
+	set x 0
 
 drawxloop:
-	set %2 hi(SRAM)  ; init address to read (0xF000 start of SRAM)
-	set %3 lo(SRAM)
+	set curh hi(SRAM)  ; init address to read (0xF000 start of SRAM)
+	set curl lo(SRAM)
 
-	mul %1 %6 %3  ; add (pixel Y * canvas width) to address
-	add %2 %h %2
+	mul y w curl      ; add (pixel Y * canvas width) to address
+	add curh %h curh
 
-	add %3 %0 %3  ; add pixel X to address
-	add %2 %h %2
+	add curl x curl   ; add pixel X to address
+	add curh %h curh
 
-	ldi %9 %2            ; load pixel from address
-	.eqj %9 %8 drawnext  ; if black pixel, skip
+	ldi px curh          ; load pixel from address
+	.eqj px _0 drawnext  ; if black pixel, skip
 
-	mul %9 %5 %9  ; multiply color value by scale to get the source X from tileset
+	mul px scale px  ; multiply color value by scale to get the source X from tileset
 
-	dw %9 %8 %5 %5  ; draw pixel
-	mul %0 %5 %10
-	mul %1 %5 %11
-	at %10 %11
+	dw px _0 scale scale  ; draw pixel
+	mul x scale dstx
+	mul y scale dsty
+	at dstx dsty
 
 drawnext:
-	add %0 %4 %0          ; next X/Y loop iteration
-	.ltj %0 %6 drawxloop
+	add x _1 x          ; next X/Y loop iteration
+	.ltj x w drawxloop
 
-	add %1 %4 %1
-	.ltj %1 %7 drawyloop
+	add y _1 y
+	.ltj y h drawyloop
 
-	ld %0 curcolor    ; draw currently selected color below canvas
-	set %1 8
-	mul %0 %1 %0
-	set %1 lo(SCALE)
-	set %2 8
-	dw %0 %1 %2 %2
-	set %0 120
-	at %8 %0          ; %8 is always zero
-
+	ld x curcolor     ; draw currently selected color below canvas
+	set y 8
+	mul x y x
+	set y SCALE
+	set curh 8
+	dw x y curh curh
+	set x 120
+	at _0 x
+}
 	end
 	jmp update

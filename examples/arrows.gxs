@@ -26,12 +26,16 @@ main:
 	; %6 = is rollover enabled? 1 = yes, 0 = no
 	; %7 = player facing direction
 	; %8 = screen size, constant 128
-	; %9 = frame counter
-	set %4 56
-	set %5 56
-	set %6 0
-	set %8 128
-	set %9 0
+	reg pX %4
+	reg pY %5
+	reg ro %6
+	reg dir %7
+	reg SCRSZ %8
+
+	set pX 56
+	set pY 56
+	set ro 0
+	set SCRSZ 128
 
 ; ______________________________________________________________________________
 ;
@@ -46,18 +50,18 @@ loop:
 	set %0 0
 	set %1 1
 	set %2 112
-	.keyjs lo(K_w) moveup
-	.keyjs lo(K_a) moveleft
-	.keyjs lo(K_s) movedown
-	.keyjs lo(K_d) moveright
-	.keyjs lo(K_W) moveup
-	.keyjs lo(K_A) moveleft
-	.keyjs lo(K_S) movedown
-	.keyjs lo(K_D) moveright
-	.keyjs lo(K_UP) moveup
-	.keyjs lo(K_LEFT) moveleft
-	.keyjs lo(K_DOWN) movedown
-	.keyjs lo(K_RIGHT) moveright
+	.keyjs K_w moveup
+	.keyjs K_a moveleft
+	.keyjs K_s movedown
+	.keyjs K_d moveright
+	.keyjs K_W moveup
+	.keyjs K_A moveleft
+	.keyjs K_S movedown
+	.keyjs K_D moveright
+	.keyjs K_UP moveup
+	.keyjs K_LEFT moveleft
+	.keyjs K_DOWN movedown
+	.keyjs K_RIGHT moveright
 
 ; ______________________________________________________________________________
 ;
@@ -70,16 +74,21 @@ loop:
 ;  %12 = constant 0
 ; ______________________________________________________________________________
 ;
-draw:
-	set %10 0
-	set %11 8
-	set %12 0
+draw: {
+	reg y %10
+	reg inc %11
+	reg _0 %12
+	
+	set y 0
+	set inc 8
+	set _0 0
 drawbgloop:
-	dw %12 %12 %8 %11
-	at %12 %10
+	dw _0 _0 SCRSZ inc
+	at _0 y
 
-	add %10 %11 %10
-	.ltj %10 %8 drawbgloop
+	add y inc y
+	.ltj y SCRSZ drawbgloop
+}
 
 ; ______________________________________________________________________________
 ;
@@ -89,18 +98,20 @@ drawbgloop:
 ;  %11 = player size, constant 16
 ; ______________________________________________________________________________
 ;
-	set %10 32
-	set %11 16
+{
+	reg SY %10
+	reg PSZ %11
 
-	dw %7 %10 %11 %11
-	at %4 %5
+	set SY 32
+	set PSZ 16
+
+	dw dir SY PSZ PSZ
+	at pX pY
 
 	js drawtext
-
-	set %0 1      ; increment frame counter and draw frame
-	add %9 %0 %9
 	end
 	jmp loop
+}
 
 ; ______________________________________________________________________________
 ;
@@ -108,17 +119,17 @@ drawbgloop:
 ; ______________________________________________________________________________
 ;
 drawtext:
-	set %22 0        ; set draw X/Y to 0, these are the same regardless of which
-	set %23 0        ; string we are printing
-	cj %6 drawtext2  ; if rollover is enabled, draw the "disable" string instead
+	set arg2 0       ; set draw X/Y to 0, these are the same regardless of which
+	set arg3 0       ; string we are printing
+	cj ro drawtext2  ; if rollover is enabled, draw the "disable" string instead
 
-	set %20 hi(enablestr)
-	set %21 lo(enablestr)
+	set arg0 hi(enablestr)
+	set arg1 lo(enablestr)
 	js print
 	ret
 drawtext2:
-	set %20 hi(disablestr)
-	set %21 lo(disablestr)
+	set arg0 hi(disablestr)
+	set arg1 lo(disablestr)
 	js print
 	ret
 
@@ -132,58 +143,64 @@ drawtext2:
 ;  %2 = screen size - player size, constant 112
 ; ______________________________________________________________________________
 ;
+{
+reg _0 %0
+reg spd %1
+reg _112 %2
+
 moveup:
-	set %7 lo(D_UP)       ; set sprite movement direction
-	sub %5 %1 %5          ; decrement player Y
-	.eqj %5 %0 moveupend  ; if Y reached 0, goto moveupend
+	set dir D_UP          ; set sprite movement direction
+	sub pY spd pY         ; decrement player Y
+	.eqj pY _0 moveupend  ; if Y reached 0, goto moveupend
 	ret
 moveupend:
-	cj %6 moveupro  ; if rollover is enabled, goto moveupro
-	add %5 %1 %5    ; else, cancel movement
+	cj ro moveupro  ; if rollover is enabled, goto moveupro
+	add pY spd pY   ; else, cancel movement
 	ret
 moveupro:
-	.mov %2 %5  ; roll over to bottom of screen
+	.mov _112 pY  ; roll over to bottom of screen
 	ret
 	
 movedown:
-	set %7 lo(D_DOWN)
-	add %5 %1 %5
-	.gtj %5 %2 movedownend
+	set dir D_DOWN
+	add pY spd pY
+	.gtj pY _112 movedownend
 	ret
 movedownend:
-	cj %6 movedownro
-	sub %5 %1 %5
+	cj ro movedownro
+	sub pY spd pY
 	ret
 movedownro:
-	set %5 1
+	set pY 1
 	ret
 	
 moveleft:
-	set %7 lo(D_LEFT)
-	sub %4 %1 %4
-	.eqj %4 %0 moveleftend
+	set dir D_LEFT
+	sub pX spd pX
+	.eqj pX _0 moveleftend
 	ret
 moveleftend:
-	cj %6 moveleftro
-	add %4 %1 %4
+	cj ro moveleftro
+	add pX spd pX
 	ret
 moveleftro:
-	.mov %2 %4
+	.mov _112 pX
 	ret
 	
 moveright:
-	set %7 lo(D_RIGHT)
-	add %4 %1 %4
-	.gtj %4 %2 moverightend
+	set dir D_RIGHT
+	add pX spd pX
+	.gtj pX _112 moverightend
 	ret
 moverightend:
-	cj %6 moverightro
-	sub %4 %1 %4
+	cj ro moverightro
+	sub pX spd pX
 	ret
 moverightro:
-	set %4 1
+	set pX 1
 	ret
+}
 
 togglerollover:
-	xor %6 %0 %6
+	xor ro %0 ro
 	ret

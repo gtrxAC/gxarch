@@ -28,13 +28,13 @@ print:
 	cj %24 printdraw  ; if not null term, continue
 	ret
 printdraw:
-	set %0 lo(PRINT_CHARSPERLINE)  ; source Y = char / chars per line
+	set %0 PRINT_CHARSPERLINE  ; source Y = char / chars per line
 	div %24 %0 %26
-	set %0 0                       ; source X = division remainder
+	set %0 0                   ; source X = division remainder
 	add %r %0 %25
 
-	set %0 lo(PRINT_WIDTH)
-	set %1 lo(PRINT_HEIGHT)
+	set %0 PRINT_WIDTH
+	set %1 PRINT_HEIGHT
 	mul %25 %0 %25           ; source X *= character width
 	mul %26 %1 %26           ; source Y *= character height
 
