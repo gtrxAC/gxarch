@@ -10,25 +10,26 @@
 
 
 ## Example
-This example is further explained [here](https://github.com/gtrxAC/gxarch/blob/main/examples/drawscroll.gxs).
+This example is further explained [here](https://github.com/gtrxAC/gxarch/blob/main/examples/hello.gxs).
+```asm
+dat main
+
+string: dat "Hello world!"
+
+val PRINT_CHARSPERLINE 32
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
+.include std/print.gxs
+						   
+main:
+	set %20 hi(string)
+	set %21 lo(string)
+	set %22 0
+	set %23 0
+	js print
+	end
+	jmp main
 ```
-; %0: scroll counter
-
-dat main            ; program entry point
-
-main:               ; define constants
-    set %1 1        ; %1: scroll increment
-    set %2 0        ; %2: draw location
-    set %3 128      ; %3: screen size
-
-loop:
-    add %0 %1 %0    ; increment scroll counter
-    dw  %0 %0 %3 %3 ; take a 128×128 area from the tileset at %0, %0
-    at  %2 %2       ; and draw it at 0, 0
-    end             ; draw frame
-    jmp loop
-```
-![example](assets/example.gif)
 
 
 # Building

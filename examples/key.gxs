@@ -27,7 +27,7 @@ loop:
 
 	set %1 1            ; next key
 	add %0 %1 %0
-	set %1 lo(K_COUNT)
+	set %1 K_COUNT
 	.ltj %0 %1 loop
 
 loopend:

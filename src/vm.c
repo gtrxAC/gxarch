@@ -141,11 +141,12 @@ void _step(struct VM *vm) {
 		
 		case OP_DIV: { \
 			u8 first = vm->reg[consume()];
-			u8 second = vm->reg[consume()];
-			if (!second) err("Division by zero at 0x%.4X", vm->pc - 3);
+			u8 second = consume();
+			u8 secondval = vm->reg[second];
+			if (!secondval) err("Division by zero at 0x%.4X (%%%d is %d)", vm->pc - 3, second, secondval);
 
-			vm->reg[consume()] = first / second;
-			vm->reg[REMAINDER] = first % second;
+			vm->reg[consume()] = first / secondval;
+			vm->reg[REMAINDER] = first % secondval;
 			break;
 		}
 		

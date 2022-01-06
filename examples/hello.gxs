@@ -24,10 +24,10 @@ val PRINT_HEIGHT 8         ; The default tileset assets/tileset.png has 32 chara
 						   ; about how tilesets work.
 						   
 main:
-	set arg0 hi(string)  ; Print (and many other subroutines) need us to put parameters
-	set arg1 lo(string)  ; in registers, starting at %20. Registers are like small memory
-	set arg2 0           ; slots that can hold temporary data. gxarch has 32 of them.
-	set arg3 0           ; Check std/print.gxs to see how the print subroutine works.
-	js print             ; Call print subroutine.
-	end                  ; The end instruction draws a frame and clears the next frame with
-	jmp main             ; black, so we need to run our program in an infinite loop.
+	set %20 hi(string)  ; Print (and many other subroutines) need us to put parameters
+	set %21 lo(string)  ; in registers, starting at %20. Registers are like small memory
+	set %22 0           ; slots that can hold temporary data. gxarch has 32 of them.
+	set %23 0           ; Check std/print.gxs to see how the print subroutine works.
+	js print            ; Call print subroutine.
+	end                 ; The end instruction draws a frame and clears the next frame with
+	jmp main            ; black, so we need to run our program in an infinite loop.
