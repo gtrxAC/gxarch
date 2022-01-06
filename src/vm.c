@@ -143,7 +143,9 @@ void _step(struct VM *vm) {
 			u8 first = vm->reg[consume()];
 			u8 second = consume();
 			u8 secondval = vm->reg[second];
-			if (!secondval) err("Division by zero at 0x%.4X (%%%d is %d)", vm->pc - 3, second, secondval);
+			
+			if (!secondval)
+				err("Division by zero at 0x%.4X (%%%d is 0)", vm->pc - 3, second);
 
 			vm->reg[consume()] = first / secondval;
 			vm->reg[REMAINDER] = first % secondval;

@@ -4,12 +4,13 @@
 ; Date: 2021-12-12
 ; Author: gtrxAC
 
+; This example is still very work in progress. It doesn't work with the current assembler and doesn't work on web.
+
 ; What works: drawing and closing windows
 ; What doesn't work: moving, resizing, focusing and creating new windows
 ; Note: You'll need to create your own save file to use this! Otherwise you'll
 ;       just get a tiled wallpaper. There is a wm.sav.bin which you can rename
 ;       to wm.sav.
-; Note: doesn't work on web for some reason
 
 dat main
 

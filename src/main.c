@@ -24,6 +24,7 @@ struct VM *vm;
 bool showfps = false;
 char message[64] = {0};
 u8 msgtime = 0;
+int speed = 60;
 
 // _____________________________________________________________________________
 //
@@ -180,13 +181,18 @@ int main(int argc, char **argv) {
 			puts("Keybinds:");
 			puts("Ctrl + O      Open ROM");
 			puts("Ctrl + F      Show/hide FPS");
+			puts("Ctrl + R      Reset");
 			puts("End           Exit, creates a memory dump in debug mode");
 			puts("Page Up/Down  Resize screen");
 			puts("Pause         Pause/continue emulation");
+			puts("Insert        Fast forward");
 			exit(EXIT_SUCCESS);
 		} else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
 			vm->debug = true;
 		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nosave")) {
+			vm->nosave = true;
+		} else if (!strcmp(argv[i], "-dn") || !strcmp(argv[i], "-nd")) {
+			vm->debug = true;
 			vm->nosave = true;
 		} else {
 			// We can't use loadfile() here because window is not initialized
@@ -198,7 +204,7 @@ int main(int argc, char **argv) {
 	vm->scale = 4;
 	SetTraceLogLevel(vm->debug ? LOG_INFO : LOG_WARNING);
 	InitWindow(512, 512, "gxVM");
-	SetTargetFPS(60);
+	SetTargetFPS(speed);
 
 	// ESC is a keycode in gxarch, it is also used to exit a raylib app by default
 	// End can be used to exit gxarch, it also creates a memory dump in debug mode
@@ -281,14 +287,47 @@ int main(int argc, char **argv) {
 					break;
 			}
 		}
+
+		else if (IsKeyPressed(KEY_INSERT)) {
+			switch (speed) {
+				case 60:
+					speed = 120;
+					SHOWMSG("2x speed");
+					SetWindowTitle("gxVM - running 2x");
+					break;
+
+				case 120:
+					speed = 240;
+					SHOWMSG("4x speed");
+					SetWindowTitle("gxVM - running 4x");
+					break;
+
+				case 240:
+					speed = 60;
+					SHOWMSG("normal speed");
+					SetWindowTitle("gxVM - running");
+					break;
+			}
+			SetTargetFPS(speed);
+		}
 		
 		else if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL))) {
 			if (IsKeyPressed(KEY_O)) {
-				char *file = tinyfd_openFileDialog("Open ROM", NULL, 0, NULL, NULL, 0);
+				char const *filter[1] = {"*.gxa"};
+				char path[512];
+				strcpy(path, GetWorkingDirectory());
+				strcat(path, "/*");
+
+				char *file = tinyfd_openFileDialog("Open ROM", path, 1, filter, "gxarch ROMs", 0);
 				if (file != NULL) loadfile(file);
 			}
 
-			if (IsKeyPressed(KEY_F)) showfps = !showfps;
+			else if (IsKeyPressed(KEY_F)) showfps = !showfps;
+
+			else if (IsKeyPressed(KEY_R)) {
+				loadfile(vm->filename);
+				SHOWMSG("reset");
+			}
 		}
 
 		// _____________________________________________________________________

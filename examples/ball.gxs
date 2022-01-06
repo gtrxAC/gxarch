@@ -22,11 +22,11 @@ reg x %10
 reg y %11
 reg dx %12
 reg dy %13
-reg redge %14
-reg bedge %15
+reg REDGE %14
+reg BEDGE %15
 reg anim %16
 reg _0 %17
-reg bsz %18
+reg BSZ %18
 
 main:
 	set %0 2
@@ -37,25 +37,25 @@ main:
 
 	set dx 1
 	set dy 1
-	set redge 126  ; screen edges are not the same as screen resolution, because:
-	set bedge 118  ; - if it were 128, the ball would be partially off screen when
-	set bsz 3      ;   hitting the bottom and right edges
+	set REDGE 126  ; screen edges are not the same as screen resolution, because:
+	set BEDGE 118  ; - if it were 128, the ball would be partially off screen when
+	set BSZ 3      ;   hitting the bottom and right edges
 				   ; - if both X and Y were the same, the ball's movement would
-				   ;   always be the same
+				   ;   always be the same and very repetitive
 
 update:
 	ld %0 MOUSEL
 	cjs %0 gotomouse
 
 	add x dx x           ; ball X += X delta
-	.gtjs x redge right  ; if hit right edge, set delta X to -1 (255 in unsigned)
+	.gtjs x REDGE right  ; if hit right edge, set delta X to -1 (255 in unsigned)
 	.eqjs x _0 left      ; if hit left edge, set delta X to 1
 	add y dy y           ; ball Y += Y delta
-	.gtjs y bedge down     ; if hit bottom edge, set delta Y to -1
+	.gtjs y BEDGE down   ; if hit bottom edge, set delta Y to -1
 	.eqjs y _0 up        ; if hit top edge, set delta Y to 1
 
 draw:
-	dw anim _0 bsz bsz
+	dw anim _0 BSZ BSZ
 	at x y
 	end
 	jmp update
@@ -82,7 +82,7 @@ up:
 
 nextframe:
 	set %1 24
-	add anim bsz anim
+	add anim BSZ anim
 	.eqj anim %1 resetframe
 	ret
 
