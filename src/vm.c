@@ -18,6 +18,8 @@ const char *opnames[] = {
 // raylib doesn't have separate keycodes for upper/lowercase or most special
 // characters, but gxarch does, so we also need to check if shift is down using
 // the needshift array
+// note: this is based on physical key position in US keyboard layout and
+// doesn't adapt to other keyboard layouts
 const u16 gx2rl[0x100] = {
 	0, 0, 0, 0, 0, 0, 0, 0, // 0x00
 	KEY_BACKSPACE, KEY_TAB, KEY_ENTER, 0, 0, 0, 0, 0, // 0x08

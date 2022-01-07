@@ -1,4 +1,5 @@
 .vscode/
+examples/testing/
 node_modules/
 include/
 lib/

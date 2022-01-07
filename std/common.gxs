@@ -23,7 +23,7 @@ val K_RETURN 0x0A    val K_ENTER 0x0A
 val K_CTRL 0x11
 val K_WIN 0x12
 val K_ALT 0x13
-val K_ESC 0x1B   val K_ESCAPE 0x1B
+val K_ESC 0x1B       val K_ESCAPE 0x1B
 
 val K_SPACE 0x20
 val K_EXCLAMATION 0x21

@@ -8,8 +8,10 @@ addr MOUSERPRESS 0xFF0A
 ;  Update mouse subroutine
 ;
 ;  Notes:
-;    - This subroutine should be called every frame to update
-;      MOUSE L/R TIME/PRESS variables
+;  - This subroutine doesn't use any registers other than immediates %0 %1.
+;  - This subroutine should be called every frame to update
+;    MOUSE L/R TIME/PRESS variables.
+;  - You can test this subroutine with the mouse example.
 ; ______________________________________________________________________________
 ;
 updatemouse:
@@ -17,10 +19,10 @@ updatemouse:
 	st %0 MOUSELPRESS
 	st %0 MOUSERPRESS
 
-	ld %0 MOUSEL           ; if left mouse down, increase its down time
+	ld %0 MOUSEL          ; if left mouse down, increase its down time
 	cj %0 updmouse_ldown
 
-	ld %0 MOUSELTIME         ; if left mouse was released, set MOUSELPRESS
+	ld %0 MOUSELTIME          ; if left mouse was released, set MOUSELPRESS
 	cjs %0 updmouse_lrelease
 
 	set %0 0               ; if not down, reset down time
@@ -33,10 +35,10 @@ updmouse_ldown:
 	st %1 MOUSELTIME
 
 updmouse_lnotdown:
-	ld %0 MOUSER           ; if right mouse down, increase its down time
+	ld %0 MOUSER          ; if right mouse down, increase its down time
 	cj %0 updmouse_rdown
 
-	ld %0 MOUSERTIME         ; if right mouse was released, set MOUSERPRESS
+	ld %0 MOUSERTIME          ; if right mouse was released, set MOUSERPRESS
 	cjs %0 updmouse_rrelease
 
 	set %0 0               ; if not down, reset down time
@@ -51,7 +53,11 @@ updmouse_rdown:
 updmouse_rnotdown:
 	ret
 
-
+; ______________________________________________________________________________
+;
+;  Set mouse pressed variables (subroutines)
+; ______________________________________________________________________________
+;
 updmouse_lrelease:
 	set %0 1
 	st %0 MOUSELPRESS

@@ -3,42 +3,49 @@
 ;  Integer to string conversion subroutine
 ;
 ;  Arguments:
-;    %20 = integer to convert
+;    %20 = integer to convert (unsigned 8-bit)
 ;    %21 %22 = destination string pointer
 ;
 ;  Uses registers:
 ;    %23 = division result
 ;
 ;  Notes:
-;    - A null terminator is not added to the end of the string.
-;    - 3 digits are always used, so 1 is converted into "001".
+;  - A null terminator is not added to the end of the string.
+;  - 3 digits are always used, so 1 is converted into "001".
+;  - If the position you want to write to is not the beginning of the string
+;    pointer, you'll have to calculate the address yourself (see mouse example).
 ; ______________________________________________________________________________
 ;
+.include std/common.gxs
+
 int2str: {
-	reg divr %23
+	reg src arg0
+	reg desth arg1
+	reg destl arg2
+	reg divres %23
 
-	set %0 100        ; divide by 100 to get 3rd digit
-	div %20 %0 divr
-	set %0 0x30       ; number + 0x30 = ASCII digit of number
-	add divr %0 divr
-	sti divr %21      ; store digit into string
+	set %0 100              ; divide by 100 to get 3rd digit
+	div src %0 divres
+	set %0 0x30             ; number + 0x30 = ASCII digit of number
+	add divres %0 divres
+	sti divres desth        ; store digit into string
 
-	set %0 1          ; next character
-	add %22 %0 %22
-	add %21 %h %21
+	set %0 1                ; next character
+	add destl %0 destl
+	add desth %h desth
 
-	set %0 10         ; divide remainder by 10 to get 2nd digit
-	div %r %0 divr
-	set %0 0x30       ; ...
-	add divr %0 divr
-	sti divr %21
+	set %0 10               ; divide remainder by 10 to get 2nd digit
+	div %r %0 divres
+	set %0 0x30             ; ...
+	add divres %0 divres
+	sti divres desth
 
 	set %0 1
-	add %22 %0 %22
-	add %21 %h %21
+	add destl %0 destl
+	add desth %h desth
 
 	set %0 0x30
-	add %r %0 divr
-	sti divr %21
+	add %r %0 divres
+	sti divres desth
 	ret
 }

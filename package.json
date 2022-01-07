@@ -1,5 +1,33 @@
 {
   "dependencies": {
     "ohm-js": "^15.5.0"
-  }
+  },
+  "name": "gxasm",
+  "description": "Assembler for the gxarch fantasy computer",
+  "version": "1.0.0",
+  "main": "gxasm.js",
+  "directories": {
+    "example": "examples"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gtrxAC/gxarch.git"
+  },
+  "keywords": [
+    "gxarch",
+    "asm",
+    "assembler",
+    "assembly",
+    "language"
+  ],
+  "author": "gtrxAC",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gtrxAC/gxarch/issues"
+  },
+  "homepage": "https://github.com/gtrxAC/gxarch#readme"
 }

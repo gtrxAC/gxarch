@@ -73,9 +73,53 @@ void err(const char *fmt, ...) {
 		}
 	}
 	
-	tinyfd_notifyPopup("Error", buf, "error");
+	tinyfd_messageBox("Error", buf, "ok", "error", 1);
 	fprintf(stderr, "%s\n", buf);
 	exit(EXIT_FAILURE);
+}
+
+// Ask for an address and value to write to memory.
+// This has to be in a separate function so we can return to break out of both loops.
+void debugwrite(void) {
+	u16 addr = 0;
+	u8 val = 0;
+	while (true) {
+		char *input = tinyfd_inputBox(
+			"Debug write", "Input address to write to (hex/dec/oct):", "");
+
+		if (input == NULL) return;
+		addr = strtoul(input, NULL, 0);
+		if (errno != ERANGE) break;
+	}
+	while (true) {
+		char *input = tinyfd_inputBox(
+			"Debug write", "Input value to write (hex/dec/oct):", "");
+
+		if (input == NULL) return;
+		val = strtoul(input, NULL, 0);
+		if (errno != ERANGE) break;
+	}
+	vm->mem[addr] = val;
+}
+
+// Ask for an address and show its value to the user.
+void debugread(void) {
+	u16 addr = 0;
+	while (true) {
+		char *input = tinyfd_inputBox(
+			"Debug read", "Input address to read (hex/dec/oct):", "");
+
+		if (input == NULL) return;
+		addr = strtoul(input, NULL, 0);
+		if (errno != ERANGE) break;
+	}
+
+	char msgstr[64];
+	sprintf(
+		msgstr, "Value at 0x%.4X (%d):\n0x%.2X (%d)",
+		addr, addr, vm->mem[addr], vm->mem[addr]
+	);
+	tinyfd_messageBox("Debug read", msgstr, "ok", "info", 1);
 }
 
 #define SHOWMSG(...)\
@@ -112,6 +156,7 @@ void loadfile(char *name) {
 	load();
 	vm->mem[RAND] = GetRandomValue(0, 0xFF);
 
+	for (int i = 0; i < 32; i++) vm->reg[i] = 0;
 	vm->pc = get16(0x0000);
 
 	UnloadFileData(file);
@@ -157,7 +202,11 @@ void loadfile(char *name) {
 	}
 
 	free(imgname);
-	SetWindowTitle("gxVM - running");
+	switch (speed) {
+		case 60: SetWindowTitle("gxVM - running"); break;
+		case 120: SetWindowTitle("gxVM - running 2x"); break;
+		case 240: SetWindowTitle("gxVM - running 4x"); break;
+	}
 	state = ST_RUNNING;
 }
 
@@ -181,7 +230,9 @@ int main(int argc, char **argv) {
 			puts("Keybinds:");
 			puts("Ctrl + O      Open ROM");
 			puts("Ctrl + F      Show/hide FPS");
-			puts("Ctrl + R      Reset");
+			puts("Ctrl + R      Debug read memory from address");
+			puts("Ctrl + S      Debug write value to address");
+			puts("Home          Reset");
 			puts("End           Exit, creates a memory dump in debug mode");
 			puts("Page Up/Down  Resize screen");
 			puts("Pause         Pause/continue emulation");
@@ -196,6 +247,7 @@ int main(int argc, char **argv) {
 			vm->nosave = true;
 		} else {
 			// We can't use loadfile() here because window is not initialized
+			// (we don't want to init window in case the arguments have --help)
 			// Instead, the filename string is checked before the main loop.
 			strcpy(vm->filename, argv[i]);
 		}
@@ -263,6 +315,11 @@ int main(int argc, char **argv) {
 			SHOWMSG("%d x %d", SCREENW * vm->scale, SCREENH * vm->scale);
 		}
 
+		else if (IsKeyPressed(KEY_HOME)) {
+			loadfile(vm->filename);
+			SHOWMSG("reset");
+		}
+
 		else if (IsKeyPressed(KEY_END)) {
 			if (vm->debug) err("User initiated error");
 			else exit(EXIT_SUCCESS);
@@ -323,11 +380,8 @@ int main(int argc, char **argv) {
 			}
 
 			else if (IsKeyPressed(KEY_F)) showfps = !showfps;
-
-			else if (IsKeyPressed(KEY_R)) {
-				loadfile(vm->filename);
-				SHOWMSG("reset");
-			}
+			else if (IsKeyPressed(KEY_R)) debugread();
+			else if (IsKeyPressed(KEY_S)) debugwrite();
 		}
 
 		// _____________________________________________________________________

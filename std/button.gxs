@@ -1,38 +1,48 @@
 ; ______________________________________________________________________________
 ;
-; Button
-; Draws a button with a different image depending on if it's hovered or pressed,
-; and returns true if it's pressed.
+;  Button
+;  Draws a button with a different image depending on if it's hovered or
+;  pressed, and returns true if it's pressed.
 ;
-; Arguments:
-;   %20 = X location
-;   %21 = Y location
-;   %22 = image source X
-;   %23 = image source Y
-;   %24 = image source width
-;   %25 = image source height
-;   %26 = return value (has the button been pressed)
+;  Arguments:
+;    %20 = X location
+;    %21 = Y location
+;    %22 = image source X
+;    %23 = image source Y
+;    %24 = image source width
+;    %25 = image source height
+;    %26 = return value (has the button been pressed)
 ;
-; Notes:
-; - The button images should be stacked on top of each other in the tileset, the
-;   hovered button under the normal button and the pressed button under the
-;   hovered button.
+;  Notes:
+;  - The button images should be stacked on top of each other in the tileset,
+;    the hovered button under the normal button and the pressed button under the
+;    hovered button.
 ; ______________________________________________________________________________
 ;
-button:
-	set %26 0
+.include std/common.gxs
+
+button: {
+	reg x arg0
+	reg y arg1
+	reg sx arg2
+	reg sy arg3
+	reg w arg4
+	reg h arg5
+	reg result arg6
+
+	set result 0
 
 	ld %0 MOUSEX
-	.ltj %0 %20 button_draw
+	.ltj %0 x button_draw
 	
-	add %20 %24 %3
-	.gtj %0 %3 button_draw
+	add x w %1
+	.gtj %0 %1 button_draw
 
 	ld %0 MOUSEY
-	.ltj %0 %21 button_draw
+	.ltj %0 y button_draw
 
-	add %21 %25 %3
-	.gtj %0 %3 button_draw
+	add y h %1
+	.gtj %0 %1 button_draw
 
 	ld %0 MOUSEL
 	cj %0 button_down
@@ -40,18 +50,19 @@ button:
 	ld %0 MOUSELPRESS
 	cj %0 button_press
 
-	add %23 %25 %23
+	add sy h sy
 	jmp button_draw
 
 button_down:
-	add %23 %25 %23
-	add %23 %25 %23
+	add sy h sy
+	add sy h sy
 	jmp button_draw
 
 button_press:
-	set %26 1
+	set result 1
 
 button_draw:
-	dw %22 %23 %24 %25
-	at %20 %21
+	dw sx sy w h
+	at x y
 	ret
+}

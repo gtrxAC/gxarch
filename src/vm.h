@@ -50,7 +50,7 @@ struct VM {
 	u8 scale;
 };
 
-enum Instruction {
+enum Opcode {
 	OP_NOP, OP_SET, OP_LD, OP_LDI, OP_ST, OP_STI,
 	OP_ADD, OP_SUB, OP_MUL, OP_DIV,
 	OP_AND, OP_OR, OP_XOR,

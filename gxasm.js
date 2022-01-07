@@ -1,3 +1,5 @@
+'use strict';
+
 const ohm = require('ohm-js');
 const fs = require('fs');
 const macros = require('./macros');
@@ -12,6 +14,8 @@ const labelrefs = new Map();
 
 let run = false;
 let debug = false;
+let buildweb = false;
+let file;
 let lastlabel;
 
 // _____________________________________________________________________________
@@ -312,29 +316,41 @@ semantics.addOperation('eval', {
 
 function help() {
 	console.log("gxasm: gxarch assembler\n");
-	console.log("Usage: node gxasm.js [options] [file]");
-	console.log("-h, --help  Show this message");
-	console.log("-r, --run   Run the output, gxvm must be in the same directory");
-	console.log("-d, --debug Enable debugging if used with --run")
+	console.log("Usage: node gxasm [options] [file]");
+	console.log("-h, --help   Show this message");
+	console.log("-r, --run    Run the output, gxvm must be in the same directory");
+	console.log("-d, --debug  Enable debugging if used with --run")
+	console.log("-w, --web    Also build for Web, requires build_web.js");
 	process.exit(0);
 }
 
 if (process.argv.length < 3) help();
-let file;
 
 for (let arg of process.argv.slice(2)) {
-	switch (arg) {
-		case '-h': case '--help': help();
-		case '-r': case '--run': run = true; break;
-		case '-d': case '--debug': debug = true; break;
-		case '-rd': case '-dr': run = true; debug = true; break;
-
-		default:
-			if (file)
-				err("Only one file can be specified (use .include to include other files)");
-			file = arg;
-			break;
+	if (arg[0] === '-' && arg[1] !== '-') {
+		for (let char of arg.slice(1).split('')) {
+			switch (char) {
+				case 'h': help();
+				case 'r': run = true; break;
+				case 'd': debug = true; break;
+				case 'w': buildweb = true; break;
+				default: err(`Unknown option -${char}`);
+			}
+		}
+	} else {
+		switch (arg) {
+			case '--help': help();
+			case '--run': run = true; break;
+			case '--debug': debug = true; break;
+			case '--web': buildweb = true; break;
+			default:
+				if (file)
+					err("Only one file can be specified (use .include to include other files)");
+				file = arg;
+				break;
+		}
 	}
+
 }
 
 // _____________________________________________________________________________
@@ -394,6 +410,11 @@ if (match.succeeded()) {
 
 	// 	fs.writeFileSync(file.replace(/\.\w*$/, ".sym.txt"), symbols.join('\n'));
 	// }
+
+	if (buildweb) {
+		const cp = require('child_process');
+		cp.spawn(process.argv0, ['build_web.js', outname], {stdio: 'inherit'});
+	}
 
 	if (run) {
 		const cp = require('child_process');

@@ -17,33 +17,49 @@
 ;    %25 = character source X position in tileset
 ;    %26 = character source Y
 ;
-; Notes:
-;   - In the tileset, the characters must start at (0, 0), in ASCII order,
-;     starting at null.
-;   - This subroutine doesn't do line wrapping, everything is drawn on one line.
+;  Notes:
+;  - In the tileset, the characters must start at (0, 0), in ASCII order,
+;    starting at null (the first row is empty, assuming PRINT_WIDTH = 4).
+;    You should use the default tileset assets/tileset.png as a base for your
+;    own tileset if you're using the default parameters (32 chars per line,
+;    width 4, height 8).
+;  - This subroutine doesn't do line wrapping, everything is drawn on one line.
+;  - The registers %20 %21 %22 are overwritten, copy them to other registers
+;    using the .mov macro if you need to use them after calling print.
 ; ______________________________________________________________________________
 ;
-print:
-	ldi %24 %20       ; load character
-	cj %24 printdraw  ; if not null term, continue
+.include std/common.gxs
+
+print: {
+	reg strh arg0
+	reg strl arg1
+	reg x arg2
+	reg y arg3
+	reg curchar %24
+	reg sx %25
+	reg sy %26
+
+	ldi curchar strh      ; load character
+	cj curchar printdraw  ; if not null term, continue
 	ret
 printdraw:
 	set %0 PRINT_CHARSPERLINE  ; source Y = char / chars per line
-	div %24 %0 %26
+	div curchar %0 sy
 	set %0 0                   ; source X = division remainder
-	add %r %0 %25
+	add %r %0 sx
 
 	set %0 PRINT_WIDTH
 	set %1 PRINT_HEIGHT
-	mul %25 %0 %25           ; source X *= character width
-	mul %26 %1 %26           ; source Y *= character height
+	mul sx %0 sx         ; source X *= character width
+	mul sy %1 sy         ; source Y *= character height
 
-	dw %25 %26 %0 %1  ; draw character
-	at %22 %23
+	dw sx sy %0 %1  ; draw character
+	at x y
 
-	set %2 1        ; go to next character
-	add %21 %2 %21
-	add %20 %h %20
+	set %2 1          ; go to next character
+	add strl %2 strl
+	add strh %h strh
 
-	add %22 %0 %22  ; next character cell
+	add x %0 x  ; next character cell
 	jmp print
+}
