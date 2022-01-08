@@ -85,7 +85,7 @@ void debugwrite(void) {
 	u8 val = 0;
 	while (true) {
 		char *input = tinyfd_inputBox(
-			"Debug write", "Input address to write to (hex/dec/oct):", "");
+			"Debug write", "Input address to write to (hex/dec/oct):", " ");
 
 		if (input == NULL) return;
 		addr = strtoul(input, NULL, 0);
@@ -93,7 +93,7 @@ void debugwrite(void) {
 	}
 	while (true) {
 		char *input = tinyfd_inputBox(
-			"Debug write", "Input value to write (hex/dec/oct):", "");
+			"Debug write", "Input value to write (hex/dec/oct):", " ");
 
 		if (input == NULL) return;
 		val = strtoul(input, NULL, 0);
@@ -107,7 +107,7 @@ void debugread(void) {
 	u16 addr = 0;
 	while (true) {
 		char *input = tinyfd_inputBox(
-			"Debug read", "Input address to read (hex/dec/oct):", "");
+			"Debug read", "Input address to read (hex/dec/oct):", " ");
 
 		if (input == NULL) return;
 		addr = strtoul(input, NULL, 0);

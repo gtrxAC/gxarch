@@ -1,0 +1,231 @@
+; CPS Test for gxarch
+; Checks your clicks per second
+; Date: 2022-01-08
+; Author: gtrxAC
+
+dat main
+
+val FPS 60
+
+timeleftstr: dat "Time left:000 sec (000 frames)"
+val TIMELEFTX 4               ; X position where to draw this string
+addr FMTTIMELEFTSEC 0x000C    ; Addresses of where to format numbers into the string
+addr FMTTIMELEFTFRAME 0x0015
+
+resultstr: dat "You clicked 000 times (000 CPS)"
+val RESULTX 2
+addr FMTRESULTCOUNT 0x002D
+addr FMTRESULTCPS 0x0038
+
+titlestr: dat "gxarch: CPS Test"
+val TITLEX 32
+
+clickstr: dat "Click!"
+startstr: dat "Start!"
+restartstr: dat "Restart"
+val CLICKSTARTX 52         ; X/Y position of where to draw click/start and restart
+val CLICKSTARTY 66         ; strings (centered inside the button)
+val RESTARTX 50
+val RESTARTY 78
+
+val PRINT_CHARSPERLINE 32
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
+.include std/common.gxs
+.include std/print.gxs
+.include std/int2str.gxs
+.include std/mouse.gxs
+.include std/button.gxs
+
+val ST_START 0    ; program state constants
+val ST_RUNNING 1
+val ST_RESULT 2
+
+val STRINGY 48        ; Y position where to draw all strings (except button labels)
+val BUTTONX 48        ; X/Y position where to draw button for START/RUNNING state
+val BUTTONY 64
+val RESTARTBUTTONX 48  ; position where to draw button for RESULT state
+val RESTARTBUTTONY 76  ; offset so the user doesn't accidentally skip over results
+val BUTTONSX 16       ; button source image X/Y/width/height
+val BUTTONSY 32
+val BUTTONW 32
+val BUTTONH 12
+
+; ______________________________________________________________________________
+;
+main:
+	reg clicks %4
+	reg timer %5
+	reg state %6
+
+	js updatemouse
+; ______________________________________________________________________________
+;
+;  Draw tiled background
+; ______________________________________________________________________________
+;
+	{
+		reg x %10    ; X iterator
+		reg y %11    ; Y iterator
+		reg INC %12  ; increment (texture size)
+		reg MAX %13  ; maximum iteration (screen size)
+
+		set %0 0          ; background texture X
+		set %1 32         ; background texture Y
+		set INC 16
+		set MAX 128
+		dw %0 %1 INC INC  ; set draw source
+
+		set x 0
+		drawbgxloop:
+			set y 0
+		drawbgyloop:
+			at x y    ; draw tile
+
+			add y INC y             ; next iteration
+			.ltj y MAX drawbgyloop
+			add x INC x
+			.ltj x MAX drawbgxloop
+	}
+; ______________________________________________________________________________
+;
+;  Update game state (using subroutines)
+; ______________________________________________________________________________
+;
+	set %0 ST_START
+	.eqjs state %0 drawstart
+	set %0 ST_RUNNING
+	.eqjs state %0 drawrunning
+	set %0 ST_RESULT
+	.eqjs state %0 drawresult
+endframe:
+	end
+	jmp main
+
+; ______________________________________________________________________________
+;
+;  START state (click button to start game)
+; ______________________________________________________________________________
+;
+drawstart:
+	set arg0 BUTTONX
+	set arg1 BUTTONY
+	set arg2 BUTTONSX
+	set arg3 BUTTONSY
+	set arg4 BUTTONW
+	set arg5 BUTTONH
+	js button
+	cjs %26 startbuttonaction
+
+	set arg0 hi(startstr)
+	set arg1 lo(startstr)
+	set arg2 CLICKSTARTX
+	set arg3 CLICKSTARTY
+	js print
+
+	set arg0 hi(titlestr)
+	set arg1 lo(titlestr)
+	set arg2 TITLEX
+	set arg3 STRINGY
+	js print
+	jmp endframe
+
+startbuttonaction:
+	set timer 240
+	set clicks 0
+	set state ST_RUNNING
+	ret
+; ______________________________________________________________________________
+;
+;  RUNNING state (lasts 4 seconds, click to increment counter)
+; ______________________________________________________________________________
+;
+drawrunning:
+	set arg0 BUTTONX
+	set arg1 BUTTONY
+	set arg2 BUTTONSX
+	set arg3 BUTTONSY
+	set arg4 BUTTONW
+	set arg5 BUTTONH
+	js button
+	cjs %26 clickbuttonaction
+
+	.mov timer arg0
+	set arg1 hi(FMTTIMELEFTFRAME)
+	set arg2 lo(FMTTIMELEFTFRAME)
+	js int2str
+
+	set %0 FPS
+	div timer %0 arg0
+	set arg1 hi(FMTTIMELEFTSEC)
+	set arg2 lo(FMTTIMELEFTSEC)
+	js int2str
+
+	set arg0 hi(timeleftstr)
+	set arg1 lo(timeleftstr)
+	set arg2 TIMELEFTX
+	set arg3 STRINGY
+	js print
+
+	set arg0 hi(clickstr)
+	set arg1 lo(clickstr)
+	set arg2 CLICKSTARTX
+	set arg3 CLICKSTARTY
+	js print
+
+	set %0 1
+	sub timer %0 timer
+	set %0 0
+	.eqjs timer %0 clicktimeend
+	jmp endframe
+
+clickbuttonaction:
+	set %0 1
+	add clicks %0 clicks
+	ret
+
+clicktimeend:
+	.mov clicks arg0
+	set arg1 hi(FMTRESULTCOUNT)
+	set arg2 lo(FMTRESULTCOUNT)
+	js int2str
+
+	set %0 4
+	div clicks %0 arg0
+	set arg1 hi(FMTRESULTCPS)
+	set arg2 lo(FMTRESULTCPS)
+	js int2str
+
+	set state ST_RESULT
+	ret
+; ______________________________________________________________________________
+;
+;  RESULT state (shows click count, click to go back to START state)
+; ______________________________________________________________________________
+;
+drawresult:
+	set arg0 RESTARTBUTTONX
+	set arg1 RESTARTBUTTONY
+	set arg2 BUTTONSX
+	set arg3 BUTTONSY
+	set arg4 BUTTONW
+	set arg5 BUTTONH
+	js button
+	cjs %26 restartbuttonaction
+
+	set arg0 hi(restartstr)
+	set arg1 lo(restartstr)
+	set arg2 RESTARTX
+	set arg3 RESTARTY
+	js print
+
+	set arg0 hi(resultstr)
+	set arg1 lo(resultstr)
+	set arg2 RESULTX
+	set arg3 STRINGY
+	js print
+	jmp endframe
+
+restartbuttonaction:
+	set state ST_START
+	ret
