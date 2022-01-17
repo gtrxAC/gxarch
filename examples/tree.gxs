@@ -16,7 +16,7 @@ val GRIDW 128     ; The screen gets automatically cleared every frame, and canno
 val GRIDH 128     ; from, so we need to keep the generated bitmap data in our own buffer,
 addr grid 0x4000  ; then draw it on screen after generating.
                   ; This is a 128 × 128 bitmap (address 0x4000 to 0x7FFF),
-				  ; each byte is one pixel.
+                  ; each byte is one pixel.
 
 ; ______________________________________________________________________________
 ;

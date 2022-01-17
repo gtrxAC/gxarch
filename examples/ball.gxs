@@ -40,8 +40,8 @@ main:
 	set REDGE 126  ; screen edges are not the same as screen resolution, because:
 	set BEDGE 118  ; - if it were 128, the ball would be partially off screen when
 	set BSZ 3      ;   hitting the bottom and right edges
-				   ; - if both X and Y were the same, the ball's movement would
-				   ;   always be the same and very repetitive
+	               ; - if both X and Y were the same, the ball's movement would
+	               ;   always be the same and very repetitive
 
 update:
 	ld %0 MOUSEL

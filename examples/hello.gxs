@@ -8,21 +8,21 @@
 
 dat main  ; All programs must start with "dat" and the label where the program starts.
           ; "dat" inserts data into the output program, this inserts the address
-		  ; of the "main" subroutine to the start of the program.
-		  ; On startup, gxarch checks the first two bytes of the program for the address
-		  ; of where the program should start (the entry point).
+          ; of the "main" subroutine to the start of the program.
+          ; On startup, gxarch checks the first two bytes of the program for the address
+          ; of where the program should start (the entry point).
 
 string: dat "Hello world!"  ; Embed the hello world string into the executable.
                             ; This is a C-style null-terminated string.
-							; "string" is used to refer to the address of this string.
+                            ; "string" is used to refer to the address of this string.
 
 val PRINT_CHARSPERLINE 32  ; We need the print subroutine from the standard library.
 val PRINT_WIDTH 4          ; Before including it we need to specify the font's properties.
 val PRINT_HEIGHT 8         ; The default tileset assets/tileset.png has 32 characters
 .include std/print.gxs     ; per line and each character is 4×8 pixels. See
                            ; https://github.com/gtrxAC/gxarch/wiki/Tilesets to learn more
-						   ; about how tilesets work.
-						   
+                           ; about how tilesets work.
+
 main:
 	set %20 hi(string)  ; Print (and many other subroutines) need us to put parameters
 	set %21 lo(string)  ; in registers, starting at %20. Registers are like small memory
