@@ -48,10 +48,15 @@ const u16 gx2rl[0x100] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xF0
 };
 
-const bool needshift[0x100] = {
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
-	0, 1, 1, 1, 1, 1, 1, 0, // 0x20
+// 0 = shift needs to be turned off
+// 1 = shift needs to be turned on
+// 2 = shift is not checked
+const u8 needshift[0x100] = {
+	0, 0, 0, 0, 0, 0, 0, 0, // 0x00
+	2, 2, 2, 0, 0, 0, 0, 0, // 0x08
+	0, 2, 2, 2, 0, 0, 0, 0, // 0x10
+	0, 0, 0, 2, 0, 0, 0, 0, // 0x18
+	2, 1, 1, 1, 1, 1, 1, 0, // 0x20
 	1, 1, 1, 1, 0, 0, 0, 0, // 0x28
 	0, 0, 0, 0, 0, 0, 0, 0, // 0x30
 	0, 0, 1, 0, 1, 0, 1, 1, // 0x38
@@ -63,7 +68,8 @@ const bool needshift[0x100] = {
 	0, 0, 0, 0, 0, 0, 0, 0, // 0x68
 	0, 0, 0, 0, 0, 0, 0, 0, // 0x70
 	0, 0, 0, 1, 1, 1, 1, 0, // 0x78
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x80
+	2, 2, 2, 2, 2, 2, 2, 2, // 0x80
+	2, 2, 2, 2, 2, 2, 2, 2, // 0x88
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x90
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xA0
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xB0
@@ -218,7 +224,7 @@ void _step(struct VM *vm) {
 		case OP_KEY: {
 			u8 key = vm->reg[consume()];
 			bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
-			vm->reg[consume()] = shift == needshift[key] && IsKeyDown(gx2rl[key]);
+			vm->reg[consume()] = (shift == needshift[key] || needshift[key] == 2) && IsKeyDown(gx2rl[key]);
 			break;
 		}
 		

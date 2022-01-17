@@ -19,10 +19,10 @@
 .include std/common.gxs
 
 int2str: {
-	reg src arg0
-	reg desth arg1
-	reg destl arg2
-	reg divres %23
+	reg src arg0    ; source integer to convert
+	reg desth arg1  ; destination string address, high byte
+	reg destl arg2  ; destination string address, low byte
+	reg divres %23  ; division result
 
 	set %0 100              ; divide by 100 to get 3rd digit
 	div src %0 divres

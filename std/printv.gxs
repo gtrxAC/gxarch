@@ -1,6 +1,6 @@
 ; ______________________________________________________________________________
 ;
-;  Print subroutine
+;  Print subroutine (for variable width fonts)
 ;
 ;  Arguments:
 ;    %20 %21 = address of string to print
@@ -8,9 +8,13 @@
 ;    %23 = Y position
 ;
 ;  Constants (need to be defined before including this file):
-;    PRINT_CHARSPERLINE = how many chars are on each line in the tileset
-;    PRINT_WIDTH = width of each character
-;    PRINT_HEIGHT = height of each character
+;    PRINTV_CHARSPERLINE = how many chars are on each line in the tileset
+;    PRINTV_WIDTH = maximum width of each character (how much space each char
+;                   takes up in the tileset, even if not all of the space is
+;                   used)
+;    PRINTV_HEIGHT = height of each character
+;    printv_charwidths = width of each character, in ASCII order, starting at
+;                        null (see examples/vfont.gxs)
 ;
 ;  Uses registers:
 ;    %24 = current character being printed
@@ -20,9 +24,9 @@
 ;  Notes:
 ;  - In the tileset, the characters must start at (0, 0), in ASCII order,
 ;    starting at null (the first row is empty, assuming PRINT_WIDTH = 4).
-;    You should use the default tileset assets/tileset.png as a base for your
+;    You should use the default tileset assets/tilesetv.png as a base for your
 ;    own tileset if you're using the default parameters (32 chars per line,
-;    width 4, height 8).
+;    width 4, height 8, charwidths from examples/vfont.gxs).
 ;  - This subroutine doesn't do line wrapping, everything is drawn on one line.
 ;  - The registers %20 %21 %22 are overwritten, copy them to other registers
 ;    using the .mov macro if you need to use them after calling print.
@@ -30,7 +34,7 @@
 ;
 .include std/common.gxs
 
-print: {
+printv: {
 	reg strh arg0    ; address of string, high byte
 	reg strl arg1    ; low byte
 	reg x arg2       ; X print location (gets overwritten)
@@ -38,20 +42,29 @@ print: {
 	reg curchar %24  ; current character value being drawn
 	reg sx %25       ; current char X location in tileset
 	reg sy %26       ; current char Y location in tileset
+	reg sw %27       ; current character width
+	reg chrwh %2     ; address of current character width, high (charwidths)
+	reg chrwl %3     ; address of current character width, low
 
-	ldi curchar strh      ; load character
-	cj curchar printdraw  ; if not null term, continue
+	ldi curchar strh       ; load character
+	cj curchar printvdraw  ; if not null term, continue
 	ret
-printdraw:
-	set %0 PRINT_CHARSPERLINE  ; source Y = char / chars per line
+printvdraw:
+	set %0 PRINTV_CHARSPERLINE  ; source Y = char / chars per line
 	div curchar %0 sy
 	set %0 0                   ; source X = division remainder
 	add %r %0 sx
 
-	set %0 PRINT_WIDTH
-	set %1 PRINT_HEIGHT
+	set %0 PRINTV_WIDTH
+	set %1 PRINTV_HEIGHT
 	mul sx %0 sx         ; source X *= character width
 	mul sy %1 sy         ; source Y *= character height
+
+	set chrwh hi(printv_charwidths)  ; get width of current char
+	set chrwl lo(printv_charwidths)
+	add chrwl curchar chrwl
+	add chrwh %h chrwh
+	ldi %0 chrwh
 
 	dw sx sy %0 %1  ; draw character
 	at x y
@@ -61,5 +74,5 @@ printdraw:
 	add strh %h strh
 
 	add x %0 x  ; next character cell
-	jmp print
+	jmp printv
 }

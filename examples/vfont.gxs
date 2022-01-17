@@ -1,0 +1,49 @@
+; Variable width fonts for gxarch
+; Prints a string using printv (non-monospace font)
+; Date: 2022-01-17
+; Author: gtrxAC
+
+dat main
+
+string1: dat "Hello, this is a variable width font!"
+string2: dat "Hello, this is a monospace font!"
+
+val PRINTV_CHARSPERLINE 32
+val PRINTV_WIDTH 4          ; This is only the max width, some chars take less
+                            ; than 4 pixels, see printv_charwidths.
+val PRINTV_HEIGHT 8
+
+val PRINT_CHARSPERLINE 32  ; We will also include the normal print subroutine
+val PRINT_WIDTH 4          ; to compare the two. Both will work at the same time
+val PRINT_HEIGHT 8         ; but they will use the same font.
+
+; Widths of each character (required by printv)
+; - The space after each character counts as a pixel, so a 1-pixel wide '!', 'I'
+;   or 'i' has the value 2.
+; - The characters will still take the same amount of space in the tileset, but
+;   part of it is unused.
+; - Make sure you name this printv_charwidths and define it before including
+;   std/printv.gxs.
+printv_charwidths:
+	dat 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+	dat 2, 2, 4, 4, 4, 4, 4, 2, 3, 3, 4, 4, 2, 4, 2, 3, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 4, 4, 4, 4
+	dat 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 4, 4
+	dat 3, 4, 4, 4, 4, 4, 3, 4, 4, 2, 3, 4, 3, 4, 4, 4, 4, 4, 3, 4, 3, 4, 4, 4, 4, 4, 4, 4, 2, 4, 4, 0
+
+.include std/printv.gxs
+.include std/print.gxs
+						   
+main:
+	set %20 hi(string1)  ; The arguments are the same as print, but make sure
+	set %21 lo(string1)  ; you call printv instead of print and use PRINTV_ in
+	set %22 0            ; the font parameters instead of PRINT_
+	set %23 0
+	js printv
+
+	set %20 hi(string2)  ; The font is designed for variable width so it will
+	set %21 lo(string2)  ; look a bit weird with the monospace print routine,
+	set %22 0            ; but it works just the same.
+	set %23 8
+	js print
+	end
+	jmp main
