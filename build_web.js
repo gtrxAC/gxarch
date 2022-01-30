@@ -18,12 +18,12 @@ for (let filename of process.argv.slice(2)) {
 		.filter(l => !l.includes('gxa_builder_remove'));
 
 	const gxa = fs.readFileSync(filename);
-															// examples/hello.gxa
+	                                                          // examples/hello.gxa
 	const filenamenoext = filename.replace(/\..*$/, '');      // -> examples/hello
 	const filenamearr = filenamenoext.split(/\/|\\/);         // -> ['examples', 'hello']
 	const filenamebase = filenamearr[filenamearr.length - 1]; // -> hello
 
-	let array = `const rom = [`;
+	let array = 'const rom = [';
 	gxa.forEach(byte => array += Number(byte) + ',');
 	array += '];'
 

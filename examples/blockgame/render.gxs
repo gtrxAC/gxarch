@@ -1,135 +1,170 @@
-val BLOCK_BORDER_X 8      ; border/background of currently selected block in HUD
-val BLOCK_BORDER_Y 0
+val BLOCK_BORDER_SX 8      ; border/background of currently selected block in HUD
+val BLOCK_BORDER_SY 0      ; source X, source Y, width and height, dest X, dest Y
 val BLOCK_BORDER_SIZE 12
+val BLOCK_BORDER_X 78
+val BLOCK_BORDER_Y 0
+
 val SEL_BORDER_X 20       ; outline of block being pointed at
 val SEL_BORDER_Y 0
 val BLOCKS_Y 32           ; Y position of row containing block textures
-val BG_Y 48               ; The background consists of two parts: the scrolling
-val BG_W 128              ; clouds (BG) and a repeating background color (BG2)
-val BG_H 48
 val BG2_Y 96
 val BG2_W 128
 val BG2_H 16
 
 render:
-	ld %0 scrollcount  ; draw clouds at current scroll count
-	set %1 BG_Y        ; this works similarly to the drawscroll example, but
-	set %2 BG_W        ; only horizontally scrolling and much slower, using
-	set %3 BG_H        ; two counters (framecount and scrollcount), see
-	dw %0 %1 %2 %3     ; renderbg2loop
-	set %1 0
-	at %1 %1
+; ______________________________________________________________________________
+;
+;  Draw background
+;
+;  The background consists of two parts:
+;  - Scrolling clouds (BG), top of screen
+;  - Background color (BG2), bottom 16 pixels of the tileset are drawn on the
+;    bottom part of the screen in a loop, solid color by default
+; ______________________________________________________________________________
+;
+	{
+		; Draw scrolling clouds (BG)
+		reg bgx %0
+		reg bgy %1
+		reg bgw %2
+		reg bgh %3
 
-	set %0 0
-	set %1 BG2_Y
-	set %2 BG2_W
-	set %3 BG2_H
-	dw %0 %1 %2 %3
+		val BG_Y 48   ; coordinates of BG (X is scrollcount)
+		val BG_W 128
+		val BG_H 48
 
-	set %1 BG_H
-	set %2 128
-renderbg2loop:
-	at %0 %1
-	add %1 %3 %1
-	.ltj %1 %2 renderbg2loop
+		ld bgx scrollcount  ; draw clouds at current scroll count
+		set bgy BG_Y        ; this works similarly to the drawscroll example, but
+		set bgw BG_W        ; only horizontally scrolling and much slower, using
+		set bgh BG_H        ; two counters (framecount and scrollcount), see
+		dw bgx bgy bgw bgh  ; renderbg2loop
+		set %1 0
+		at %1 %1
+
+		set bgx 0           ; set draw source for BG2
+		set bgy BG2_Y       ; we only need to do this once and the at instruction
+		set bgw BG2_W       ; will keep using the same source until we set a
+		set bgh BG2_H       ; different source
+		dw bgx bgy bgw bgh
+
+		; Draw repeating background color (BG2)
+		reg bg2iter %1
+		reg bg2max %2
+
+		set bg2iter BG_H  ; start drawing BG2 where BG ends
+		set bg2max 128    ; and end where the screen ends (128px)
+	renderbg2loop:
+		at bgx bg2iter                     ; draw one strip of BG2 and loop
+		add bg2iter bgh bg2iter
+		.ltj bg2iter bg2max renderbg2loop
+	}
 
 	ld %0 framecount  ; increment frame count
 	set %1 1
-	add %0 %1 %3
-	st %3 framecount
+	add %0 %1 %0
+	st %0 framecount
 
-	set %0 CLOUDSPEED     ; if framecount is divisible by CLOUDSPEED,
-	div %3 %0 %29         ; increment cloud scroll count
+	set %2 CLOUDSPEED     ; if framecount is divisible by CLOUDSPEED,
+	div %0 %2 %29         ; increment cloud scroll count
 	set %0 0
-	.eqj %r %0 incscroll
-	jmp noincscroll
+	.eqjs %r %0 incscroll
 
-incscroll:
-	ld %0 scrollcount
-	set %1 1
-	add %0 %1 %3
-	st %3 scrollcount
+; ______________________________________________________________________________
+;
+;  Draw blocks
+; ______________________________________________________________________________
+;
+	{
+		; Variables
+		; if changing registers, also change them in drawindicator subroutine
+		reg x %4       ; X/Y iterator
+		reg y %5
+		reg px %6      ; player X/Y
+		reg py %7      
+		reg blockh %8  ; block address, high/low bytes
+		reg blockl %9
+		reg block %10  ; value at block address (block value/ID)
+		reg mxb %20    ; mouse x/y block
+		reg myb %21
+		reg drawx %17  ; current draw location
+		reg drawy %18
+		reg tsx %19    ; tileset X to draw from
 
-noincscroll:
-	set %4 0  ; iterator X/Y
-	set %5 0
-	ld %6 playerx  ; player X/Y
-	ld %7 playery
-	; %8 %9 = current block address
-	; %10 = current block value
-	set %11 1              ; constants
-	set %12 BLOCKSIZE
-	set %13 13
-	set %14 WWIDTH
-	set %15 BLOCKS_Y
-	; %16 = immediate
-	; %17 %18 = current draw location
-	; %19 = current tileset X to draw
-	ld %20 mousexblock
-	ld %21 mouseyblock
+		; Constants
+		reg _1 %11       ; 1
+		reg BSIZE %12    ; block size
+		reg ITERMAX %13  ; max X and Y iter (blocksize 10 * itermax = 130 needed to fill screen)
+		reg WW %14       ; world width
+		reg BY %15       ; tileset source Y for blocks
 
-renderyloop:
-	set %4 0
+		set y 0             ; set initial values for variables
+		ld px playerx
+		ld py playery
+		ld mxb mousexblock
+		ld myb mouseyblock
 
-renderxloop:
-	set %8 hi(blocks)  ; block address = starting address
-	set %9 lo(blocks)
+		set _1 1             ; set constants
+		set BSIZE BLOCKSIZE
+		set ITERMAX 13
+		set WW WWIDTH
+		set BY BLOCKS_Y
 
-	add %5 %7 %16    ; block address += (iterator y + player y) * world width
-	mul %16 %14 %16
-	add %8 %h %8
-	add %9 %16 %9
+	renderyloop:
+		set x 0
 
-	add %9 %4 %9  ; block address += iterator x + player x
-	add %8 %h %8
-	add %9 %6 %9
-	add %8 %h %8
+	renderxloop:
+		set blockh hi(blocks)  ; block address = starting address
+		set blockl lo(blocks)
 
-	ldi %10 %8               ; load current block, skip drawing if it's air
-	set %16 0
-	.eqj %10 %16 renderskip
+		add y py %0           ; block address += (iterator y + player y) * world width
+		mul %0 WW %0
+		add blockh %h blockh
+		add blockl %0 blockl
 
-	set %16 BLOCKCOUNT       ; skip drawing if block id exceeds block count
-	sub %16 %11 %16
-	.gtj %10 %16 renderskip
+		add blockl x blockl   ; block address += iterator x + player x
+		add blockh %h blockh
+		add blockl px blockl
+		add blockh %h blockh
 
-	mul %10 %12 %19     ; multiply the block's id by block size
-	dw %19 %15 %12 %12  ; to get the tileset coordinate to draw from
+		ldi block blockh          ; load current block, skip drawing if it's air
+		set %0 0
+		.eqj block %0 renderskip
 
-	mul %4 %12 %17  ; destination X/Y = iterator X/Y * block size
-	mul %5 %12 %18
-	at %17 %18      ; draw tile at destination X/Y
+		set %0 BLOCKCOUNT         ; skip drawing if block id exceeds block count
+		sub %0 _1 %0
+		.gtj block %0 renderskip
 
-renderskip:
-	add %4 %6 %16            ; is this block being pointed at?
-	.eqj %16 %20 pointedatx  ; in X direction
-	jmp notpointedat
+		mul block BSIZE tsx    ; multiply the block's id by block size
+		dw tsx BY BSIZE BSIZE  ; to get the tileset coordinate to draw from
 
-pointedatx:
-	add %5 %7 %16            ; in Y direction
-	.eqj %16 %21 pointedaty
-	jmp notpointedat
+		mul x BSIZE drawx  ; destination X/Y = iterator X/Y * block size
+		mul y BSIZE drawy
+		at drawx drawy     ; draw tile at destination X/Y
 
-pointedaty:
-	set %0 SEL_BORDER_X  ; if pointed at, draw an indicator
-	set %1 SEL_BORDER_Y
-	set %2 BLOCKSIZE
-	dw %0 %1 %2 %2
-	mul %4 %12 %23
-	mul %5 %12 %24
-	at %23 %24
+	renderskip:
+		add x px %1           ; if this block is being pointed at (check both X and Y coordinates)
+		eq %1 mxb %2
+		add y py %1
+		eq %1 myb %3
+		and %2 %3 %1
+		cjs %1 drawindicator  ; then draw an indicator
 
-notpointedat:
-	add %4 %11 %4            ; next X iteration if row isn't done
-	.ltj %4 %13 renderxloop
+		add x _1 x                  ; next X iteration if row isn't done
+		.ltj x ITERMAX renderxloop
 
-	add %5 %11 %5            ; next Y iteration if render not finished
-	.ltj %5 %13 renderyloop
-
+		add y _1 y                  ; next Y iteration if drawing not finished
+		.ltj y ITERMAX renderyloop
+	}
+; ______________________________________________________________________________
+;
+;  Draw HUD (player position and currently selected block)
+; ______________________________________________________________________________
+;
 	ld arg0 playerx         ; format player X/Y into coordinate string
 	set arg1 hi(COORDSTRX)
 	set arg2 lo(COORDSTRX)
 	js int2str
+
 	ld arg0 playery
 	set arg1 hi(COORDSTRY)
 	set arg2 lo(COORDSTRY)
@@ -141,12 +176,12 @@ notpointedat:
 	set arg3 2
 	js print
 
-	set %0 BLOCK_BORDER_X     ; draw border for current block
-	set %1 BLOCK_BORDER_Y
+	set %0 BLOCK_BORDER_SX    ; draw border for current block
+	set %1 BLOCK_BORDER_SY
 	set %2 BLOCK_BORDER_SIZE
 	dw %0 %1 %2 %2
-	set %0 78
-	set %1 0
+	set %0 BLOCK_BORDER_X
+	set %1 BLOCK_BORDER_Y
 	at %0 %1
 
 	ld %0 curblock    ; draw current block
@@ -160,3 +195,32 @@ notpointedat:
 
 	end
 	jmp update
+
+; ______________________________________________________________________________
+;
+;  Subroutines
+; ______________________________________________________________________________
+;
+
+; Increment cloud scroll counter
+incscroll:
+	ld %0 scrollcount
+	set %1 1
+	add %0 %1 %0
+	st %0 scrollcount
+	ret
+
+; Draw indicator for the block that is being pointed at
+drawindicator:
+	reg x %4       ; regs from draw blocks routine
+	reg y %5
+	reg BSIZE %12
+
+	set %1 SEL_BORDER_X
+	set %2 SEL_BORDER_Y
+	set %3 BLOCKSIZE
+	dw %1 %2 %3 %3
+	mul x BSIZE %23
+	mul y BSIZE %24
+	at %23 %24
+	ret

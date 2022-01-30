@@ -16,15 +16,17 @@ val PRINT_HEIGHT 8
 .include std/int2str.gxs
 .include std/print.gxs
 
-val WWIDTH 128     ; save RAM is 4K(0xFxxx) - 256(reserved 0xFFxx) = 3840 bytes
-val WHEIGHT 29     ; we use the first 30 bytes of SRAM for variables, so 128 × 29 world size
+; Constants
+val WWIDTH 128         ; save RAM is 4K(0xFxxx) - 256(reserved 0xFFxx) = 3840 bytes
+val WHEIGHT 29         ; we use the first 30 bytes of SRAM for variables, so 128 × 29 world size
 val BLOCKSIZE 10
-val SPEED 2        ; player can move every SPEED frames (1 block per frame is too fast)
+val SPEED 2            ; player can move every SPEED frames (1 block per frame is too fast)
 val BLOCKCOUNT 12
-val CLOUDSPEED 10  ; clouds move by 1 pixel every CLOUDSPEED frames
-addr COORDSTRX 0x0004    ; addresses of where numbers are placed into the coordstr string
+val CLOUDSPEED 10      ; clouds move by 1 pixel every CLOUDSPEED frames
+addr COORDSTRX 0x0004  ; addresses of where numbers are formatted into the coordstr string
 addr COORDSTRY 0x000B
 
+; Variables (saved in SRAM)
 addr playerx 0xF000
 addr playery 0xF001
 addr curblock 0xF002
@@ -32,6 +34,8 @@ addr worldready 0xF003   ; if 0, world is not ready and needs to be generated
 addr framecount 0xF004
 addr scrollcount 0xF005  ; for scrolling clouds
 addr blocks 0xF01D       ; starting address of block array
+
+; Variables (not saved)
 addr zdowntime 0xE000    ; how long Z/X have been down for (to prevent key repeat)
 addr xdowntime 0xE001
 addr mousexblock 0xE002  ; what block coordinates is the mouse pointing at
@@ -43,7 +47,7 @@ main:
 	set %0 1           ; enable SRAM to save worlds
 	st %0 SRAM_TOGGLE
 
-	ld %0 worldready   ; generate world if not generated yet
+	ld %0 worldready      ; generate world if not generated yet
 	set %1 0
 	.eqjs %0 %1 genworld
 

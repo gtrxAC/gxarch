@@ -5,57 +5,35 @@ update:
 	set %0 0
 	cj %r getmouseblock
 
+	reg WW %5
+	reg BCOUNT %7
+	reg WH %8
+	reg _13 %9
+
 	set %1 0
 	set %2 1
-	set %5 WWIDTH
-	set %7 BLOCKCOUNT
-	set %8 WHEIGHT
-	set %9 13
-	sub %5 %9 %5
-	sub %8 %9 %8
-
-	set %0 0x77  ; if W is down, go up
-	key %0 %3
-	.eqj %3 %1 nomoveup
-
-	ld %4 playery
-	.eqj %4 %1 nomoveup
-	sub %4 %2 %4
-	st %4 playery
-
-nomoveup:
-	set %0 0x61  ; if A is down, go left
-	key %0 %3
-	.eqj %3 %1 nomoveleft
-
-	ld %4 playerx
-	.eqj %4 %1 nomoveleft
-	sub %4 %2 %4
-	st %4 playerx
-
-nomoveleft:
-	set %0 0x73  ; if S is down, go down
-	key %0 %3
-	.eqj %3 %1 nomovedown
+	set WW WWIDTH
+	set BCOUNT BLOCKCOUNT
+	set WH WHEIGHT
 	
-	ld %4 playery
-	add %4 %2 %4
-	.gtj %4 %8 nomovedown
-	st %4 playery
+	set _13 13     ; screen can show 13 blocks in both X/Y at a time, so maximum 
+	sub WW _13 WW  ; possible player X/Y is (world width/height - 13) so we
+	sub WH _13 WH  ; don't try to draw out of bounds (top left block on screen
+	               ; is player position)
 
-nomovedown:
-	set %0 0x64  ; if D is down, go right
-	key %0 %3
-	.eqj %3 %1 checkprevblock
-
-	ld %4 playerx
-	add %4 %2 %4
-	.gtj %4 %5 checkprevblock
-	st %4 playerx
-
-checkprevblock:
-	.keyj 0x7a prevblock  ; if Z is pressed, select previous block
-	jmp noprevblock
+	.keyjs K_w moveup
+	.keyjs K_a moveleft
+	.keyjs K_s movedown
+	.keyjs K_d moveright
+	.keyjs K_z prevblock
+	.keyjs K_x nextblock
+; ______________________________________________________________________________
+;
+;  Previous/next block keys
+; ______________________________________________________________________________
+;
+	.keyj K_z prevblock  ; if Z is pressed, select previous block
+	jmp noprevblock      ; if not, reset its down timer
 prevblock:
 	ld %0 zdowntime
 	cj %0 checknextblock
@@ -73,15 +51,15 @@ noprevblock:
 	st %1 zdowntime
 
 checknextblock:
-	.keyj 0x78 nextblock  ; if X is pressed, select next block
-	jmp nonextblock
+	.keyj K_x nextblock  ; if X is pressed, select next block
+	jmp nonextblock      ; if not, reset its down timer
 nextblock:
 	ld %0 xdowntime
 	cj %0 getmouseblock
 
 	ld %4 curblock
 	add %4 %2 %4
-	.eqj %4 %7 getmouseblock
+	.eqj %4 BCOUNT getmouseblock
 	st %4 curblock
 
 	ld %0 xdowntime  ; increment counter
@@ -90,7 +68,11 @@ nextblock:
 	jmp getmouseblock
 nonextblock:
 	st %1 xdowntime
-
+; ______________________________________________________________________________
+;
+;  Mouse
+; ______________________________________________________________________________
+;
 getmouseblock:
 	set %2 BLOCKSIZE  ; get the block that the mouse is pointing at
 	ld %0 MOUSEX
@@ -110,19 +92,13 @@ getmouseblock:
 	ld %0 MOUSER        ; if right mouse is down, replace pointed block with current block
 	cjs %0 placeblock
 	jmp render
+; ______________________________________________________________________________
+;
+;  Subroutines
+; ______________________________________________________________________________
+;
 
-removeblock:
-	js getblockaddr
-	set %4 0
-	sti %4 %0
-	ret
-
-placeblock:
-	js getblockaddr
-	ld %4 curblock
-	sti %4 %0
-	ret
-
+; get address of block being pointed at
 getblockaddr:
 	set %0 hi(blocks)  ; block address = starting address
 	set %1 lo(blocks)
@@ -136,4 +112,48 @@ getblockaddr:
 	ld %2 mousexblock  ; block address += mouse x block
 	add %1 %2 %1
 	add %0 %h %0
+	ret
+
+moveup:
+	ld %4 playery
+	.eqj %4 %1 moveuplimit
+	sub %4 %2 %4
+	st %4 playery
+moveuplimit:
+	ret
+
+moveleft:
+	ld %4 playerx
+	.eqj %4 %1 moveleftlimit
+	sub %4 %2 %4
+	st %4 playerx
+moveleftlimit:
+	ret
+
+movedown:
+	ld %4 playery
+	add %4 %2 %4
+	.gtj %4 WH movedownlimit
+	st %4 playery
+movedownlimit:
+	ret
+
+moveright:
+	ld %4 playerx
+	add %4 %2 %4
+	.gtj %4 WW moverightlimit
+	st %4 playerx
+moverightlimit:
+	ret
+
+removeblock:
+	js getblockaddr
+	set %4 0
+	sti %4 %0
+	ret
+
+placeblock:
+	js getblockaddr
+	ld %4 curblock
+	sti %4 %0
 	ret

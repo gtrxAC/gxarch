@@ -1,15 +1,25 @@
+; What block ID to fill for each row (Y coordinate) of the world
+; Default: air, grass, dirt, stone, stonebrick
 ylayers:
 	dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 6, 6
 
 genworld:
-	set %4 0  ; iterator X/Y
+	reg x %4       ; iterator X/Y
+	reg y %5
+	reg blockh %8
+	reg blockl %9
+	reg _1 %11
+	reg BSIZE %12
+	reg WW %13
+	reg WH %14
+
+
+	set %4 0
 	set %5 0
-	; %8 %9 = current block address
-	set %11 1              ; constants
+	set %11 1
 	set %12 BLOCKSIZE
 	set %13 WWIDTH
 	set %14 WHEIGHT
-	; %16 = immediate
 
 genyloop:
 	set %4 0

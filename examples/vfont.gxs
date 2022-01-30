@@ -21,7 +21,7 @@ val PRINT_HEIGHT 8         ; but they will use the same font.
 ; - The space after each character counts as a pixel, so a 1-pixel wide '!', 'I'
 ;   or 'i' has the value 2.
 ; - The characters will still take the same amount of space in the tileset, but
-;   part of it is unused.
+;   part of it is unused (a font should work with both print and printv).
 ; - Make sure you name this printv_charwidths and define it before including
 ;   std/printv.gxs.
 printv_charwidths:
@@ -34,16 +34,16 @@ printv_charwidths:
 .include std/print.gxs
    
 main:
-	set %20 hi(string1)  ; The arguments are the same as print, but make sure
-	set %21 lo(string1)  ; you call printv instead of print and use PRINTV_ in
-	set %22 0            ; the font parameters instead of PRINT_
-	set %23 0
+	set arg0 hi(string1)  ; The arguments are the same as print, but make sure
+	set arg1 lo(string1)  ; you call printv instead of print and use PRINTV_ in
+	set arg2 0            ; the font parameters above, instead of PRINT_
+	set arg3 0
 	js printv
 
-	set %20 hi(string2)  ; The font is designed for variable width so it will
-	set %21 lo(string2)  ; look a bit weird with the monospace print routine,
-	set %22 0            ; but it works just the same.
-	set %23 8
+	set arg0 hi(string2)  ; The font is designed for variable width so it will
+	set arg1 lo(string2)  ; look a bit weird with the monospace print routine,
+	set arg2 0            ; but it works just the same.
+	set arg3 8
 	js print
 	end
 	jmp main

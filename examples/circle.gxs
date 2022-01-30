@@ -115,7 +115,8 @@ circleifstmt:
 ;
 main: {
 	reg rad %4
-	set %4 30   ; set initial radius value to 30px
+	
+	set rad 30   ; set initial radius value to 30px
 
 loop:
 	set %0 K_LEFT     ; left/down arrow keys: decrease radius

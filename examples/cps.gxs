@@ -155,8 +155,8 @@ drawrunning:
 	set arg2 lo(FMTTIMELEFTFRAME)
 	js int2str
 
-	set %0 FPS
-	div timer %0 arg0
+	set %0 FPS                   ; timer is frames, divide by fps (60) to get
+	div timer %0 arg0            ; seconds
 	set arg1 hi(FMTTIMELEFTSEC)
 	set arg2 lo(FMTTIMELEFTSEC)
 	js int2str
@@ -173,9 +173,9 @@ drawrunning:
 	set arg3 CLICKSTARTY
 	js print
 
-	set %0 1
+	set %0 1                     ; decrement timer
 	sub timer %0 timer
-	set %0 0
+	set %0 0                     ; if timer has reached 0, go to RESULT state
 	.eqjs timer %0 clicktimeend
 	jmp endframe
 
@@ -184,8 +184,9 @@ clickbuttonaction:
 	add clicks %0 clicks
 	ret
 
+; Subroutine, called when the timer ends
 clicktimeend:
-	.mov clicks arg0
+	.mov clicks arg0             ; format results into result string
 	set arg1 hi(FMTRESULTCOUNT)
 	set arg2 lo(FMTRESULTCOUNT)
 	js int2str

@@ -1,5 +1,6 @@
 ; Key for gxarch
 ; Saves the last pressed key and shows it on screen
+; The key is also saved in SRAM (save file).
 ; Date: 2021-11-21
 ; Author: gtrxAC
 
@@ -18,17 +19,25 @@ val PRINT_HEIGHT 8
 .include std/int2str.gxs
 
 main:
+	reg curkey %4     ; current key being checked
+	reg ispressed %5  ; is key pressed? result of key instruction (1 or 0)
+
 	set %0 1           ; enable SRAM
 	st %0 SRAM_TOGGLE
 
 loop:
-	key %0 %1       ; is current key pressed?
-	cj %1 keyfound  ; then store it in SRAM
+	; Reading the keyboard in gxarch is done with the key instruction.
+	; There is no way to directly get which key is currently pressed, to do this
+	; you have to scan every available keycode and check if it's pressed. This
+	; is good for games where multiple keys may be pressed at the same time.
 
-	set %1 1            ; next key
-	add %0 %1 %0
+	key curkey ispressed   ; is current key pressed?
+	cj ispressed keyfound  ; then store it in SRAM
+
+	set %1 1              ; next key
+	add curkey %1 curkey
 	set %1 K_COUNT
-	.ltj %0 %1 loop
+	.ltj curkey %1 loop
 
 loopend:
 	ld arg0 SRAM            ; update string with last key's numeric value
@@ -44,10 +53,10 @@ loopend:
 	set arg3 0
 	js print
 
-	end       ; draw frame and loop
-	set %0 0
+	end           ; draw frame and loop
+	set curkey 0
 	jmp loop
 
 keyfound:
-	st %0 SRAM
+	st curkey SRAM
 	jmp loopend

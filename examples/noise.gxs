@@ -10,7 +10,7 @@ dat main
 ; %0 = increment and draw size (constant 1)
 ; %1 = screen size and random value division (constant 128)
 ; %2 = draw source Y (constant 0), initial value is 0 so we don't need to set it
-; %3 = draw source X (random value 0-1)
+; %3 = draw source X (random value 0 - 1)
 ; %4 = X iterator
 ; %5 = Y iterator
 
@@ -29,8 +29,10 @@ loop:
 loopy:
 	set x 0
 loopx:
+	; Note: the tileset is only two pixels, (0, 0) is black and (1, 0) is white
+
 	ld sx RAND         ; generate random value 0-1 for %3
-	div sx SIZE sx     ; RAND has 0-255, divide by 128 to get 0-1
+	div sx SIZE sx     ; RAND has 0 - 255, divide by 128 to get 0 - 1
 	dw sx SY INC INC   ; draw the pixel from the tileset
 	at x y             ; at the coordinates of the current iterator
 
