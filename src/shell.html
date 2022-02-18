@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    
+    <title>gxVM</title>
+    
+    <meta name="title" content="gxVM">
+    <meta name="description" content="gxarch web emulator">
+    <meta name="keywords" content="raylib, games, html5, programming, C, C++, library, learn, videogames">
+    <meta name="viewport" content="width=device-width">
+    
+    <!-- Open Graph metatags for sharing -->
+    <meta property="og:title" content="gxVM">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image" content="https://www.raylib.com/common/img/raylib_logo.png">
+    <meta property="og:site_name" content="raylib.com">
+    <meta property="og:url" content="https://www.github.com/gtrxAC/gxarch">
+    <meta property="og:description" content="gxarch web emulator">
+
+    <!-- Twitter metatags for sharing -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="gxVM">
+    <meta name="twitter:image" content="https://www.raylib.com/common/raylib_logo.png">
+    <meta name="twitter:url" content="https://www.github.com/gtrxAC/gxarch">
+    <meta name="twitter:description" content="gxarch web emulator">
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAACVBMVEUAAAAAAAD///+D3c/SAAAAAXRSTlMAQObYZgAAAEVJREFUCB0FwbEJgDAQAMBLoRu4T4bwLVIH4Z1HLKyN4JbeWaLS7kpmJRPtQ2RwjCRyoJ2UfCgjVmXbO/P+ML+d6eqUWH+lmhDpapWG9gAAAABJRU5ErkJggg==">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #080A10;
+            color: rgba(255,255,255,0.3);
+            font-family: monospace;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas.emscripten {
+            background-color: black;
+            display: block;
+        }
+        @media (min-aspect-ratio: 1/1) {
+            canvas.emscripten {
+                height: 100vh;
+                width: auto;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+        @media (max-aspect-ratio: 1/1) {
+            canvas.emscripten {
+                width: 100vw;
+                height: auto;
+                margin-top: auto;
+                margin-bottom: auto;
+            }
+        }
+        #inputs {
+            color: white;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    </style>
+    <script type='text/javascript' src="https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js"> </script>
+    <script type='text/javascript'>
+        function saveFileFromMEMFSToDisk(memoryFSname, localFSname)     // This can be called by C/C++ code
+        {
+            var isSafari = false; // Not supported, navigator.userAgent access is being restricted
+            //var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            var data = FS.readFile(memoryFSname);
+            var blob;
+
+            if (isSafari) blob = new Blob([data.buffer], { type: "application/octet-stream" });
+            else blob = new Blob([data.buffer], { type: "application/octet-binary" });
+
+            // NOTE: SaveAsDialog is a browser setting. For example, in Google Chrome,
+            // in Settings/Advanced/Downloads section you have a setting:
+            // 'Ask where to save each file before downloading' - which you can set true/false.
+            // If you enable this setting it would always ask you and bring the SaveAsDialog
+            saveAs(blob, localFSname);
+        }
+    </script>
+    </head>
+    <body>
+        <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+        <div id="inputs">
+            ROM (.gxa): &nbsp;&nbsp;&nbsp;&nbsp;<input type="file" id="rom" name="rom" accept=".gxa"><br>
+            Tileset (.png): <input type="file" id="tileset" name="tileset" accept=".png"><br>
+            <button onclick="loadrom()">Play</button>
+        </div>
+        <p id="output" />
+        <script>
+            var Module = {
+                print: (function() {
+                    var element = document.getElementById('output');
+                    if (element) element.value = ''; // clear browser cache
+                    return function(text) {
+                        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                        console.log(text);
+                        if (element) {
+                          element.value += text + "\n";
+                          element.scrollTop = element.scrollHeight; // focus on bottom
+                        }
+                    };
+                })(),            
+                canvas: (function() {
+                    var canvas = document.getElementById('canvas');
+                    return canvas;
+                })()
+            };
+
+            function loadrom() {
+                const romelem = document.querySelector('#rom');
+                const tilesetelem = document.querySelector('#tileset');
+
+                const rombuf = romelem.files[0].arrayBuffer();
+                const tilesetbuf = tilesetelem.files[0].arrayBuffer();
+
+                Promise.all([rombuf, tilesetbuf]).then(([rom, tileset]) => {
+                    FS.writeFile('rom.gxa', new Uint8Array(rom));
+                    FS.writeFile('rom.png', new Uint8Array(tileset));
+                    Module.ccall('loadfile', null, ['string'], ['rom.gxa']);
+
+                    const inputelem = document.querySelector('#inputs');
+                    inputelem.style.display = 'none';
+                })
+            }
+        </script>
+        {{{ SCRIPT }}}
+    </body>
+</html>

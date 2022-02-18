@@ -6,13 +6,19 @@
 #include <ctype.h>
 
 #include "raylib.h"
-#include "tinyfiledialogs.h"
+#include "ui.h"
 #include "vm.h"
 #include "sram.h"
 
-#include "../assets/splash.h"
 #include "../assets/tileset.h"
 #include "../assets/icon.h"
+
+#ifdef PLATFORM_WEB
+	#include <emscripten/emscripten.h>
+	#include "../assets/splash_web.h"
+#else
+	#include "../assets/splash.h"
+#endif
 
 enum {
 	ST_IDLE,
@@ -25,6 +31,9 @@ bool showfps = false;
 char message[64] = {0};
 u8 msgtime = 0;
 int speed = 60;
+Texture splash;
+
+#define GXA_YELLOW (Color) {255, 208, 64, 255}
 
 // _____________________________________________________________________________
 //
@@ -56,7 +65,9 @@ void err(const char *fmt, ...) {
 	va_end(args);
 
 	if (!vm->debug) {
-		strcat(buf, "\nTip: use --debug to get a memory dump");
+		#ifndef PLATFORM_WEB
+			strcat(buf, "\nTip: use --debug to get a memory dump");
+		#endif
 	} else {
 		FILE *dump = fopen("dump.txt", "wt");
 
@@ -73,7 +84,7 @@ void err(const char *fmt, ...) {
 		}
 	}
 	
-	tinyfd_messageBox("Error", buf, "ok", "error", 1);
+	msgbox("Error", buf, "error");
 	fprintf(stderr, "%s\n", buf);
 	exit(EXIT_FAILURE);
 }
@@ -84,16 +95,14 @@ void debugwrite(void) {
 	u16 addr = 0;
 	u8 val = 0;
 	while (true) {
-		char *input = tinyfd_inputBox(
-			"Debug write", "Input address to write to (hex/dec/oct):", " ");
+		char *input = prompt("Debug write", "Input address to write to (hex/dec/oct):");
 
 		if (input == NULL) return;
 		addr = strtoul(input, NULL, 0);
 		if (errno != ERANGE) break;
 	}
 	while (true) {
-		char *input = tinyfd_inputBox(
-			"Debug write", "Input value to write (hex/dec/oct):", " ");
+		char *input = prompt("Debug write", "Input value to write (hex/dec/oct):");
 
 		if (input == NULL) return;
 		val = strtoul(input, NULL, 0);
@@ -106,8 +115,7 @@ void debugwrite(void) {
 void debugread(void) {
 	u16 addr = 0;
 	while (true) {
-		char *input = tinyfd_inputBox(
-			"Debug read", "Input address to read (hex/dec/oct):", " ");
+		char *input = prompt("Debug read", "Input address to read (hex/dec/oct):");
 
 		if (input == NULL) return;
 		addr = strtoul(input, NULL, 0);
@@ -119,7 +127,7 @@ void debugread(void) {
 		msgstr, "Value at 0x%.4X (%d):\n0x%.2X (%d)",
 		addr, addr, vm->mem[addr], vm->mem[addr]
 	);
-	tinyfd_messageBox("Debug read", msgstr, "ok", "info", 1);
+	msgbox("Debug read", msgstr, "info");
 }
 
 #define SHOWMSG(...)\
@@ -185,6 +193,13 @@ void loadfile(char *name) {
 			err("Tileset has too many colors, max 16");
 		}
 
+		for (int i = 0; i < 16; i++) {
+			if (colors[i].a != 0 && colors[i].a != 255) {
+				UnloadImage(tileset);
+				err("Tileset has partial transparency, only alpha 0 or 255 is allowed");
+			}
+		}
+
 		vm->tileset = LoadTextureFromImage(tileset);
 		UnloadImage(tileset);
 	} else {
@@ -216,72 +231,92 @@ void loadfile(char *name) {
 // _____________________________________________________________________________
 //
 
+void mainloop(void);
+
 int main(int argc, char **argv) {
 	vm = malloc(sizeof(struct VM));
 	if (vm == NULL) err("Failed to allocate virtual machine");
 	
-	for (int i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			puts("gxVM: gxarch emulator\n");
-			puts("Usage: gxvm [options] [file]");
-			puts("-h, --help    Show this message");
-			puts("-d, --debug   Save memory dump on error");
-			puts("-n, --nosave  Don't create a .sav file\n");
-			puts("Keybinds:");
-			puts("Ctrl + O      Open ROM");
-			puts("Ctrl + F      Show/hide FPS");
-			puts("Ctrl + R      Debug read memory from address");
-			puts("Ctrl + S      Debug write value to address");
-			puts("Home          Reset");
-			puts("End           Exit, creates a memory dump in debug mode");
-			puts("Page Up/Down  Resize screen");
-			puts("Pause         Pause/continue emulation");
-			puts("Insert        Fast forward");
-			exit(EXIT_SUCCESS);
-		} else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
-			vm->debug = true;
-		} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nosave")) {
-			vm->nosave = true;
-		} else if (!strcmp(argv[i], "-dn") || !strcmp(argv[i], "-nd")) {
-			vm->debug = true;
-			vm->nosave = true;
-		} else {
-			// We can't use loadfile() here because window is not initialized
-			// (we don't want to init window in case the arguments have --help)
-			// Instead, the filename string is checked before the main loop.
-			strcpy(vm->filename, argv[i]);
+	#ifndef PLATFORM_WEB
+		for (int i = 1; i < argc; i++) {
+			if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+				puts("gxVM: gxarch emulator\n");
+				puts("Usage: gxvm [options] [file]");
+				puts("-h, --help    Show this message");
+				puts("-d, --debug   Save memory dump on error");
+				puts("-n, --nosave  Don't create a .sav file\n");
+				puts("Keybinds:");
+				puts("Ctrl + O      Open ROM");
+				puts("Ctrl + F      Show/hide FPS");
+				puts("Ctrl + R      Debug read memory from address");
+				puts("Ctrl + S      Debug write value to address");
+				puts("Home          Reset");
+				puts("End           Exit, creates a memory dump in debug mode");
+				puts("Page Up/Down  Resize screen");
+				puts("Pause         Pause/continue emulation");
+				puts("Insert        Fast forward");
+				exit(EXIT_SUCCESS);
+			} else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--debug")) {
+				vm->debug = true;
+			} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nosave")) {
+				vm->nosave = true;
+			} else if (!strcmp(argv[i], "-dn") || !strcmp(argv[i], "-nd")) {
+				vm->debug = true;
+				vm->nosave = true;
+			} else {
+				// We can't use loadfile() here because window is not initialized
+				// (we don't want to init window in case the arguments have --help)
+				// Instead, the filename string is checked before the main loop.
+				strcpy(vm->filename, argv[i]);
+			}
 		}
-	}
+	#endif
 
-	vm->scale = 4;
 	SetTraceLogLevel(vm->debug ? LOG_INFO : LOG_WARNING);
-	InitWindow(512, 512, "gxVM");
+
+	#ifdef PLATFORM_WEB
+		// The web canvas fills the entire browser window, assume we're on at least 720p
+		vm->scale = 6;
+		InitWindow(768, 768, "");
+	#else
+		vm->scale = 4;
+		InitWindow(512, 512, "gxVM");
+	#endif
 	SetTargetFPS(speed);
 
 	// ESC is a keycode in gxarch, it is also used to exit a raylib app by default
 	// End can be used to exit gxarch, it also creates a memory dump in debug mode
 	SetExitKey(0);
 
-	Image icon = {
-		ICON_DATA,
-		ICON_WIDTH,
-		ICON_HEIGHT,
-		1, ICON_FORMAT
-	};
+	#ifdef PLATFORM_DESKTOP
+		Image icon = {
+			ICON_DATA,
+			ICON_WIDTH,
+			ICON_HEIGHT,
+			1, ICON_FORMAT
+		};
 
-	SetWindowIcon(icon);
+		SetWindowIcon(icon);
+	#endif
 
 	vm->screen = LoadRenderTexture(SCREENW, SCREENH);
 
 	// Load splash screen from header file
 	// Default tileset is loaded if a ROM doesn't have a tileset, see loadfile()
 	Image splashimg = {
-		SPLASH_DATA,
-		SPLASH_WIDTH,
-		SPLASH_HEIGHT,
-		1, SPLASH_FORMAT
+		#ifdef PLATFORM_WEB
+			SPLASH_WEB_DATA,
+			SPLASH_WEB_WIDTH,
+			SPLASH_WEB_HEIGHT,
+			1, SPLASH_WEB_FORMAT
+		#else
+			SPLASH_DATA,
+			SPLASH_WIDTH,
+			SPLASH_HEIGHT,
+			1, SPLASH_FORMAT
+		#endif
 	};
-	Texture splash = LoadTextureFromImage(splashimg);
+	splash = LoadTextureFromImage(splashimg);
 
 	atexit(cleanup);
 
@@ -294,153 +329,165 @@ int main(int argc, char **argv) {
 	// _________________________________________________________________________
 	//
 	
-	while (!WindowShouldClose()) {
-		if (state == ST_IDLE && IsFileDropped()) {
-			int unused;
-			char **files = GetDroppedFiles(&unused);
-			loadfile(files[0]);
-			ClearDroppedFiles();
-		}
-
-		if (IsKeyPressed(KEY_PAGE_UP)) {
-			vm->scale++;
-			SetWindowSize(SCREENW * vm->scale, SCREENH * vm->scale);
-			SHOWMSG("%d x %d", SCREENW * vm->scale, SCREENH * vm->scale);
-		}
-
-		else if (IsKeyPressed(KEY_PAGE_DOWN)) {
-			vm->scale--;
-			if (!vm->scale) vm->scale = 1;
-			SetWindowSize(SCREENW * vm->scale, SCREENH * vm->scale);
-			SHOWMSG("%d x %d", SCREENW * vm->scale, SCREENH * vm->scale);
-		}
-
-		else if (IsKeyPressed(KEY_HOME)) {
-			loadfile(vm->filename);
-			SHOWMSG("reset");
-		}
-
-		else if (IsKeyPressed(KEY_END)) {
-			if (vm->debug) err("User initiated error");
-			else exit(EXIT_SUCCESS);
-		}
-
-		else if (IsKeyPressed(KEY_PAUSE)) {
-			switch (state) {
-				case ST_RUNNING:
-					state = ST_PAUSED;
-					SHOWMSG("paused");
-					SetWindowTitle("gxVM - paused");
-					break;
-
-				case ST_PAUSED:
-					state = ST_RUNNING;
-					SHOWMSG("running");
-					SetWindowTitle("gxVM - running");
-					break;
-
-				case ST_IDLE:
-					SHOWMSG("no program loaded");
-					break;
-			}
-		}
-
-		else if (IsKeyPressed(KEY_INSERT)) {
-			switch (speed) {
-				case 60:
-					speed = 120;
-					SHOWMSG("2x speed");
-					SetWindowTitle("gxVM - running 2x");
-					break;
-
-				case 120:
-					speed = 240;
-					SHOWMSG("4x speed");
-					SetWindowTitle("gxVM - running 4x");
-					break;
-
-				case 240:
-					speed = 60;
-					SHOWMSG("normal speed");
-					SetWindowTitle("gxVM - running");
-					break;
-			}
-			SetTargetFPS(speed);
-		}
-		
-		else if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL))) {
-			if (IsKeyPressed(KEY_O)) {
-				char const *filter[1] = {"*.gxa"};
-				char path[512];
-				strcpy(path, GetWorkingDirectory());
-				strcat(path, "/*");
-
-				char *file = tinyfd_openFileDialog("Open ROM", path, 1, filter, "gxarch ROMs", 0);
-				if (file != NULL) loadfile(file);
-			}
-
-			else if (IsKeyPressed(KEY_F)) showfps = !showfps;
-			else if (IsKeyPressed(KEY_R)) debugread();
-			else if (IsKeyPressed(KEY_S)) debugwrite();
-		}
-
-		// _____________________________________________________________________
-		//
-		//  Update and Draw
-		// _____________________________________________________________________
-		//
-
-		BeginTextureMode(vm->screen);
-		if (state != ST_PAUSED) ClearBackground(BLACK);
-
-		switch (state) {
-			case ST_IDLE:
-				DrawTexture(splash, 0, 0, WHITE);
-				break;
-
-			case ST_RUNNING:
-				while (!vm->needdraw) step();
-				// fall through
-				
-			case ST_PAUSED:
-				vm->needdraw = false;
-				break;
-		}
-
-		// Show message for 1 second
-		if (msgtime < 60) {
-			// Draw a thick black outline with yellow text in the middle
-			for (int x = 0; x < 3; x++) {
-				for (int y = 0; y < 3; y++) {
-					DrawText(message, x, y, 10, BLACK);
-				}
-			}
-			DrawText(message, 1, 1, 10, YELLOW);
-			msgtime++;
-		}
-
-		if (showfps) {
-			const char *fps = TextFormat("%d", GetFPS());
-			for (int x = 0; x < 3; x++) {
-				for (int y = 0; y < 3; y++) {
-					DrawText(fps, x, 117 + y, 10, BLACK);
-				}
-			}
-			DrawText(fps, 1, 118, 10, YELLOW);
-		}
-
-		EndTextureMode();
-
-		BeginDrawing();
-		ClearBackground(BLACK);
-		DrawTexturePro(
-			vm->screen.texture,
-			(Rectangle){0, 0, SCREENW, -SCREENH},
-			(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
-			(Vector2){0, 0}, 0.0f, WHITE
-		);
-		EndDrawing();
-	}
+	#ifdef PLATFORM_WEB
+		emscripten_set_main_loop(mainloop, 240, 1);
+	#else
+		while (!WindowShouldClose()) mainloop();
+	#endif
 
 	exit(EXIT_SUCCESS);
+}
+
+void mainloop(void) {
+	if (state == ST_IDLE && IsFileDropped()) {
+		int unused;
+		char **files = GetDroppedFiles(&unused);
+		loadfile(files[0]);
+		ClearDroppedFiles();
+	}
+
+	if (IsKeyPressed(KEY_PAGE_UP)) {
+		vm->scale++;
+		SetWindowSize(SCREENW * vm->scale, SCREENH * vm->scale);
+		SHOWMSG("%d x %d", SCREENW * vm->scale, SCREENH * vm->scale);
+	}
+
+	else if (IsKeyPressed(KEY_PAGE_DOWN)) {
+		vm->scale--;
+		if (!vm->scale) vm->scale = 1;
+		SetWindowSize(SCREENW * vm->scale, SCREENH * vm->scale);
+		SHOWMSG("%d x %d", SCREENW * vm->scale, SCREENH * vm->scale);
+	}
+
+	else if (IsKeyPressed(KEY_HOME)) {
+		loadfile(vm->filename);
+		SHOWMSG("reset");
+	}
+
+	else if (IsKeyPressed(KEY_END)) {
+		if (vm->debug) err("User initiated error");
+		else exit(EXIT_SUCCESS);
+	}
+
+	else if (IsKeyPressed(KEY_PAUSE)) {
+		switch (state) {
+			case ST_RUNNING:
+				state = ST_PAUSED;
+				SHOWMSG("paused");
+				SetWindowTitle("gxVM - paused");
+				break;
+
+			case ST_PAUSED:
+				state = ST_RUNNING;
+				SHOWMSG("running");
+				SetWindowTitle("gxVM - running");
+				break;
+
+			case ST_IDLE:
+				SHOWMSG("no program loaded");
+				break;
+		}
+	}
+
+	else if (IsKeyPressed(KEY_INSERT)) {
+		switch (speed) {
+			case 60:
+				speed = 120;
+				SHOWMSG("2x speed");
+				SetWindowTitle("gxVM - running 2x");
+				break;
+
+			case 120:
+				speed = 240;
+				SHOWMSG("4x speed");
+				SetWindowTitle("gxVM - running 4x");
+				break;
+
+			case 240:
+				speed = 60;
+				SHOWMSG("normal speed");
+				SetWindowTitle("gxVM - running");
+				break;
+		}
+		SetTargetFPS(speed);
+	}
+
+	#ifdef PLATFORM_WEB
+		else if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT))) {
+	#else
+		else if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL))) {
+	#endif
+		if (IsKeyPressed(KEY_O)) {
+			char const *filter[1] = {"*.gxa"};
+			char path[512];
+			strcpy(path, GetWorkingDirectory());
+			strcat(path, "/*");
+
+			char *file = openfile("Open ROM", path, 1, filter, "gxarch ROMs");
+			if (file != NULL) loadfile(file);
+		}
+
+		else if (IsKeyPressed(KEY_F)) showfps = !showfps;
+		else if (IsKeyPressed(KEY_R)) debugread();
+		else if (IsKeyPressed(KEY_S)) debugwrite();
+	}
+
+	// _____________________________________________________________________
+	//
+	//  Update and Draw
+	// _____________________________________________________________________
+	//
+
+	BeginTextureMode(vm->screen);
+	if (state != ST_PAUSED) ClearBackground(BLACK);
+
+	switch (state) {
+		case ST_IDLE:
+			DrawTexture(splash, 0, 0, WHITE);
+			break;
+
+		case ST_RUNNING:
+			while (!vm->needdraw) step();
+			// fall through
+			
+		case ST_PAUSED:
+			vm->needdraw = false;
+			break;
+	}
+
+	// Show message for 1 second
+	if (msgtime < 60) {
+		// Draw a thick black outline with yellow text in the middle
+		for (int x = 0; x < 3; x++) {
+			for (int y = 0; y < 3; y++) {
+				DrawText(message, x, y, 10, BLACK);
+			}
+		}
+		DrawText(message, 1, 1, 10, GXA_YELLOW);
+		msgtime++;
+	}
+
+	if (showfps) {
+		const char *fps = TextFormat("%d", GetFPS());
+		for (int x = 0; x < 3; x++) {
+			for (int y = 0; y < 3; y++) {
+				DrawText(fps, x, 117 + y, 10, BLACK);
+			}
+		}
+		DrawText(fps, 1, 118, 10, GXA_YELLOW);
+	}
+
+	EndTextureMode();
+
+	BeginDrawing();
+	ClearBackground(BLACK);
+
+	DrawTexturePro(
+		vm->screen.texture,
+		(Rectangle){0, 0, SCREENW, -SCREENH},
+		(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
+		(Vector2){0, 0}, 0.0f, WHITE
+	);
+
+	EndDrawing();
 }

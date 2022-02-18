@@ -67,4 +67,4 @@ void _step(struct VM *vm);
 #define consume16() consume() << 8 | consume()
 #define step() _step(vm)
 
-#endif
+#endif // vm.h

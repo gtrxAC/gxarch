@@ -1,22 +1,23 @@
 .vscode/
 examples/testing/
 node_modules/
+emsdk/
+raylib/
 include/
 lib/
+assets/*.h
 
 gxvm
-gxvm.exe
 png2h
-png2h.exe
+*.exe
 
-splash.h
-tileset.h
-icon.h
+*.data
+*.js
+*.wasm
+index.html
 
 dump.txt
 screenshot*.png
 *.gxa
 *.sav
 *.sym.txt
-examples/*.html
-examples/*/*.html
