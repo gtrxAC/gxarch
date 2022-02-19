@@ -54,7 +54,7 @@ module.exports = function (name, args) {
 				`eq ${args[0]} ${args[1]} %29`,
 				`cjs %29 ${args[2]}`
 			]
-			
+
 		case 'keyj':
 			needargs('keyj', 2);
 			return [

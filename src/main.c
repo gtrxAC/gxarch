@@ -12,6 +12,7 @@
 
 #include "../assets/tileset.h"
 #include "../assets/icon.h"
+#include "../assets/font.h"
 
 #ifdef PLATFORM_WEB
 	#include <emscripten/emscripten.h>
@@ -31,7 +32,10 @@ bool showfps = false;
 char message[64] = {0};
 u8 msgtime = 0;
 int speed = 60;
+bool filefromargv = false;
+
 Texture splash;
+Font font;
 
 #define GXA_YELLOW (Color) {255, 208, 64, 255}
 
@@ -41,21 +45,6 @@ Texture splash;
 // _____________________________________________________________________________
 //
 
-// Dump a range of memory into a file.
-// Note: start/end should be divided by 16
-// For example, to dump 0xF000 - 0xFEFF, use 0xF00 for start and 0xFEF for end.
-void dumprange(FILE *dump, u16 start, u16 end) {
-	for (u16 i = start; i < end; i++) {
-		fprintf(dump, "0x%.3x |", i);
-
-		for (u8 j = 0; j < 16; j++) {
-			fprintf(dump, "%.2X ", vm->mem[i * 16 + j]);
-		}
-
-		fprintf(dump, "\n");
-	}
-}
-
 // Print an error message with a memory dump and exit.
 void err(const char *fmt, ...) {
 	char buf[256];
@@ -64,29 +53,22 @@ void err(const char *fmt, ...) {
 	vsprintf(buf, fmt, args);
 	va_end(args);
 
-	if (!vm->debug) {
-		#ifndef PLATFORM_WEB
+	#ifndef PLATFORM_WEB
+		if (!vm->debug) {
 			strcat(buf, "\nTip: use --debug to get a memory dump");
-		#endif
-	} else {
-		FILE *dump = fopen("dump.txt", "wt");
-
-		if (dump) {
-			fprintf(dump, "ROM/RAM\n");
-			dumprange(dump, 0x000, 0xEFF);
-			fprintf(dump, "\n\nSave RAM\n");
-			dumprange(dump, 0xF00, 0xFEF);
-			fprintf(dump, "\n\nReserved\n");
-			dumprange(dump, 0xFF0, 0x1000);
-			fclose(dump);
 		} else {
-			perror("Failed to write dump file");
+			SaveFileData("dump.bin", vm->mem, 0x10000);
 		}
-	}
-	
+	#endif
+
 	msgbox("Error", buf, "error");
 	fprintf(stderr, "%s\n", buf);
-	exit(EXIT_FAILURE);
+
+	if (filefromargv) exit(EXIT_FAILURE);
+	else {
+		state = ST_IDLE;
+		vm->needdraw = true;
+	}
 }
 
 // Ask for an address and value to write to memory.
@@ -153,12 +135,14 @@ void cleanup() {
 void loadfile(char *name) {
 	strcpy(vm->filename, name);
 
+	// Load ROM into RAM
 	unsigned int size;
 	u8 *file = LoadFileData(name, &size);
 
 	if (!file) err("Failed to load file");
 	if (size > 0xFF00) err("ROM too large, 0x%.4X > 0xFF00", size);
-	
+
+	// Copy ROM into gxarch RAM, clear rest of gxarch RAM, load SRAM, init registers
 	memcpy(&vm->mem, file, size);
 	for (int i = size; i < 0x10000; i++) vm->mem[i] = 0;
 	load();
@@ -170,7 +154,7 @@ void loadfile(char *name) {
 	UnloadFileData(file);
 
 	// Load tileset with the same filename as the ROM, for example:
-	// ROM name is program.bin, try to load program.png
+	// ROM name is program.gxa, try to load program.png
 	char *imgname = TextReplace(name, GetFileExtension(name), ".png");
 
 	if (FileExists(imgname)) {
@@ -186,20 +170,24 @@ void loadfile(char *name) {
 		}
 
 		Color *colors = LoadImagePalette(tileset, 17, &palsize);
-		UnloadImagePalette(colors);
 
 		if (palsize > 16) {
+			UnloadImagePalette(colors);
 			UnloadImage(tileset);
 			err("Tileset has too many colors, max 16");
 		}
 
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < palsize; i++) {
 			if (colors[i].a != 0 && colors[i].a != 255) {
 				UnloadImage(tileset);
-				err("Tileset has partial transparency, only alpha 0 or 255 is allowed");
+				err(TextFormat(
+					"Tileset color (%d, %d, %d, %d) has partial transparency, only alpha 0 or 255 is allowed",
+					colors[i].r, colors[i].g, colors[i].b, colors[i].a
+				));
 			}
 		}
 
+		UnloadImagePalette(colors);
 		vm->tileset = LoadTextureFromImage(tileset);
 		UnloadImage(tileset);
 	} else {
@@ -236,7 +224,7 @@ void mainloop(void);
 int main(int argc, char **argv) {
 	vm = malloc(sizeof(struct VM));
 	if (vm == NULL) err("Failed to allocate virtual machine");
-	
+
 	#ifndef PLATFORM_WEB
 		for (int i = 1; i < argc; i++) {
 			if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
@@ -268,6 +256,7 @@ int main(int argc, char **argv) {
 				// (we don't want to init window in case the arguments have --help)
 				// Instead, the filename string is checked before the main loop.
 				strcpy(vm->filename, argv[i]);
+				filefromargv = true;
 			}
 		}
 	#endif
@@ -318,17 +307,25 @@ int main(int argc, char **argv) {
 	};
 	splash = LoadTextureFromImage(splashimg);
 
+	Image fontimg = {
+		FONT_DATA,
+		FONT_WIDTH,
+		FONT_HEIGHT,
+		1, FONT_FORMAT
+	};
+	font = LoadFontFromImage(fontimg, MAGENTA, ' ');
+
 	atexit(cleanup);
 
 	// If a file was specified from command line args, load it
-	if (state == ST_IDLE && strlen(vm->filename)) loadfile(vm->filename);
+	if (filefromargv) loadfile(vm->filename);
 
 	// _________________________________________________________________________
 	//
 	//  Main loop
 	// _________________________________________________________________________
 	//
-	
+
 	#ifdef PLATFORM_WEB
 		emscripten_set_main_loop(mainloop, 240, 1);
 	#else
@@ -413,6 +410,7 @@ void mainloop(void) {
 	}
 
 	#ifdef PLATFORM_WEB
+		// Use alt on Web, ctrl may interfere with browser's keyboard shortcuts
 		else if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT))) {
 	#else
 		else if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL))) {
@@ -449,21 +447,21 @@ void mainloop(void) {
 		case ST_RUNNING:
 			while (!vm->needdraw) step();
 			// fall through
-			
+
 		case ST_PAUSED:
 			vm->needdraw = false;
 			break;
 	}
 
 	// Show message for 1 second
-	if (msgtime < 60) {
+	if (msgtime < speed) {
 		// Draw a thick black outline with yellow text in the middle
 		for (int x = 0; x < 3; x++) {
 			for (int y = 0; y < 3; y++) {
-				DrawText(message, x, y, 10, BLACK);
+				DrawTextEx(font, message, (Vector2) {x, y}, 8, 0, BLACK);
 			}
 		}
-		DrawText(message, 1, 1, 10, GXA_YELLOW);
+		DrawTextEx(font, message, (Vector2) {1, 1}, 8, 0, GXA_YELLOW);
 		msgtime++;
 	}
 
@@ -471,10 +469,10 @@ void mainloop(void) {
 		const char *fps = TextFormat("%d", GetFPS());
 		for (int x = 0; x < 3; x++) {
 			for (int y = 0; y < 3; y++) {
-				DrawText(fps, x, 117 + y, 10, BLACK);
+				DrawTextEx(font, fps, (Vector2) {x, 119 + y}, 8, 0, BLACK);
 			}
 		}
-		DrawText(fps, 1, 118, 10, GXA_YELLOW);
+		DrawTextEx(font, fps, (Vector2) {1, 120}, 8, 0, GXA_YELLOW);
 	}
 
 	EndTextureMode();

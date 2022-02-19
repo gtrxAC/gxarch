@@ -51,10 +51,8 @@ printv: {
 	cj curchar printvdraw  ; if not null term, continue
 	ret
 printvdraw:
-	set %0 PRINTV_CHARSPERLINE  ; source Y = char / chars per line
-	div curchar %0 sy
-	set %0 0                   ; source X = division remainder
-	add %r %0 sx
+	div curchar (%0:PRINTV_CHARSPERLINE) sy  ; source Y = char / chars per line
+	.mov %r sx                               ; source X = division remainder
 
 	set %0 PRINTV_WIDTH
 	set %1 PRINTV_HEIGHT
@@ -70,8 +68,7 @@ printvdraw:
 	dw sx sy %0 %1  ; draw character
 	at x y
 
-	set %2 1          ; go to next character
-	add strl %2 strl
+	add strl (%2:1) strl  ; go to next character
 	add strh %h strh
 
 	add x %0 x  ; next character cell

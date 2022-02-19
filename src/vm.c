@@ -122,7 +122,6 @@ void _step(struct VM *vm) {
 			u8 val = vm->reg[consume()];
 			u16 addr = consume16();
 			vm->mem[addr] = val;
-			if (addr == SRAM_TOGGLE && val) load();
 			break;
 		}
 
@@ -131,7 +130,6 @@ void _step(struct VM *vm) {
 			u8 reg = consume();
 			u16 addr = vm->reg[reg] << 8 | vm->reg[reg + 1];
 			vm->mem[addr] = val;
-			if (addr == SRAM_TOGGLE && val) load();
 			break;
 		}
 
@@ -146,12 +144,12 @@ void _step(struct VM *vm) {
 		BINOP16(ADD, +)
 		BINOP16(SUB, -)
 		BINOP16(MUL, *)
-		
+
 		case OP_DIV: { \
 			u8 first = vm->reg[consume()];
 			u8 second = consume();
 			u8 secondval = vm->reg[second];
-			
+
 			if (!secondval)
 				err("Division by zero at 0x%.4X (%%%d is 0)", vm->pc - 3, second);
 
@@ -159,7 +157,7 @@ void _step(struct VM *vm) {
 			vm->reg[REMAINDER] = first % secondval;
 			break;
 		}
-		
+
 		#define BINOP(op, sign) \
 			case OP_ ## op: { \
 				u8 result = vm->reg[consume()] sign vm->reg[consume()]; \
@@ -212,7 +210,7 @@ void _step(struct VM *vm) {
 			vm->drawwidth = vm->reg[consume()];
 			vm->drawheight = vm->reg[consume()];
 			break;
-			
+
 		case OP_AT:
 			DrawTextureRec(
 				vm->tileset,
@@ -227,7 +225,7 @@ void _step(struct VM *vm) {
 			vm->reg[consume()] = (shift == needshift[key] || needshift[key] == 2) && IsKeyDown(gx2rl[key]);
 			break;
 		}
-		
+
 		case OP_SND:
 			err("SND not implemented, used at 0x%.4X", vm->pc - 1);
 			break;

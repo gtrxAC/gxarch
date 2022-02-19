@@ -1,7 +1,7 @@
 ; Your Program for gxarch
 ; Description
-; Date: 
-; Author: 
+; Date:
+; Author:
 
 dat main
 
@@ -19,7 +19,7 @@ main:
 
 loop:
 	js updatemouse  ; requires mouse.gxs
-	
+
 	; Update loop
 
 draw:

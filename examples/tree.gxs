@@ -32,8 +32,7 @@ addr grid 0x4000  ; then draw it on screen after generating.
 pixeladdr:
 	set %23 hi(grid)
 	set %24 lo(grid)
-	set %0 GRIDH
-	mul %21 %0 %24
+	mul %21 (%0:GRIDH) %24
 	add %23 %h %23
 	add %24 %20 %24
 	add %23 %h %23
@@ -80,7 +79,7 @@ main: {
 	reg SIZE %4
 	reg MAXITERH %15
 	reg MAXITERL %16
-	
+
 	set SIZE 63     ; set constants
 	set MAXITERH 5  ; max iterations is a 16-bit value, just like the iterator (ih, il)
 	set MAXITERL 0  ; so we can have more than 256 iterations

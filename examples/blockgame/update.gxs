@@ -1,8 +1,6 @@
 update:
-	ld %0 framecount  ; only allow moving every 4th frame
-	set %1 SPEED
-	div %0 %1 %29
-	set %0 0
+	ld %0 framecount       ; only allow moving every 4th frame
+	div %0 (%1:SPEED) %29
 	cj %r getmouseblock
 
 	reg WW %5
@@ -15,18 +13,16 @@ update:
 	set WW WWIDTH
 	set BCOUNT BLOCKCOUNT
 	set WH WHEIGHT
-	
-	set _13 13     ; screen can show 13 blocks in both X/Y at a time, so maximum 
-	sub WW _13 WW  ; possible player X/Y is (world width/height - 13) so we
-	sub WH _13 WH  ; don't try to draw out of bounds (top left block on screen
-	               ; is player position)
+
+	sub WW (_13:13) WW  ; screen can show 13 blocks in both X/Y at a time, so maximum
+	sub WH _13 WH       ; possible player X/Y is (world width/height - 13) so we
+	                    ; don't try to draw out of bounds (top left block on screen
+	                    ; is player position)
 
 	.keyjs K_w moveup
 	.keyjs K_a moveleft
 	.keyjs K_s movedown
 	.keyjs K_d moveright
-	.keyjs K_z prevblock
-	.keyjs K_x nextblock
 ; ______________________________________________________________________________
 ;
 ;  Previous/next block keys
@@ -74,9 +70,8 @@ nonextblock:
 ; ______________________________________________________________________________
 ;
 getmouseblock:
-	set %2 BLOCKSIZE  ; get the block that the mouse is pointing at
-	ld %0 MOUSEX
-	div %0 %2 %0
+	ld %0 MOUSEX              ; get the block that the mouse is pointing at
+	div %0 (%2:BLOCKSIZE) %0
 	ld %1 playerx
 	add %0 %1 %0
 	st %0 mousexblock
@@ -103,9 +98,8 @@ getblockaddr:
 	set %0 hi(blocks)  ; block address = starting address
 	set %1 lo(blocks)
 
-	ld %2 mouseyblock  ; block address += mouse y block * world width
-	set %3 WWIDTH
-	mul %2 %3 %2
+	ld %2 mouseyblock      ; block address += mouse y block * world width
+	mul %2 (%3:WWIDTH) %2
 	add %0 %h %0
 	add %1 %2 %1
 
@@ -148,8 +142,7 @@ moverightlimit:
 
 removeblock:
 	js getblockaddr
-	set %4 0
-	sti %4 %0
+	sti (%4:0) %0
 	ret
 
 placeblock:

@@ -27,10 +27,8 @@ dat main
 ; ______________________________________________________________________________
 ;
 main:
-	set %0 1           ; enable SRAM
-	st %0 SRAM_TOGGLE
-	set %0 2           ; set current color to white
-	st %0 curcolor
+	st (%0:1) SRAM_TOGGLE  ; enable SRAM
+	st (%0:2) curcolor     ; set current color to white
 
 
 update:
@@ -41,11 +39,9 @@ moveleft:
 	ld %0 ldowntime       ; if left has been down for longer (key down timer > 0), ignore
 	cj %0 checkmoveright
 
-	ld %0 curcolor             ; if color is already 0, ignore
-	set %1 0
-	.eqj %0 %1 checkmoveright
-	set %1 1                   ; decrement color
-	sub %0 %1 %0
+	ld %0 curcolor                 ; if color is already 0, ignore
+	.eqj %0 (%1:0) checkmoveright
+	sub %0 (%1:1) %0               ; decrement color
 	st %0 curcolor
 
 	ld %0 ldowntime     ; increment key down timer
@@ -67,16 +63,13 @@ moveright:
 
 	ld %0 curcolor         ; if color is already COLORCOUNT - 1, ignore
 	set %1 COLORCOUNT
-	set %2 1
-	sub %1 %2 %1
+	sub %1 (%2:1) %1
 	.eqj %0 %1 checkmouse
-	set %1 1               ; increment color
-	add %0 %1 %0
+	add %0 (%1:1) %0       ; increment color
 	st %0 curcolor
 
 	ld %0 rdowntime  ; increment key down timer
-	set %1 1
-	add %0 %1 %0
+	add %0 (%1:1) %0
 	st %0 rdowntime
 	jmp checkmouse
 
@@ -93,14 +86,12 @@ mousedown:
 	set %0 hi(SRAM)  ; init address to write to (0xF000 start of SRAM)
 	set %1 lo(SRAM)
 
-	ld %2 MOUSEX      ; get mouse coordinates divided by scale
-	ld %3 MOUSEY      ; to get X/Y of pixel pointed at
-	set %4 SCALE
-	div %2 %4 %2
+	ld %2 MOUSEX          ; get mouse coordinates divided by scale
+	ld %3 MOUSEY          ; to get X/Y of pixel pointed at
+	div %2 (%4:SCALE) %2
 	div %3 %4 %3
 
-	set %5 CANVASW  ; add (pixel Y * canvas width) to address
-	mul %3 %5 %1
+	mul %3 (%5:CANVASW) %1  ; add (pixel Y * canvas width) to address
 	add %0 %h %0
 
 	add %1 %2 %1  ; add pixel X to address
@@ -123,7 +114,7 @@ draw: {
 	reg px %9
 	reg dstx %10
 	reg dsty %11
-	
+
 	set x 0            ; iterator X/Y
 	set y 0
 	set curh 0            ; current pixel address

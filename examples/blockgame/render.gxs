@@ -38,8 +38,7 @@ render:
 		set bgw BG_W        ; only horizontally scrolling and much slower, using
 		set bgh BG_H        ; two counters (framecount and scrollcount), see
 		dw bgx bgy bgw bgh  ; renderbg2loop
-		set %1 0
-		at %1 %1
+		at (%1:0) %1
 
 		set bgx 0           ; set draw source for BG2
 		set bgy BG2_Y       ; we only need to do this once and the at instruction
@@ -60,14 +59,11 @@ render:
 	}
 
 	ld %0 framecount  ; increment frame count
-	set %1 1
-	add %0 %1 %0
+	add %0 (%1:1) %0
 	st %0 framecount
 
-	set %2 CLOUDSPEED     ; if framecount is divisible by CLOUDSPEED,
-	div %0 %2 %29         ; increment cloud scroll count
-	set %0 0
-	.eqjs %r %0 incscroll
+	div %0 (%2:CLOUDSPEED) %29  ; if framecount is divisible by CLOUDSPEED,
+	.eqjs %r (%0:0) incscroll   ; increment cloud scroll count
 
 ; ______________________________________________________________________________
 ;
@@ -80,7 +76,7 @@ render:
 		reg x %4       ; X/Y iterator
 		reg y %5
 		reg px %6      ; player X/Y
-		reg py %7      
+		reg py %7
 		reg blockh %8  ; block address, high/low bytes
 		reg blockl %9
 		reg block %10  ; value at block address (block value/ID)
@@ -127,8 +123,7 @@ render:
 		add blockh %h blockh
 
 		ldi block blockh          ; load current block, skip drawing if it's air
-		set %0 0
-		.eqj block %0 renderskip
+		.eqj block (%0:0) renderskip
 
 		set %0 BLOCKCOUNT         ; skip drawing if block id exceeds block count
 		sub %0 _1 %0
@@ -176,22 +171,15 @@ render:
 	set arg3 2
 	js print
 
-	set %0 BLOCK_BORDER_SX    ; draw border for current block
-	set %1 BLOCK_BORDER_SY
-	set %2 BLOCK_BORDER_SIZE
-	dw %0 %1 %2 %2
-	set %0 BLOCK_BORDER_X
-	set %1 BLOCK_BORDER_Y
-	at %0 %1
+	; draw border for current block
+	dw (%0:BLOCK_BORDER_SX) (%1:BLOCK_BORDER_SY) (%2:BLOCK_BORDER_SIZE) %2
+	at (%0:BLOCK_BORDER_X) (%1:BLOCK_BORDER_Y)
 
-	ld %0 curblock    ; draw current block
+	; draw current block
+	ld %0 curblock
 	mul %0 %12 %0
-	set %1 BLOCKS_Y
-	set %2 BLOCKSIZE
-	dw %0 %1 %2 %2
-	set %0 79
-	set %1 1
-	at %0 %1
+	dw %0 (%1:BLOCKS_Y) (%2:BLOCKSIZE) %2
+	at (%0:79) (%1:1)
 
 	end
 	jmp update
@@ -205,8 +193,7 @@ render:
 ; Increment cloud scroll counter
 incscroll:
 	ld %0 scrollcount
-	set %1 1
-	add %0 %1 %0
+	add %0 (%1:1) %0
 	st %0 scrollcount
 	ret
 
@@ -216,10 +203,7 @@ drawindicator:
 	reg y %5
 	reg BSIZE %12
 
-	set %1 SEL_BORDER_X
-	set %2 SEL_BORDER_Y
-	set %3 BLOCKSIZE
-	dw %1 %2 %3 %3
+	dw (%1:SEL_BORDER_X) (%2:SEL_BORDER_Y) BSIZE BSIZE
 	mul x BSIZE %23
 	mul y BSIZE %24
 	at %23 %24

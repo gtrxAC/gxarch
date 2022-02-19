@@ -14,9 +14,9 @@ const labelrefs = new Map();
 
 let run = false;
 let debug = false;
-let buildweb = false;
 let file;
 let lastlabel;
+let lastins = 0;
 
 // _____________________________________________________________________________
 //
@@ -123,6 +123,9 @@ semantics.addOperation('parse', {
 	value_hex(_, digits) { return parsenum(digits, 16) },
 	value_bin(_, digits) { return parsenum(digits, 2) },
 	value_dec(digits) { return parsenum(digits) },
+	value_lo(_, __, addr, ___) { return [addr.parse()[1]] },
+	value_hi(_, __, addr, ___) { return [addr.parse()[0]] },
+	value_label(ident) { return getvar(ident, 'value') },
 
 	address_hex(_, digits) { return parsenum(digits, 16, true) },
 	address_bin(_, digits) { return parsenum(digits, 2, true) },
@@ -216,6 +219,11 @@ semantics.addOperation('eval', {
 
 	register_ident(ident) { output.push(...getvar(ident, 'register')) },
 
+	register_val(_, reg, __, val, ___) {
+		output.splice(lastins, 0, 1, ...reg.parse(), ...val.parse());
+		reg.eval();
+	},
+
 	Instruction_block(_, insts, __) {
 		vars.push(new Map());  // create a scope for this block
 		insts.eval();
@@ -230,81 +238,98 @@ semantics.addOperation('eval', {
 		}
 		lastlabel = ident.sourceString;
 	},
-	Instruction_dat(_, data) { data.asIteration().eval() },
-	Instruction_val(_, ident, val) { setvar(ident, val.parse(), 'value') },
-	Instruction_addr(_, ident, addr) { setvar(ident, addr.parse(), 'address') },
-	Instruction_reg(_, ident, reg) { setvar(ident, reg.parse(), 'register') },
-
-	Instruction_nop(_) { output.push(0); },
+	Instruction_dat(_, data) {
+		data.asIteration().eval(); lastins = output.length;
+	},
+	Instruction_val(_, ident, val) {
+		setvar(ident, val.parse(), 'value'); lastins = output.length;
+	},
+	Instruction_addr(_, ident, addr) {
+		setvar(ident, addr.parse(), 'address'); lastins = output.length;
+	},
+	Instruction_reg(_, ident, reg) {
+		setvar(ident, reg.parse(), 'register'); lastins = output.length;
+	},
+	Instruction_nop(_) {
+		output.push(0); lastins = output.length;
+	},
 	Instruction_set(_, reg, val) {
-		output.push(1); reg.eval(); val.eval();
+		output.push(1); reg.eval(); val.eval(); lastins = output.length;
 	},
 	Instruction_ld(_, reg, addr) {
-		output.push(2); reg.eval(); addr.eval();
+		output.push(2); reg.eval(); addr.eval(); lastins = output.length;
 	},
 	Instruction_ldi(_, reg, addr) {
-		output.push(3); reg.eval(); addr.eval();
+		output.push(3); reg.eval(); addr.eval(); lastins = output.length;
 	},
 	Instruction_st(_, reg, addr) {
-		output.push(4); reg.eval(); addr.eval();
+		output.push(4); reg.eval(); addr.eval(); lastins = output.length;
 	},
 	Instruction_sti(_, reg, addr) {
-		output.push(5); reg.eval(); addr.eval();
+		output.push(5); reg.eval(); addr.eval(); lastins = output.length;
 	},
 	Instruction_add(_, reg1, reg2, reg3) {
-		output.push(6); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(6); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_sub(_, reg1, reg2, reg3) {
-		output.push(7); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(7); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_mul(_, reg1, reg2, reg3) {
-		output.push(8); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(8); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_div(_, reg1, reg2, reg3) {
-		output.push(9); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(9); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_and(_, reg1, reg2, reg3) {
-		output.push(10); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(10); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_or(_, reg1, reg2, reg3) {
-		output.push(11); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(11); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_xor(_, reg1, reg2, reg3) {
-		output.push(12); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(12); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_eq(_, reg1, reg2, reg3) {
-		output.push(13); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(13); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_lt(_, reg1, reg2, reg3) {
-		output.push(14); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(14); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
 	Instruction_gt(_, reg1, reg2, reg3) {
-		output.push(15); reg1.eval(); reg2.eval(); reg3.eval();
+		output.push(15); reg1.eval(); reg2.eval(); reg3.eval(); lastins = output.length;
 	},
-	Instruction_jmp(_, addr) { output.push(16); addr.eval(); },
+	Instruction_jmp(_, addr) {
+		output.push(16); addr.eval(); lastins = output.length;
+	},
 	Instruction_cj(_, reg, addr) {
-		output.push(17); reg.eval(); addr.eval();
+		output.push(17); reg.eval(); addr.eval(); lastins = output.length;
 	},
-	Instruction_js(_, addr) { output.push(18); addr.eval(); },
+	Instruction_js(_, addr) {
+		output.push(18); addr.eval(); lastins = output.length;
+	},
 	Instruction_cjs(_, reg, addr) {
-		output.push(19); reg.eval(); addr.eval();
+		output.push(19); reg.eval(); addr.eval(); lastins = output.length;
 	},
-	Instruction_ret(_) { output.push(20); },
+	Instruction_ret(_) {
+		output.push(20); lastins = output.length;
+	},
 	Instruction_dw(_, reg1, reg2, reg3, reg4) {
-		output.push(21); reg1.eval(); reg2.eval(); reg3.eval(); reg4.eval();
+		output.push(21); reg1.eval(); reg2.eval(); reg3.eval(); reg4.eval(); lastins = output.length;
 	},
 	Instruction_at(_, reg1, reg2) {
-		output.push(22); reg1.eval(); reg2.eval();
+		output.push(22); reg1.eval(); reg2.eval(); lastins = output.length;
 	},
 	Instruction_key(_, reg1, reg2) {
-		output.push(23); reg1.eval(); reg2.eval();
+		output.push(23); reg1.eval(); reg2.eval(); lastins = output.length;
 	},
 	// snd
-	Instruction_end(_) { output.push(25); },
-
+	Instruction_end(_) {
+		output.push(25); lastins = output.length;
+	},
 	string(_, parts, __) {
 		parts.parse().forEach(c => output.push(c.charCodeAt(0)));
 		output.push(0);
+		lastins = output.length;
 	}
 })
 
@@ -319,8 +344,7 @@ function help() {
 	console.log("Usage: node gxasm [options] [file]");
 	console.log("-h, --help   Show this message");
 	console.log("-r, --run    Run the output, gxvm must be in the same directory");
-	console.log("-d, --debug  Enable debugging if used with --run")
-	console.log("-w, --web    Also build for Web, requires build_web.js");
+	console.log("-d, --debug  Enable debugging if used with --run");
 	process.exit(0);
 }
 
@@ -333,7 +357,6 @@ for (let arg of process.argv.slice(2)) {
 				case 'h': help();
 				case 'r': run = true; break;
 				case 'd': debug = true; break;
-				case 'w': buildweb = true; break;
 				default: err(`Unknown option -${char}`);
 			}
 		}
@@ -342,7 +365,6 @@ for (let arg of process.argv.slice(2)) {
 			case '--help': help();
 			case '--run': run = true; break;
 			case '--debug': debug = true; break;
-			case '--web': buildweb = true; break;
 			default:
 				if (file)
 					err("Only one file can be specified (use .include to include other files)");
@@ -410,11 +432,6 @@ if (match.succeeded()) {
 
 	// 	fs.writeFileSync(file.replace(/\.\w*$/, ".sym.txt"), symbols.join('\n'));
 	// }
-
-	if (buildweb) {
-		const cp = require('child_process');
-		cp.spawn(process.argv0, ['build_web.js', outname], {stdio: 'inherit'});
-	}
 
 	if (run) {
 		const cp = require('child_process');

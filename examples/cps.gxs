@@ -70,11 +70,9 @@ main:
 		reg INC %12  ; increment (texture size)
 		reg MAX %13  ; maximum iteration (screen size)
 
-		set %0 0          ; background texture X
-		set %1 32         ; background texture Y
 		set INC 16
 		set MAX 128
-		dw %0 %1 INC INC  ; set draw source
+		dw (%0:0) (%1:32) INC INC  ; set draw source
 
 		set x 0
 		drawbgxloop:
@@ -92,12 +90,9 @@ main:
 ;  Update game state (using subroutines)
 ; ______________________________________________________________________________
 ;
-	set %0 ST_START
-	.eqjs state %0 drawstart
-	set %0 ST_RUNNING
-	.eqjs state %0 drawrunning
-	set %0 ST_RESULT
-	.eqjs state %0 drawresult
+	.eqjs state (%0:ST_START) drawstart
+	.eqjs state (%0:ST_RUNNING) drawrunning
+	.eqjs state (%0:ST_RESULT) drawresult
 endframe:
 	end
 	jmp main
@@ -155,8 +150,7 @@ drawrunning:
 	set arg2 lo(FMTTIMELEFTFRAME)
 	js int2str
 
-	set %0 FPS                   ; timer is frames, divide by fps (60) to get
-	div timer %0 arg0            ; seconds
+	div timer (%0:FPS) arg0      ; timer is frames, divide by fps (60) to get seconds
 	set arg1 hi(FMTTIMELEFTSEC)
 	set arg2 lo(FMTTIMELEFTSEC)
 	js int2str
@@ -173,15 +167,12 @@ drawrunning:
 	set arg3 CLICKSTARTY
 	js print
 
-	set %0 1                     ; decrement timer
-	sub timer %0 timer
-	set %0 0                     ; if timer has reached 0, go to RESULT state
-	.eqjs timer %0 clicktimeend
+	sub timer (%0:1) timer           ; decrement timer
+	.eqjs timer (%0:0) clicktimeend  ; if timer has reached 0, go to RESULT state
 	jmp endframe
 
 clickbuttonaction:
-	set %0 1
-	add clicks %0 clicks
+	add clicks (%0:1) clicks
 	ret
 
 ; Subroutine, called when the timer ends
@@ -191,8 +182,7 @@ clicktimeend:
 	set arg2 lo(FMTRESULTCOUNT)
 	js int2str
 
-	set %0 4
-	div clicks %0 arg0
+	div clicks (%0:4) arg0
 	set arg1 hi(FMTRESULTCPS)
 	set arg2 lo(FMTRESULTCPS)
 	js int2str

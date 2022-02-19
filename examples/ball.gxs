@@ -29,10 +29,9 @@ reg _0 %17
 reg BSZ %18
 
 main:
-	set %0 2
-	ld x RAND   ; generate random start position
+	ld x RAND       ; generate random start position
 	ld y RAND
-	div x %0 x  ; RAND is 0-255, but screen is only 128 pixels, so divide by 2
+	div x (%0:2) x  ; RAND is 0-255, but screen is only 128 pixels, so divide by 2
 	div y %0 y
 
 	set dx 1
@@ -81,9 +80,8 @@ up:
 	; ret
 
 nextframe:
-	set %1 24
 	add anim BSZ anim
-	.eqj anim %1 resetframe
+	.eqj anim (%1:24) resetframe
 	ret
 
 resetframe:

@@ -16,7 +16,7 @@ png2h
 *.wasm
 index.html
 
-dump.txt
+dump.bin
 screenshot*.png
 *.gxa
 *.sav

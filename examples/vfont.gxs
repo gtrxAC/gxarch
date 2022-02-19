@@ -32,7 +32,7 @@ printv_charwidths:
 
 .include std/printv.gxs
 .include std/print.gxs
-   
+
 main:
 	set arg0 hi(string1)  ; The arguments are the same as print, but make sure
 	set arg1 lo(string1)  ; you call printv instead of print and use PRINTV_ in

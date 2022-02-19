@@ -78,7 +78,7 @@ draw: {
 	reg y %10
 	reg inc %11
 	reg _0 %12
-	
+
 	set y 0
 	set inc 8
 	set _0 0
@@ -102,10 +102,7 @@ drawbgloop:
 	reg SY %10
 	reg PSZ %11
 
-	set SY 32
-	set PSZ 16
-
-	dw dir SY PSZ PSZ
+	dw dir (SY:32) (PSZ:16) PSZ
 	at pX pY
 
 	js drawtext
@@ -160,7 +157,7 @@ moveupend:
 moveupro:
 	.mov _112 pY  ; roll over to bottom of screen
 	ret
-	
+
 movedown:
 	set dir D_DOWN
 	add pY spd pY
@@ -173,7 +170,7 @@ movedownend:
 movedownro:
 	set pY 1
 	ret
-	
+
 moveleft:
 	set dir D_LEFT
 	sub pX spd pX
@@ -186,7 +183,7 @@ moveleftend:
 moveleftro:
 	.mov _112 pX
 	ret
-	
+
 moveright:
 	set dir D_RIGHT
 	add pX spd pX

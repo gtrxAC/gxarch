@@ -34,7 +34,7 @@ button: {
 
 	ld %0 MOUSEX
 	.ltj %0 x button_draw
-	
+
 	add x w %1
 	.gtj %0 %1 button_draw
 

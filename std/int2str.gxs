@@ -24,28 +24,21 @@ int2str: {
 	reg destl arg2  ; destination string address, low byte
 	reg divres %23  ; division result
 
-	set %0 100              ; divide by 100 to get 3rd digit
-	div src %0 divres
-	set %0 0x30             ; number + 0x30 = ASCII digit of number
-	add divres %0 divres
-	sti divres desth        ; store digit into string
+	div src (%0:100) divres      ; divide by 100 to get 3rd digit
+	add divres (%0:0x30) divres  ; number + 0x30 = ASCII digit of number
+	sti divres desth             ; store digit into string
 
-	set %0 1                ; next character
-	add destl %0 destl
+	add destl (%0:1) destl  ; next character
 	add desth %h desth
 
-	set %0 10               ; divide remainder by 10 to get 2nd digit
-	div %r %0 divres
-	set %0 0x30             ; ...
-	add divres %0 divres
+	div %r (%0:10) divres        ; divide remainder by 10 to get 2nd digit
+	add divres (%0:0x30) divres  ; ...
 	sti divres desth
 
-	set %0 1
-	add destl %0 destl
+	add destl (%0:1) destl
 	add desth %h desth
 
-	set %0 0x30
-	add %r %0 divres
+	add %r (%0:0x30) divres
 	sti divres desth
 	ret
 }

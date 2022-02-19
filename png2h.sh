@@ -48,4 +48,4 @@ esac
 $CC src/png2h.c -Iinclude -Llib/`uname` -o $NAME$EXT \
 	-lraylib -D$PLATFORM $FLAGS $TYPEFLAGS $TARGETFLAGS
 
-./$NAME$EXT assets/splash.png assets/splash_web.png assets/tileset.png assets/icon.png
+./$NAME$EXT assets/splash.png assets/splash_web.png assets/tileset.png assets/icon.png assets/font.png

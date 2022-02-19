@@ -44,8 +44,7 @@ addr mouseyblock 0xE003
 .include examples/blockgame/worldgen.gxs
 
 main:
-	set %0 1           ; enable SRAM to save worlds
-	st %0 SRAM_TOGGLE
+	st (%0:1) SRAM_TOGGLE  ; enable SRAM to save worlds
 
 	ld %0 worldready      ; generate world if not generated yet
 	set %1 0
