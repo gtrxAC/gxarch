@@ -322,7 +322,9 @@ semantics.addOperation('eval', {
 	Instruction_key(_, reg1, reg2) {
 		output.push(23); reg1.eval(); reg2.eval(); lastins = output.length;
 	},
-	// snd
+	Instruction_snd(_, reg1, reg2, reg3, reg4) {
+		output.push(24); reg1.eval(); reg2.eval(); reg3.eval(); reg4.eval(); lastins = output.length;
+	},
 	Instruction_end(_) {
 		output.push(25); lastins = output.length;
 	},

@@ -5,12 +5,21 @@
 ;
 addr SRAM 0xF000
 addr RESERVED 0xFF00
-addr MOUSEX 0xFF01
-addr MOUSEY 0xFF02
-addr MOUSEL 0xFF03
-addr MOUSER 0xFF04
-addr SRAM_TOGGLE 0xFF05
-addr RAND 0xFF06
+addr MOUSEX 0xFF00
+addr MOUSEY 0xFF01
+addr MOUSEL 0xFF02
+addr MOUSER 0xFF03
+addr RAND 0xFF04
+
+; ______________________________________________________________________________
+;
+;  Sound types
+; ______________________________________________________________________________
+;
+val SND_SQUARE 0
+val SND_SAWTOOTH 1
+val SND_SINE 2
+val SND_NOISE 3
 
 ; ______________________________________________________________________________
 ;

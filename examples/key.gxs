@@ -4,12 +4,14 @@
 ; Date: 2021-11-21
 ; Author: gtrxAC
 
-dat main
+dat main     ; set program entry point
+dat 0, 0, 0  ; set screen clear color (black)
+dat 1        ; supports save file
 
 string: dat "Last pressed key: 000 \" \""
 
-addr FORMATNUM 0x0014    ; addresses of where numeric/ASCII values are
-addr FORMATASCII 0x0019  ; formatted into the string
+addr FORMATNUM 0x0018    ; addresses of where numeric/ASCII values are
+addr FORMATASCII 0x001D  ; formatted into the string
 
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
@@ -21,8 +23,6 @@ val PRINT_HEIGHT 8
 main:
 	reg curkey %4     ; current key being checked
 	reg ispressed %5  ; is key pressed? result of key instruction (1 or 0)
-
-	st (%0:1) SRAM_TOGGLE  ; enable SRAM
 
 loop:
 	; Reading the keyboard in gxarch is done with the key instruction.

@@ -7,23 +7,15 @@ val BLOCK_BORDER_Y 0
 val SEL_BORDER_X 20       ; outline of block being pointed at
 val SEL_BORDER_Y 0
 val BLOCKS_Y 32           ; Y position of row containing block textures
-val BG2_Y 96
-val BG2_W 128
-val BG2_H 16
 
 render:
 ; ______________________________________________________________________________
 ;
 ;  Draw background
-;
-;  The background consists of two parts:
-;  - Scrolling clouds (BG), top of screen
-;  - Background color (BG2), bottom 16 pixels of the tileset are drawn on the
-;    bottom part of the screen in a loop, solid color by default
 ; ______________________________________________________________________________
 ;
 	{
-		; Draw scrolling clouds (BG)
+		; Draw scrolling clouds
 		reg bgx %0
 		reg bgy %1
 		reg bgw %2
@@ -31,7 +23,7 @@ render:
 
 		val BG_Y 48   ; coordinates of BG (X is scrollcount)
 		val BG_W 128
-		val BG_H 48
+		val BG_H 36
 
 		ld bgx scrollcount  ; draw clouds at current scroll count
 		set bgy BG_Y        ; this works similarly to the drawscroll example, but
@@ -39,23 +31,6 @@ render:
 		set bgh BG_H        ; two counters (framecount and scrollcount), see
 		dw bgx bgy bgw bgh  ; renderbg2loop
 		at (%1:0) %1
-
-		set bgx 0           ; set draw source for BG2
-		set bgy BG2_Y       ; we only need to do this once and the at instruction
-		set bgw BG2_W       ; will keep using the same source until we set a
-		set bgh BG2_H       ; different source
-		dw bgx bgy bgw bgh
-
-		; Draw repeating background color (BG2)
-		reg bg2iter %1
-		reg bg2max %2
-
-		set bg2iter BG_H  ; start drawing BG2 where BG ends
-		set bg2max 128    ; and end where the screen ends (128px)
-	renderbg2loop:
-		at bgx bg2iter                     ; draw one strip of BG2 and loop
-		add bg2iter bgh bg2iter
-		.ltj bg2iter bg2max renderbg2loop
 	}
 
 	ld %0 framecount  ; increment frame count

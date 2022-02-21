@@ -3,7 +3,10 @@
 ; Date: 2021-12-31
 ; Author: gtrxAC
 
-dat main
+dat main     ; set program entry point
+dat 0, 0, 0  ; set screen clear color (black)
+dat 0        ; doesn't support save file
+
 .include std/common.gxs
 
 ; This example doesn't operate on main memory, it only uses 6 registers:

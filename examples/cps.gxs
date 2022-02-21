@@ -3,19 +3,21 @@
 ; Date: 2022-01-08
 ; Author: gtrxAC
 
-dat main
+dat main     ; set program entry point
+dat 0, 0, 0  ; set screen clear color (black)
+dat 0        ; doesn't support save file
 
 val FPS 60
 
 timeleftstr: dat "Time left:000 sec (000 frames)"
 val TIMELEFTX 4               ; X position where to draw this string
-addr FMTTIMELEFTSEC 0x000C    ; Addresses of where to format numbers into the string
-addr FMTTIMELEFTFRAME 0x0015
+addr FMTTIMELEFTSEC 0x0010    ; Addresses of where to format numbers into the string
+addr FMTTIMELEFTFRAME 0x0019
 
 resultstr: dat "You clicked 000 times (000 CPS)"
 val RESULTX 2
-addr FMTRESULTCOUNT 0x002D
-addr FMTRESULTCPS 0x0038
+addr FMTRESULTCOUNT 0x0031
+addr FMTRESULTCPS 0x003C
 
 titlestr: dat "gxarch: CPS Test"
 val TITLEX 32

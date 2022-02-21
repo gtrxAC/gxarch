@@ -11,14 +11,18 @@
 #define u16 uint16_t
 
 #define ENTRY 0x0000
+#define CLEAR_R 0x0002
+#define CLEAR_G 0x0003
+#define CLEAR_B 0x0004
+#define SRAM_TOGGLE 0x0005
+
 #define SRAM 0xF000
 #define RESERVED 0xFF00
-#define MOUSEX 0xFF01
-#define MOUSEY 0xFF02
-#define MOUSEL 0xFF03
-#define MOUSER 0xFF04
-#define SRAM_TOGGLE 0xFF05
-#define RAND 0xFF06
+#define MOUSEX 0xFF00
+#define MOUSEY 0xFF01
+#define MOUSEL 0xFF02
+#define MOUSER 0xFF03
+#define RAND 0xFF04
 
 #define RESH 30
 #define REMAINDER 31
@@ -48,6 +52,8 @@ struct VM {
 	RenderTexture screen;
 	Texture tileset;
 	u8 scale;
+
+	Sound cursound;
 };
 
 enum Opcode {

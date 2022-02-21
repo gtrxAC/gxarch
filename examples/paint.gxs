@@ -22,14 +22,14 @@ addr ldowntime 0xE000  ; how long have left/right keys been pressed
 addr rdowntime 0xE001
 addr curcolor 0xE002
 
-dat main
+dat main     ; set program entry point
+dat 0, 0, 0  ; set screen clear color (black)
+dat 1        ; supports save file
 
 ; ______________________________________________________________________________
 ;
 main:
-	st (%0:1) SRAM_TOGGLE  ; enable SRAM
 	st (%0:2) curcolor     ; set current color to white
-
 
 update:
 	.keyj K_LEFT moveleft  ; if left key down, select previous color

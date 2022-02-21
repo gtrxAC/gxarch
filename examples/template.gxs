@@ -4,6 +4,8 @@
 ; Author:
 
 dat main
+dat 0, 0, 0
+dat 0
 
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4

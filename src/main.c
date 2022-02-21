@@ -36,6 +36,7 @@ bool filefromargv = false;
 
 Texture splash;
 Font font;
+Color clear;
 
 #define GXA_YELLOW (Color) {255, 208, 64, 255}
 
@@ -124,11 +125,14 @@ void debugread(void) {
 
 // Unload everything and exit.
 void cleanup() {
-	if (vm->mem[SRAM_TOGGLE]) save();
-	UnloadRenderTexture(vm->screen);
-	UnloadTexture(vm->tileset);
-	CloseWindow();
-	free(vm);
+	#ifndef PLATFORM_WEB
+		if (vm->mem[SRAM_TOGGLE]) save();
+		UnloadRenderTexture(vm->screen);
+		UnloadTexture(vm->tileset);
+		CloseWindow();
+		CloseAudioDevice();
+		free(vm);
+	#endif
 }
 
 // Load a ROM file and tileset, if found.
@@ -145,7 +149,7 @@ void loadfile(char *name) {
 	// Copy ROM into gxarch RAM, clear rest of gxarch RAM, load SRAM, init registers
 	memcpy(&vm->mem, file, size);
 	for (int i = size; i < 0x10000; i++) vm->mem[i] = 0;
-	load();
+	if (file[SRAM_TOGGLE]) load();
 	vm->mem[RAND] = GetRandomValue(0, 0xFF);
 
 	for (int i = 0; i < 32; i++) vm->reg[i] = 0;
@@ -210,6 +214,7 @@ void loadfile(char *name) {
 		case 120: SetWindowTitle("gxVM - running 2x"); break;
 		case 240: SetWindowTitle("gxVM - running 4x"); break;
 	}
+	clear = (Color) {vm->mem[CLEAR_R], vm->mem[CLEAR_G], vm->mem[CLEAR_B], 255};
 	state = ST_RUNNING;
 }
 
@@ -271,6 +276,7 @@ int main(int argc, char **argv) {
 		vm->scale = 4;
 		InitWindow(512, 512, "gxVM");
 	#endif
+	InitAudioDevice();
 	SetTargetFPS(speed);
 
 	// ESC is a keycode in gxarch, it is also used to exit a raylib app by default
@@ -357,8 +363,12 @@ void mainloop(void) {
 	}
 
 	else if (IsKeyPressed(KEY_HOME)) {
-		loadfile(vm->filename);
-		SHOWMSG("reset");
+		if (state == ST_IDLE) {
+			SHOWMSG("no program loaded");
+		} else {
+			loadfile(vm->filename);
+			SHOWMSG("reset");
+		}
 	}
 
 	else if (IsKeyPressed(KEY_END)) {
@@ -427,7 +437,14 @@ void mainloop(void) {
 
 		else if (IsKeyPressed(KEY_F)) showfps = !showfps;
 		else if (IsKeyPressed(KEY_R)) debugread();
-		else if (IsKeyPressed(KEY_S)) debugwrite();
+		else if (IsKeyPressed(KEY_W)) debugwrite();
+
+		#ifdef PLATFORM_WEB
+			else if (IsKeyPressed(KEY_S)) {
+				SHOWMSG("saved");
+				save();
+			}
+		#endif
 	}
 
 	// _____________________________________________________________________
@@ -437,7 +454,7 @@ void mainloop(void) {
 	//
 
 	BeginTextureMode(vm->screen);
-	if (state != ST_PAUSED) ClearBackground(BLACK);
+	if (state != ST_PAUSED) ClearBackground(clear);
 
 	switch (state) {
 		case ST_IDLE:
@@ -478,7 +495,7 @@ void mainloop(void) {
 	EndTextureMode();
 
 	BeginDrawing();
-	ClearBackground(BLACK);
+	ClearBackground(clear);
 
 	DrawTexturePro(
 		vm->screen.texture,

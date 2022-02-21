@@ -69,7 +69,7 @@ case "$TARGET" in
 		;;
 esac
 
-$CC src/main.c src/sram.c src/vm.c src/ui.c -Iinclude -Llib/$TARGET -o $NAME$EXT \
+$CC src/main.c src/sram.c src/vm.c src/ui.c src/rfxgen.c -Iinclude -Llib/$TARGET -o $NAME$EXT \
 	-lraylib -D$PLATFORM $FLAGS $TYPEFLAGS $TARGETFLAGS
 
 # itch.io expects html5 games to be named index.html, the names of js/data/wasm

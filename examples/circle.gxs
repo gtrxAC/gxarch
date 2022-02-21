@@ -4,12 +4,14 @@
 ; Date: 2021-12-31
 ; Author: gtrxAC
 
-dat main
+dat main        ; set program entry point
+dat 64, 0, 208  ; set screen clear color (dark blue)
+dat 0           ; doesn't support save file
 
 radstr: dat "Radius: 000px"
 helpstr: dat "Use arrow keys to change radius"
 
-addr FMTRADSTR 0x000A  ; address of "000" in radstr, for int2str formatting
+addr FMTRADSTR 0x000E  ; address of "000" in radstr, for int2str formatting
 
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4

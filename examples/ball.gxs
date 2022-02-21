@@ -3,7 +3,9 @@
 ; Date: 2021-12-22
 ; Author: gtrxAC
 
-dat main
+dat main     ; set program entry point
+dat 0, 0, 0  ; set screen clear color (black)
+dat 0        ; doesn't support save file
 
 .include std/common.gxs
 
@@ -27,6 +29,10 @@ reg BEDGE %15
 reg anim %16
 reg _0 %17
 reg BSZ %18
+reg SND1 %19
+reg SND2 %20
+reg SND3 %21
+reg SND4 %22
 
 main:
 	ld x RAND       ; generate random start position
@@ -41,6 +47,11 @@ main:
 	set BSZ 3      ;   hitting the bottom and right edges
 	               ; - if both X and Y were the same, the ball's movement would
 	               ;   always be the same and very repetitive
+
+	set SND1 SND_SQUARE  ; attributes for sound when the ball bounces
+	set SND2 96          ; frequency
+	set SND3 1           ; sustain length
+	set SND4 32          ; decay length
 
 update:
 	ld %0 MOUSEL
@@ -80,6 +91,7 @@ up:
 	; ret
 
 nextframe:
+	snd SND1 SND2 SND3 SND4
 	add anim BSZ anim
 	.eqj anim (%1:24) resetframe
 	ret

@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "sram.h"
+#include "rfxgen.h"
 void err(const char *fmt, ...); // main.c
 
 // Opcode names, used for debugging.
@@ -226,9 +227,24 @@ void _step(struct VM *vm) {
 			break;
 		}
 
-		case OP_SND:
-			err("SND not implemented, used at 0x%.4X", vm->pc - 1);
+		case OP_SND: {
+			UnloadSound(vm->cursound);
+
+			WaveParams params = {0};
+			ResetWaveParams(&params);
+
+			params.waveTypeValue = vm->reg[consume()];
+			params.startFrequencyValue = (float) vm->reg[consume()] / 255;
+			params.sustainTimeValue = (float) vm->reg[consume()] / 255;
+			params.decayTimeValue = (float) vm->reg[consume()] / 255;
+
+			Wave wave = GenerateWave(params);
+			vm->cursound = LoadSoundFromWave(wave);
+			PlaySound(vm->cursound);
+
+			UnloadWave(wave);
 			break;
+		}
 
 		case OP_END:
 			vm->needdraw = true;

@@ -53,13 +53,12 @@ button: {
 	add sy h sy
 	jmp button_draw
 
+button_press:
+	set result 1
+
 button_down:
 	add sy h sy
 	add sy h sy
-	jmp button_draw
-
-button_press:
-	set result 1
 
 button_draw:
 	dw sx sy w h

@@ -4,7 +4,10 @@
 ; Date: 2022-01-06
 ; Author: gtrxAC
 
-dat main
+dat main        ; set program entry point
+dat 0, 128, 64  ; set screen clear color (dark green)
+dat 0           ; doesn't support save file
+
 string: dat "Generating, may take a while"
 
 val PRINT_CHARSPERLINE 32

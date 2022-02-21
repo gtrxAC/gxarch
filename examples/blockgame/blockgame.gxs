@@ -4,7 +4,9 @@
 ; Date: 2021-11-18
 ; Author: gtrxAC
 
-dat main
+dat main          ; set program entry point
+dat 96, 208, 255  ; set screen clear color (cyan)
+dat 1             ; supports save file
 
 coordstr: dat "X:000 yY:000  Block:"  ; in the font, the lowercase y is the
                                       ; black border for the uppercase Y
@@ -23,8 +25,8 @@ val BLOCKSIZE 10
 val SPEED 2            ; player can move every SPEED frames (1 block per frame is too fast)
 val BLOCKCOUNT 12
 val CLOUDSPEED 10      ; clouds move by 1 pixel every CLOUDSPEED frames
-addr COORDSTRX 0x0004  ; addresses of where numbers are formatted into the coordstr string
-addr COORDSTRY 0x000B
+addr COORDSTRX 0x0008  ; addresses of where numbers are formatted into the coordstr string
+addr COORDSTRY 0x000F
 
 ; Variables (saved in SRAM)
 addr playerx 0xF000
@@ -44,8 +46,6 @@ addr mouseyblock 0xE003
 .include examples/blockgame/worldgen.gxs
 
 main:
-	st (%0:1) SRAM_TOGGLE  ; enable SRAM to save worlds
-
 	ld %0 worldready      ; generate world if not generated yet
 	set %1 0
 	.eqjs %0 %1 genworld

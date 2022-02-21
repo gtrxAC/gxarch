@@ -12,6 +12,12 @@ dat main  ; All programs must start with "dat" and the label where the program s
           ; On startup, gxarch checks the first two bytes of the program for the address
           ; of where the program should start (the entry point).
 
+dat 0, 0, 0  ; All programs must also have the RGB color values of the background color
+             ; after the entry point.
+
+dat 0  ; This byte indicates whether or not this program supports save files (save RAM or SRAM).
+       ; 0 for no, anything else for yes.
+
 string: dat "Hello world!"  ; Embed the hello world string into the executable.
                             ; This is a C-style null-terminated string.
                             ; "string" is used to refer to the address of this string.
@@ -32,19 +38,19 @@ main:
 	set %20 hi(string)  ; Print (and many other subroutines) need us to put parameters
 	set %21 lo(string)  ; in registers, starting at %20. Registers are like small memory
 	set %22 0           ; slots that can hold temporary data. gxarch has 32 of them.
-    set %23 0           ; By convention, gxarch uses registers %20 to %28 for subroutines.
-                        ; https://github.com/gtrxAC/gxarch/wiki/Beginner-Tips#register-management
+	set %23 0           ; By convention, gxarch uses registers %20 to %28 for subroutines.
+	                    ; https://github.com/gtrxAC/gxarch/wiki/Beginner-Tips#register-management
 
-                        ; std/print.gxs also includes std/common.gxs which has definitions
-                        ; for more user friendly names for the registers, so we can use
-                        ; arg0, arg1... instead of %20, %21...
+	                    ; std/print.gxs also includes std/common.gxs which has definitions
+	                    ; for more user friendly names for the registers, so we can use
+	                    ; arg0, arg1... instead of %20, %21...
 
 	js print            ; Call print subroutine. JS stands for jump subroutine.
-                        ; Check std/print.gxs to see how the print subroutine works, and what
-                        ; the registers %20 - %23 are used for.
+	                    ; Check std/print.gxs to see how the print subroutine works, and what
+	                    ; the registers %20 - %23 are used for.
 
 	end                 ; The end instruction draws a frame and clears the next frame with
 	jmp main            ; black, so we need to run our program in an infinite loop.
-                        ; If we don't draw a frame, only a blank frame is shown and the
-                        ; emulator freezes, as the end instruction is directly tied to the
-                        ; emulator's main rendering loop.
+	                    ; If we don't draw a frame, only a blank frame is shown and the
+	                    ; emulator freezes, as the end instruction is directly tied to the
+	                    ; emulator's main rendering loop.
