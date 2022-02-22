@@ -11,7 +11,7 @@ play: {
 	reg addrl arg4
 
 	ld %1 framecount
-	div %1 (%0:4) %29  ; only play every 4 frames
+	div %1 (%0:64) %29  ; only play every 64 frames (press Insert to speed up)
 	cj %r return
 
 	; read each byte for the current line and play the appropriate sounds

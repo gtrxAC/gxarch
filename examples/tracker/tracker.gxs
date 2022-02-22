@@ -1,6 +1,6 @@
 ; Tracker for gxarch
 ; Create music using gxarch's 4 audio channels
-; Controls: arrow keys to move, 0-9 A-F to input, P to play
+; Controls: arrow keys to move, 0-9 A-F to input, P to play, Insert to change playback speed
 ; Date: 2022-02-22
 ; Author: gtrxAC
 
