@@ -1,0 +1,31 @@
+hexbuf: dat "0"
+
+; ______________________________________________________________________________
+;
+;  Integer to hex string conversion subroutine
+;
+;  Arguments:
+;    %20 = Value to convert (0x00 to 0x0F)
+;
+;  Notes:
+;  - The result character (lowercase) is stored in null-terminated string
+;    "hexbuf"
+;  - If the input value is invalid, a '?' character is returned.
+; ______________________________________________________________________________
+;
+int2hex4b:
+	.ltj arg0 (%0:0x0A) int2hex4b_digit
+	.ltj arg0 (%0:0x10) int2hex4b_letter
+
+	st (%0:K_QUESTION) hexbuf
+	ret
+
+int2hex4b_digit:
+	add arg0 (%0:0x30) %0
+	st %0 hexbuf
+	ret
+
+int2hex4b_letter:
+	add arg0 (%0:0x57) %0
+	st %0 hexbuf
+	ret

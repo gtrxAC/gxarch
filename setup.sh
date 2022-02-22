@@ -1,4 +1,5 @@
 #!/bin/bash
+_ () { [[ "${!1}" = "" ]] && export $1="$2"; }
 # ______________________________________________________________________________
 #
 #  Set up raylib project
@@ -12,7 +13,7 @@
 #
 
 # Default to host platform
-[[ "$TARGET" = "" ]] && TARGET=`uname`
+[[ "$TARGET" = "" ]] && TARGET=$(uname)
 
 # Set up directory structure
 mkdir -p include src lib assets lib/$TARGET
@@ -48,27 +49,33 @@ case "$TARGET" in
 		make || make -e
 		mv libraylib.a ../../lib/$TARGET
 		cp raylib.h ../../include
-		make clean || make clean -e || rm -v *.o
+		make clean || make clean -e || rm -fv *.o
 		cd ../..
 		;;
 
 	"Windows_NT")
 		# Works on Windows (w64devkit) and Linux (mingw-w64)
-		if command -v x86_64-w64-mingw32-gcc > /dev/null; then
+		_ ARCH "x86_64"
+		if command -v $ARCH-w64-mingw32-gcc > /dev/null; then
 			cd raylib/src
-			make CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar OS=Windows_NT || \
-			make CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar OS=Windows_NT -e
+			make CC=$ARCH-w64-mingw32-gcc AR=$ARCH-w64-mingw32-ar OS=Windows_NT || \
+			make CC=$ARCH-w64-mingw32-gcc AR=$ARCH-w64-mingw32-ar OS=Windows_NT -e
 			mv libraylib.a ../../lib/$TARGET
 			cp raylib.h ../../include
-			make clean || make clean -e || rm -v *.o
+			make clean || make clean -e || rm -fv *.o
 			cd ../..
 		else
-			if command -v apt > /dev/null; then
-				sudo apt install mingw-w64
-				source setup.sh
-				exit
+			if [[ `uname` = "Linux" ]]; then
+				if command -v apt > /dev/null; then
+					sudo apt install mingw-w64
+					source setup.sh
+					exit
+				else
+					echo "Please install mingw-w64 using your package manager"
+					exit 1
+				fi
 			else
-				echo "Please install mingw-w64 using your package manager"
+				echo "Compiler for $ARCH not found, make sure you're using w64devkit.exe from https://github.com/skeeto/w64devkit/releases"
 				exit 1
 			fi
 		fi
@@ -95,12 +102,12 @@ case "$TARGET" in
 		make PLATFORM=PLATFORM_WEB || make PLATFORM=PLATFORM_WEB -e
 		mv libraylib.a ../../lib/$TARGET
 		cp raylib.h ../../include
-		make clean || make clean -e || rm -v *.o
+		make clean || make clean -e || rm -fv *.o
 		cd ../..
 		;;
 
 	*)
-		echo "Unsupported OS $TARGET"
+		echo "Unsupported platform $TARGET"
 		exit 1
 		;;
 esac

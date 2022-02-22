@@ -228,19 +228,21 @@ void _step(struct VM *vm) {
 		}
 
 		case OP_SND: {
-			UnloadSound(vm->cursound);
+			int type = vm->reg[consume()];
+			if (type > 3) err("Invalid sound type %d", type);
+			UnloadSound(vm->cursound[type]);
 
 			WaveParams params = {0};
 			ResetWaveParams(&params);
 
-			params.waveTypeValue = vm->reg[consume()];
+			params.waveTypeValue = type;
 			params.startFrequencyValue = (float) vm->reg[consume()] / 255;
 			params.sustainTimeValue = (float) vm->reg[consume()] / 255;
 			params.decayTimeValue = (float) vm->reg[consume()] / 255;
 
 			Wave wave = GenerateWave(params);
-			vm->cursound = LoadSoundFromWave(wave);
-			PlaySound(vm->cursound);
+			vm->cursound[type] = LoadSoundFromWave(wave);
+			PlaySound(vm->cursound[type]);
 
 			UnloadWave(wave);
 			break;

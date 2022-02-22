@@ -29,11 +29,3 @@ void msgbox(const char *title, const char *msg, const char *type) {
 		emscripten_run_script(script);
 	#endif
 }
-
-char *openfile(const char *title, const char *path, int filtercount, const char **filters, const char *filterdesc) {
-	#ifdef PLATFORM_DESKTOP
-		return tinyfd_openFileDialog(title, path, filtercount, filters, filterdesc, 0);
-	#elif defined(PLATFORM_WEB)
-		return NULL;
-	#endif
-}

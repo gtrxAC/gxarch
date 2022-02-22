@@ -1,0 +1,62 @@
+drawhud:
+	; Draw channel icons on top
+	dw (%0:0) (%1:32) (%2:60) (%3:8)
+	at (%0:32) (%1:0)
+
+	; Draw cursor
+	{
+		reg x arg3
+		reg y arg4
+
+		; get cursor location on screen
+		ld arg0 cursorx
+		ld arg1 cursorch
+		ld arg2 cursory
+		js pos2scr
+
+		; draw currently selected line (dark gray)
+		dw (%0:0) (%1:46) (%2:128) (%3:6)
+		at (%0:0) y
+
+		; draw currently selected character (light gray)
+		dw (%0:0) (%1:40) (%2:4) (%3:6)
+		at x y
+	}
+
+	; Draw meaning of current X position: FREQ SUST or DECAY
+	; Draws a musical note if song is currently playing
+	{
+		reg addrh arg0
+		reg addrl arg1
+
+		ld %1 playing
+		cj %1 drawplaying
+
+		ld %1 cursorx
+		.eqj %1 (%0:0) drawfreq
+		.eqj %1 (%0:1) drawsust
+
+		set addrh hi(decaystr)
+		set addrl lo(decaystr)
+		jmp drawxstr
+
+		drawplaying:
+			set addrh hi(playstr)
+			set addrl lo(playstr)
+			jmp drawxstr
+
+		drawfreq:
+			set addrh hi(freqstr)
+			set addrl lo(freqstr)
+			jmp drawxstr
+
+		drawsust:
+			set addrh hi(suststr)
+			set addrl lo(suststr)
+		
+		drawxstr:
+			set arg2 0
+			set arg3 0
+			js print
+	}
+	ret

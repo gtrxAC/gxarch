@@ -18,6 +18,7 @@
 	#include <emscripten/emscripten.h>
 	#include "../assets/splash_web.h"
 #else
+	#include "tinyfiledialogs.h"
 	#include "../assets/splash.h"
 #endif
 
@@ -29,7 +30,7 @@ enum {
 
 struct VM *vm;
 bool showfps = false;
-char message[64] = {0};
+char message[33] = {0};
 u8 msgtime = 0;
 int speed = 60;
 bool filefromargv = false;
@@ -123,18 +124,6 @@ void debugread(void) {
 // _____________________________________________________________________________
 //
 
-// Unload everything and exit.
-void cleanup() {
-	#ifndef PLATFORM_WEB
-		if (vm->mem[SRAM_TOGGLE]) save();
-		UnloadRenderTexture(vm->screen);
-		UnloadTexture(vm->tileset);
-		CloseWindow();
-		CloseAudioDevice();
-		free(vm);
-	#endif
-}
-
 // Load a ROM file and tileset, if found.
 void loadfile(char *name) {
 	strcpy(vm->filename, name);
@@ -184,10 +173,10 @@ void loadfile(char *name) {
 		for (int i = 0; i < palsize; i++) {
 			if (colors[i].a != 0 && colors[i].a != 255) {
 				UnloadImage(tileset);
-				err(TextFormat(
+				err(
 					"Tileset color (%d, %d, %d, %d) has partial transparency, only alpha 0 or 255 is allowed",
 					colors[i].r, colors[i].g, colors[i].b, colors[i].a
-				));
+				);
 			}
 		}
 
@@ -218,6 +207,22 @@ void loadfile(char *name) {
 	state = ST_RUNNING;
 }
 
+// Unload everything and exit.
+// Note: won't get run on Web, SRAM saving on Web is done with Alt + S
+void cleanup() {
+	#ifndef PLATFORM_WEB
+		if (vm->mem[SRAM_TOGGLE]) save();
+
+		for (int i = 0; i < 4; i++) UnloadSound(vm->cursound[i]);
+		UnloadRenderTexture(vm->screen);
+		UnloadTexture(vm->tileset);
+		free(vm);
+
+		CloseWindow();
+		CloseAudioDevice();
+	#endif
+}
+
 // _____________________________________________________________________________
 //
 //  Startup
@@ -242,7 +247,7 @@ int main(int argc, char **argv) {
 				puts("Ctrl + O      Open ROM");
 				puts("Ctrl + F      Show/hide FPS");
 				puts("Ctrl + R      Debug read memory from address");
-				puts("Ctrl + S      Debug write value to address");
+				puts("Ctrl + W      Debug write value to address");
 				puts("Home          Reset");
 				puts("End           Exit, creates a memory dump in debug mode");
 				puts("Page Up/Down  Resize screen");
@@ -270,6 +275,7 @@ int main(int argc, char **argv) {
 
 	#ifdef PLATFORM_WEB
 		// The web canvas fills the entire browser window, assume we're on at least 720p
+		// Title is not needed for web, the title from the HTML shell is used
 		vm->scale = 6;
 		InitWindow(768, 768, "");
 	#else
@@ -283,6 +289,7 @@ int main(int argc, char **argv) {
 	// End can be used to exit gxarch, it also creates a memory dump in debug mode
 	SetExitKey(0);
 
+	// Window icon is only needed on Desktop, on Web the HTML shell's favicon is used
 	#ifdef PLATFORM_DESKTOP
 		Image icon = {
 			ICON_DATA,
@@ -313,6 +320,7 @@ int main(int argc, char **argv) {
 	};
 	splash = LoadTextureFromImage(splashimg);
 
+	// Load the gxarch font, only used for messages and the fps display
 	Image fontimg = {
 		FONT_DATA,
 		FONT_WIDTH,
@@ -420,37 +428,47 @@ void mainloop(void) {
 	}
 
 	#ifdef PLATFORM_WEB
-		// Use alt on Web, ctrl may interfere with browser's keyboard shortcuts
+		// Use Alt on Web, Ctrl may interfere with browser's keyboard shortcuts
 		else if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT))) {
+			if (IsKeyPressed(KEY_F)) showfps = !showfps;
 	#else
 		else if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL))) {
+			// Open file functionality is not needed on Web, the HTML shell takes
+			// care of that
+			if (IsKeyPressed(KEY_O)) {
+				char const *filter[1] = {"*.gxa"};
+				char path[512];
+				strcpy(path, GetWorkingDirectory());
+				strcat(path, "/*");
+
+				char *file = tinyfd_openFileDialog("Open ROM", path, 1, filter, "gxarch ROMs", 0);
+				if (file != NULL) loadfile(file);
+			}
+
+			else if (IsKeyPressed(KEY_F)) showfps = !showfps;
 	#endif
-		if (IsKeyPressed(KEY_O)) {
-			char const *filter[1] = {"*.gxa"};
-			char path[512];
-			strcpy(path, GetWorkingDirectory());
-			strcat(path, "/*");
 
-			char *file = openfile("Open ROM", path, 1, filter, "gxarch ROMs");
-			if (file != NULL) loadfile(file);
-		}
-
-		else if (IsKeyPressed(KEY_F)) showfps = !showfps;
 		else if (IsKeyPressed(KEY_R)) debugread();
 		else if (IsKeyPressed(KEY_W)) debugwrite();
 
+		// cleanup() is used to save SRAM and unload everything before the window
+		// closes, on Web we can't do that, so Alt + S is used to save instead
 		#ifdef PLATFORM_WEB
 			else if (IsKeyPressed(KEY_S)) {
-				SHOWMSG("saved");
-				save();
+				if (vm->mem[SRAM_TOGGLE]) {
+					SHOWMSG("saved");
+					save();
+				} else {
+					SHOWMSG("program doesn't support saves");
+				}
 			}
 		#endif
 	}
 
-	// _____________________________________________________________________
+	// _________________________________________________________________________
 	//
 	//  Update and Draw
-	// _____________________________________________________________________
+	// _________________________________________________________________________
 	//
 
 	BeginTextureMode(vm->screen);

@@ -1,4 +1,5 @@
 #!/bin/bash
+_ () { [[ "${!1}" = "" ]] && export $1="$2"; }
 # ______________________________________________________________________________
 #
 #  Compile raylib project
@@ -13,20 +14,25 @@
 #  - Build and run           ./build.sh -r
 # ______________________________________________________________________________
 #
-
-# Default build options, override options from the command line
-
+#  Build options
+#  Target specific options are below "Compile"
+#  You can also override options from the command line.
+# ______________________________________________________________________________
+#
 # Platform, one of Windows_NT, Linux, Web. Defaults to your OS.
-[[ "$TARGET" = "" ]] && TARGET=`uname`
+_ TARGET $(uname)
 
 # Executable name, extension is added depending on target platform.
-[[ "$NAME" = "" ]] && NAME="gxvm"
+_ NAME "gxvm"
+
+# Files to compile.
+_  SRC "src/main.c src/sram.c src/vm.c src/ui.c src/rfxgen.c"
 
 # Compiler flags.
-[[ "$FLAGS" = "" ]] && FLAGS=""
+_ FLAGS ""
 
-RELEASEFLAGS="-Os -flto -s"
-DEBUGFLAGS="-O0 -g -Wall -Wextra -Wpedantic"
+_ RELEASEFLAGS "-Os -flto -s"
+_ DEBUGFLAGS "-O0 -g -Wall -Wextra -Wpedantic"
 
 # ______________________________________________________________________________
 #
@@ -41,35 +47,37 @@ TYPEFLAGS=$RELEASEFLAGS
 # Convert images to headers
 ./png2h.sh
 
+# Build options for each target
 case "$TARGET" in
 	"Windows_NT")
-		CC="x86_64-w64-mingw32-gcc"
-		EXT=".exe"
-		PLATFORM="PLATFORM_DESKTOP"
-		TARGETFLAGS="src/tinyfiledialogs.c -lopengl32 -lgdi32 -lwinmm -lcomdlg32 -lole32 -Wl,--subsystem,windows"
+		_ ARCH "x86_64"
+		_ CC "$ARCH-w64-mingw32-gcc"
+		_ EXT ".exe"
+		_ PLATFORM "PLATFORM_DESKTOP"
+		_ TARGETFLAGS "src/tinyfiledialogs.c -lopengl32 -lgdi32 -lwinmm -lcomdlg32 -lole32 -Wl,--subsystem,windows"
 		;;
 
 	"Linux")
-		CC="gcc"
-		PLATFORM="PLATFORM_DESKTOP"
-		TARGETFLAGS="src/tinyfiledialogs.c -lGL -lm -lpthread -ldl -lrt -lX11"
+		_ CC "gcc"
+		_ PLATFORM "PLATFORM_DESKTOP"
+		_ TARGETFLAGS "src/tinyfiledialogs.c -lGL -lm -lpthread -ldl -lrt -lX11"
 		;;
 
 	"Web")
-		CC="emcc"
-		EXT=".html"
-		PLATFORM="PLATFORM_WEB"
-		TARGETFLAGS="-s ASYNCIFY -s USE_GLFW=3 -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 --shell-file src/shell.html -s EXPORTED_RUNTIME_METHODS=ccall -s EXPORTED_FUNCTIONS=_main,_loadfile"
+		_ CC "emcc"
+		_ EXT ".html"
+		_ PLATFORM "PLATFORM_WEB"
+		_ TARGETFLAGS "-s ASYNCIFY -s USE_GLFW=3 -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 --shell-file src/shell.html -s EXPORTED_RUNTIME_METHODS=ccall -s EXPORTED_FUNCTIONS=_main,_loadfile"
 		source emsdk/emsdk_env.sh
 		;;
 
 	*)
-		echo "Unsupported OS $TARGET"
+		echo "Unsupported platform $TARGET"
 		exit 1
 		;;
 esac
 
-$CC src/main.c src/sram.c src/vm.c src/ui.c src/rfxgen.c -Iinclude -Llib/$TARGET -o $NAME$EXT \
+$CC $SRC -Iinclude -Llib/$TARGET -o $NAME$EXT \
 	-lraylib -D$PLATFORM $FLAGS $TYPEFLAGS $TARGETFLAGS
 
 # itch.io expects html5 games to be named index.html, the names of js/data/wasm

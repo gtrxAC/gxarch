@@ -53,7 +53,7 @@ struct VM {
 	Texture tileset;
 	u8 scale;
 
-	Sound cursound;
+	Sound cursound[4];
 };
 
 enum Opcode {

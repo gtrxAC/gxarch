@@ -1,0 +1,107 @@
+; ______________________________________________________________________________
+;
+;  Cursor movement subroutines
+; ______________________________________________________________________________
+;
+{
+	reg x %5
+	reg ch %6
+	reg y %7
+
+loadpos:
+	ld x cursorx
+	ld ch cursorch
+	ld y cursory
+	set %1 1
+	ret
+
+storepos:
+	st x cursorx
+	st ch cursorch
+	st y cursory
+	ret
+
+; ______________________________________________________________________________
+;
+;  Left
+; ______________________________________________________________________________
+;
+moveleft:
+	js loadpos
+	sub x %1 x
+	cjs %h moveleftch
+	js storepos
+	ret
+
+moveleftch:
+	set x 2
+	sub ch %1 ch
+	cjs %h movelefty
+	ret
+
+movelefty:
+	set ch 3
+	sub y %1 y
+	cjs %h moveleftstop
+	ret
+
+moveleftstop:
+	set x 0
+	set ch 0
+	set y 0
+	ret
+
+; ______________________________________________________________________________
+;
+;  Right
+; ______________________________________________________________________________
+;
+moveright:
+	js loadpos
+	add x %1 x
+	.eqjs x (%0:CHANNEL_LENGTH) moverightch
+	js storepos
+	ret
+
+moverightch:
+	set x 0
+	add ch %1 ch
+	.eqjs ch (%0:CHANNEL_COUNT) moverighty
+	ret
+
+moverighty:
+	set ch 0
+	add y %1 y
+	.eqjs y (%0:TRACK_LENGTH) moverightstop
+	ret
+
+moverightstop:
+	set x 2
+	set ch 3
+	sub y %1 y
+	ret
+
+; ______________________________________________________________________________
+;
+;  Up
+; ______________________________________________________________________________
+;
+moveup:
+	js loadpos
+	sub y %1 y
+	cjs %h moveleftstop  ; note: reusing horizontal movement stop sub
+	js storepos
+	ret
+
+; ______________________________________________________________________________
+;
+;  Down
+; ______________________________________________________________________________
+;
+movedown:
+	js loadpos
+	add y %1 y
+	.eqjs y (%0:TRACK_LENGTH) moverightstop
+	js storepos
+	ret
+}

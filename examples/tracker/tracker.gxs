@@ -1,0 +1,66 @@
+; Tracker for gxarch
+; Create music using gxarch's 4 audio channels
+; Controls: arrow keys to move, 0-9 A-F to input, P to play
+; Date: 2022-02-22
+; Author: gtrxAC
+
+dat loop
+dat 8, 8, 12
+dat 1
+
+val PRINT_CHARSPERLINE 32
+val PRINT_WIDTH 4
+val PRINT_HEIGHT 8
+.include std/common.gxs
+.include std/print.gxs
+
+; use "cj (reg) return" to quickly return from any subroutine
+return: ret
+
+addr framecount 0xE000
+addr keyflag 0xE001
+addr curkey 0xE002
+addr cursory 0xE003
+addr cursorch 0xE004
+addr cursorx 0xE005
+addr oldx 0xE007
+addr oldch 0xE008
+addr oldy 0xE009
+addr playing 0xE00A
+
+addr track 0xF000
+
+val TRACK_LENGTH 20
+val LINE_LENGTH 12
+val CHANNEL_LENGTH 3
+val CHANNEL_COUNT 4
+
+freqstr: dat "FREQ"
+suststr: dat "SUST"
+decaystr: dat "DECAY"
+playstr: dat "Z["      ; note: "Z[" in the font is a musical note
+
+.include examples/tracker/hex2int4b.gxs
+.include examples/tracker/int2hex4b.gxs
+.include examples/tracker/pos2scr.gxs
+.include examples/tracker/pos2addr.gxs
+
+.include examples/tracker/cursor.gxs
+.include examples/tracker/drawhud.gxs
+.include examples/tracker/draw.gxs
+.include examples/tracker/input.gxs
+.include examples/tracker/play.gxs
+
+loop:
+	ld %1 playing
+	cjs %1 play
+
+	js input
+	js drawhud
+	js draw
+
+	ld %1 framecount
+	add %1 (%0:1) %1
+	st %1 framecount
+	end
+	jmp loop
