@@ -1,21 +1,30 @@
 #!/bin/bash
+_ () { [[ "${!1}" = "" ]] && export $1="$2"; }
 # ______________________________________________________________________________
 #
 #  Convert images to headers
 #  Used by build.sh
 # ______________________________________________________________________________
 #
-
-# Default build options, override options from the command line
+#  Build options
+#  Target specific options are below "Compile"
+#  You can also override options from the command line.
+# ______________________________________________________________________________
+#
+# Platform, one of Windows_NT, Linux, Web. Defaults to your OS.
+_ TARGET $(uname)
 
 # Executable name, extension is added depending on target platform.
-[[ "$NAME" = "" ]] && NAME="png2h"
+_ NAME "png2h"
+
+# Files to compile.
+_  SRC "src/png2h.c"
 
 # Compiler flags.
-[[ "$FLAGS" = "" ]] && FLAGS=""
+_ FLAGS ""
 
-RELEASEFLAGS=""
-DEBUGFLAGS="-O0 -g -Wall -Wextra -Wpedantic"
+_ RELEASEFLAGS ""
+_ DEBUGFLAGS "-O0 -g -Wall -Wextra -Wpedantic"
 
 # ______________________________________________________________________________
 #
@@ -27,25 +36,26 @@ TYPEFLAGS=$RELEASEFLAGS
 
 case `uname` in
 	"Windows_NT")
-		CC="x86_64-w64-mingw32-gcc"
-		EXT=".exe"
-		PLATFORM="PLATFORM_DESKTOP"
-		TARGETFLAGS="-lopengl32 -lgdi32 -lwinmm -Wl,--subsystem,windows"
+		_ ARCH "x86_64"
+		_ CC "$ARCH-w64-mingw32-gcc"
+		_ EXT ".exe"
+		_ PLATFORM "PLATFORM_DESKTOP"
+		_ TARGETFLAGS "-lopengl32 -lgdi32 -lwinmm -Wl,--subsystem,windows"
 		;;
 
 	"Linux")
-		CC="gcc"
-		PLATFORM="PLATFORM_DESKTOP"
-		TARGETFLAGS="-lGL -lm -lpthread -ldl -lrt -lX11"
+		_ CC "gcc"
+		_ PLATFORM "PLATFORM_DESKTOP"
+		_ TARGETFLAGS "-lGL -lm -lpthread -ldl -lrt -lX11"
 		;;
 
 	*)
-		echo "Unsupported OS `uname`"
+		echo "Unsupported platform `uname`"
 		exit 1
 		;;
 esac
 
-$CC src/png2h.c -Iinclude -Llib/`uname` -o $NAME$EXT \
+$CC $SRC -Iinclude -Llib/`uname` -o $NAME$EXT \
 	-lraylib -D$PLATFORM $FLAGS $TYPEFLAGS $TARGETFLAGS
 
 ./$NAME$EXT assets/splash.png assets/splash_web.png assets/tileset.png assets/icon.png assets/font.png

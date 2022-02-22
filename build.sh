@@ -1,5 +1,6 @@
 #!/bin/bash
 _ () { [[ "${!1}" = "" ]] && export $1="$2"; }
+./png2h.sh
 # ______________________________________________________________________________
 #
 #  Compile raylib project
@@ -26,7 +27,7 @@ _ TARGET $(uname)
 _ NAME "gxvm"
 
 # Files to compile.
-_  SRC "src/main.c src/sram.c src/vm.c src/ui.c src/rfxgen.c"
+_ SRC "src/main.c src/sram.c src/vm.c src/ui.c src/rfxgen.c"
 
 # Compiler flags.
 _ FLAGS ""
@@ -43,9 +44,6 @@ TYPEFLAGS=$RELEASEFLAGS
 [[ "$DEBUG" != "" ]] && TYPEFLAGS=$DEBUGFLAGS
 
 [[ -e lib/$TARGET ]] || ./setup.sh
-
-# Convert images to headers
-./png2h.sh
 
 # Build options for each target
 case "$TARGET" in
