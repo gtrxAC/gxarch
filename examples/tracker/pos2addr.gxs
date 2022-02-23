@@ -1,29 +1,29 @@
 ; arg0 = x
 ; arg1 = ch
 ; arg2 = y
-; return value arg3 arg4
-; uses regs arg5 arg6
+; arg3 = page
+; return value arg4 arg5
 pos2addr: {
 	reg x arg0
 	reg ch arg1
 	reg y arg2
+	reg page arg3
 
-	reg resh arg3
-	reg resl arg4
+	reg resh arg4
+	reg resl arg5
 
-	reg ch_tmp arg5
-	reg y_tmp arg6
+	set resh hi(SRAM)
+	set resl lo(SRAM)
 
-	set resh hi(track)
-	set resl lo(track)
+	add resh page resh
 
-	mul y (%0:TRACK_LENGTH) y_tmp
+	mul y (%0:LINE_LENGTH) %1
 	add resh %h resh
-	add resl y_tmp resl
+	add resl %1 resl
 
-	mul ch (%0:CHANNEL_LENGTH) ch_tmp
+	mul ch (%0:CHANNEL_LENGTH) %1
 	add resh %h resh
-	add resl ch_tmp resl
+	add resl %1 resl
 
 	add resl x resl
 	add resh %h resh

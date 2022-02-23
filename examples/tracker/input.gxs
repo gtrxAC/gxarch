@@ -48,9 +48,10 @@ input: {
 		ld arg0 cursorx   ; get the address where to write
 		ld arg1 cursorch
 		ld arg2 cursory
+		ld arg3 curpage
 		js pos2addr
 
-		sti k arg3  ; write to address
+		sti k arg4  ; write to address
 		js moveright
 		ret
 
@@ -62,6 +63,8 @@ input: {
 		.eqj k (%0:K_DOWN) movedown
 		.eqj k (%0:K_P) toggleplay
 		.eqj k (%0:K_p) toggleplay
+		.eqj k (%0:K_PLUS) addpage
+		.eqj k (%0:K_MINUS) removepage
 		ret
 }
 
@@ -72,9 +75,15 @@ toggleplay:
 	ld %1 cursorx
 	ld %2 cursorch
 	ld %3 cursory
+	ld %4 curpage
 	st %1 oldx
 	st %2 oldch
 	st %3 oldy
+	st %4 oldpage
+	st (%0:0) cursorx
+	st (%0:0) cursorch
+	st (%0:0) cursory
+	st (%0:0) curpage
 	ret
 
 toggleplayoff:
@@ -82,11 +91,35 @@ toggleplayoff:
 	ld %1 oldx
 	ld %2 oldch
 	ld %3 oldy
+	ld %4 oldpage
 	st %1 cursorx
 	st %2 cursorch
 	st %3 cursory
+	st %4 curpage
 	snd (%0:0) %0 %0 %0  ; reset all audio channels
 	snd (%1:1) %0 %0 %0
 	snd (%1:2) %0 %0 %0
 	snd (%1:3) %0 %0 %0
+	ret
+
+addpage:
+	ld %1 pagecount
+	add %1 (%0:1) %1
+	.gtj %1 (%0:MAX_PAGES) return
+	st %1 pagecount
+	ret
+
+removepage:
+	ld %1 pagecount
+	sub %1 (%0:1) %1
+	.eqj %1 (%0:0) return
+	ld %0 curpage
+	.eqjs %0 %1 removepage_pageup
+	st %1 pagecount
+	ret
+
+removepage_pageup:
+	ld %2 curpage
+	sub %2 (%0:1) %2
+	st %2 curpage
 	ret

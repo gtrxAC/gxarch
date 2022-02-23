@@ -3,9 +3,11 @@ draw: {
 	reg x %6
 	reg ch %7
 	reg y %8
-	reg dstx %9
-	reg dsty %10
+	reg page %9
+	reg dstx %10
+	reg dsty %11
 
+	ld page curpage
 	set y 0
 
 	drawlinesloop:
@@ -19,10 +21,11 @@ draw: {
 				.mov x arg0
 				.mov ch arg1
 				.mov y arg2
+				.mov page arg3
 				js pos2addr
 
 				; get the ASCII value of the character
-				ldi arg0 arg3
+				ldi arg0 arg4
 				js int2hex4b
 
 				; get the location to draw at

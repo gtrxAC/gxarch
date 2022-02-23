@@ -2,25 +2,28 @@ play: {
 	reg x %4
 	reg ch %5
 	reg y %6
+	reg page %7
 
-	reg snd0 %7  ; args for snd instruction
-	reg snd1 %8
-	reg snd2 %9
+	reg snd0 %8   ; args for snd instruction
+	reg snd1 %9
+	reg snd2 %10
 
-	reg addrh arg3  ; pos2addr result
-	reg addrl arg4
+	reg addrh arg4  ; pos2addr result
+	reg addrl arg5
 
 	ld %1 framecount
-	div %1 (%0:64) %29  ; only play every 64 frames (press Insert to speed up)
+	div %1 (%0:PLAYBACK_SPEED) %29  ; only play every PLAYBACK_SPEED frames
 	cj %r return
 
 	; read each byte for the current line and play the appropriate sounds
+	ld page curpage
 	ld y cursory
 	set ch 0
 	playloop:
-		.mov x arg0   ; get the address for this line and channel
+		.mov x arg0     ; get the address for this line and channel
 		.mov ch arg1
 		.mov y arg2
+		.mov page arg3
 		js pos2addr
 
 		ldi snd0 addrh          ; load each sound attribute into registers
@@ -44,11 +47,19 @@ play: {
 		.ltj ch (%0:CHANNEL_COUNT) playloop
 
 	add y (%0:1) y                        ; move cursor to next line
-	.eqjs y (%0:TRACK_LENGTH) playerloop  ; loop when reaching the end
+	.eqjs y (%0:TRACK_LENGTH) playerpage  ; go to next page as needed
 	st y cursory
+	st page curpage
+	ret
+
+playerpage:
+	set y 0
+	add page (%0:1) page
+	ld %0 pagecount
+	.eqj page %0 playerloop
 	ret
 
 playerloop:
-	set y 0
+	set page 0
 	ret
 }

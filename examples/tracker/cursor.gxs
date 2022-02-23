@@ -7,11 +7,13 @@
 	reg x %5
 	reg ch %6
 	reg y %7
+	reg page %8
 
 loadpos:
 	ld x cursorx
 	ld ch cursorch
 	ld y cursory
+	ld page curpage
 	set %1 1
 	ret
 
@@ -19,6 +21,7 @@ storepos:
 	st x cursorx
 	st ch cursorch
 	st y cursory
+	st page curpage
 	ret
 
 ; ______________________________________________________________________________
@@ -42,6 +45,12 @@ moveleftch:
 movelefty:
 	set ch 3
 	sub y %1 y
+	cjs %h moveleftpage
+	ret
+
+moveleftpage:
+	set y 19
+	sub page %1 page
 	cjs %h moveleftstop
 	ret
 
@@ -49,6 +58,7 @@ moveleftstop:
 	set x 0
 	set ch 0
 	set y 0
+	set page 0
 	ret
 
 ; ______________________________________________________________________________
@@ -72,13 +82,21 @@ moverightch:
 moverighty:
 	set ch 0
 	add y %1 y
-	.eqjs y (%0:TRACK_LENGTH) moverightstop
+	.eqjs y (%0:TRACK_LENGTH) moverightpage
+	ret
+
+moverightpage:
+	set y 0
+	add page %1 page
+	ld %0 pagecount
+	.eqjs page %0 moverightstop
 	ret
 
 moverightstop:
 	set x 2
 	set ch 3
-	sub y %1 y
+	set y 19
+	sub page %1 page
 	ret
 
 ; ______________________________________________________________________________
@@ -89,7 +107,7 @@ moverightstop:
 moveup:
 	js loadpos
 	sub y %1 y
-	cjs %h moveleftstop  ; note: reusing horizontal movement stop sub
+	cjs %h moveleftpage  ; note: reusing horizontal movement sub
 	js storepos
 	ret
 
@@ -101,7 +119,7 @@ moveup:
 movedown:
 	js loadpos
 	add y %1 y
-	.eqjs y (%0:TRACK_LENGTH) moverightstop
+	.eqjs y (%0:TRACK_LENGTH) moverightpage
 	js storepos
 	ret
 }

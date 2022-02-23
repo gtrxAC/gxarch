@@ -1,3 +1,5 @@
+slashstr: dat "/"
+
 drawhud:
 	; Draw channel icons on top
 	dw (%0:0) (%1:32) (%2:60) (%3:8)
@@ -59,4 +61,32 @@ drawhud:
 			set arg3 0
 			js print
 	}
+
+	; Draw page number
+	ld arg0 curpage
+	add arg0 (%0:1) arg0
+	js int2hex4b
+	
+	set arg0 hi(hexbuf)
+	set arg1 lo(hexbuf)
+	set arg2 116
+	set arg3 1
+	js print
+
+	; Draw a slash
+	set arg0 hi(slashstr)
+	set arg1 lo(slashstr)
+	set arg2 120
+	set arg3 0
+	js print
+
+	; Draw page count
+	ld arg0 pagecount
+	js int2hex4b
+	
+	set arg0 hi(hexbuf)
+	set arg1 lo(hexbuf)
+	set arg2 124
+	set arg3 1
+	js print
 	ret
