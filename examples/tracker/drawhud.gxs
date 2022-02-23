@@ -55,7 +55,7 @@ drawhud:
 		drawsust:
 			set addrh hi(suststr)
 			set addrl lo(suststr)
-		
+
 		drawxstr:
 			set arg2 0
 			set arg3 0
@@ -63,10 +63,11 @@ drawhud:
 	}
 
 	; Draw page number
+	; (0 indexed, so increment by 1 to make it more human readable)
 	ld arg0 curpage
 	add arg0 (%0:1) arg0
 	js int2hex4b
-	
+
 	set arg0 hi(hexbuf)
 	set arg1 lo(hexbuf)
 	set arg2 116
@@ -83,7 +84,7 @@ drawhud:
 	; Draw page count
 	ld arg0 pagecount
 	js int2hex4b
-	
+
 	set arg0 hi(hexbuf)
 	set arg1 lo(hexbuf)
 	set arg2 124

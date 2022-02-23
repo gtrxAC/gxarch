@@ -1,5 +1,5 @@
 update:
-	ld %0 framecount       ; only allow moving every 4th frame
+	ld %0 framecount       ; only allow moving every SPEED frames
 	div %0 (%1:SPEED) %29
 	cj %r getmouseblock
 
@@ -14,10 +14,10 @@ update:
 	set BCOUNT BLOCKCOUNT
 	set WH WHEIGHT
 
-	sub WW (_13:13) WW  ; screen can show 13 blocks in both X/Y at a time, so maximum
-	sub WH _13 WH       ; possible player X/Y is (world width/height - 13) so we
-	                    ; don't try to draw out of bounds (top left block on screen
-	                    ; is player position)
+	sub WW (_13:13) WW  ; screen can show 13 blocks in both X/Y at a time, so
+	sub WH _13 WH       ; maximum possible player X/Y is (world width/height
+	                    ; - 13) so we don't try to draw out of bounds (top left
+	                    ; block on screen is player position)
 
 	.keyjs K_w moveup
 	.keyjs K_a moveleft
@@ -84,15 +84,14 @@ getmouseblock:
 
 	ld %0 MOUSEL        ; if left mouse is down, replace pointed block with air
 	cjs %0 removeblock
-	ld %0 MOUSER        ; if right mouse is down, replace pointed block with current block
-	cjs %0 placeblock
+	ld %0 MOUSER        ; if right mouse is down, replace pointed block with
+	cjs %0 placeblock   ; current block
 	jmp render
 ; ______________________________________________________________________________
 ;
 ;  Subroutines
 ; ______________________________________________________________________________
 ;
-
 ; get address of block being pointed at
 getblockaddr:
 	set %0 hi(blocks)  ; block address = starting address

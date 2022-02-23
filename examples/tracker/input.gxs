@@ -6,9 +6,11 @@ input: {
 ;  Copied from examples/key.gxs
 ; ______________________________________________________________________________
 ;
-	reg k %4
+	reg k %4  ; register for current key (also stored in RAM as curkey)
 	set k 0
 
+	; Check each key to find one that is pressed
+	; see examples/key.gxs
 	inputloop:
 		key k %0
 		cj %0 keyfound
@@ -72,15 +74,15 @@ toggleplay:
 	ld %0 playing
 	cj %0 toggleplayoff
 	st (%0:1) playing
-	ld %1 cursorx
-	ld %2 cursorch
+	ld %1 cursorx        ; copy editmode location into old location
+	ld %2 cursorch       ; to be retrieved later when exiting playmode
 	ld %3 cursory
 	ld %4 curpage
 	st %1 oldx
 	st %2 oldch
 	st %3 oldy
 	st %4 oldpage
-	st (%0:0) cursorx
+	st (%0:0) cursorx   ; start playing from the start of the track
 	st (%0:0) cursorch
 	st (%0:0) cursory
 	st (%0:0) curpage
@@ -88,7 +90,7 @@ toggleplay:
 
 toggleplayoff:
 	st (%0:0) playing
-	ld %1 oldx
+	ld %1 oldx         ; restore old location
 	ld %2 oldch
 	ld %3 oldy
 	ld %4 oldpage
@@ -96,6 +98,7 @@ toggleplayoff:
 	st %2 cursorch
 	st %3 cursory
 	st %4 curpage
+
 	snd (%0:0) %0 %0 %0  ; reset all audio channels
 	snd (%1:1) %0 %0 %0
 	snd (%1:2) %0 %0 %0
@@ -114,8 +117,8 @@ removepage:
 	sub %1 (%0:1) %1
 	.eqj %1 (%0:0) return
 	ld %0 curpage
-	.eqjs %0 %1 removepage_pageup
-	st %1 pagecount
+	.eqjs %0 %1 removepage_pageup  ; if on last page (after removing page, that
+	st %1 pagecount                ; is out of bounds), go one page back
 	ret
 
 removepage_pageup:

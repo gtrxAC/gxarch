@@ -14,8 +14,8 @@ render:
 ;  Draw background
 ; ______________________________________________________________________________
 ;
+	; Draw scrolling clouds
 	{
-		; Draw scrolling clouds
 		reg bgx %0
 		reg bgy %1
 		reg bgw %2
@@ -26,10 +26,10 @@ render:
 		val BG_H 36
 
 		ld bgx scrollcount  ; draw clouds at current scroll count
-		set bgy BG_Y        ; this works similarly to the drawscroll example, but
-		set bgw BG_W        ; only horizontally scrolling and much slower, using
-		set bgh BG_H        ; two counters (framecount and scrollcount), see
-		dw bgx bgy bgw bgh  ; renderbg2loop
+		set bgy BG_Y
+		set bgw BG_W
+		set bgh BG_H
+		dw bgx bgy bgw bgh
 		at (%1:0) %1
 	}
 
@@ -64,7 +64,8 @@ render:
 		; Constants
 		reg _1 %11       ; 1
 		reg BSIZE %12    ; block size
-		reg ITERMAX %13  ; max X and Y iter (blocksize 10 * itermax = 130 needed to fill screen)
+		reg ITERMAX %13  ; max X and Y iter (blocksize 10 * itermax = 130 needed
+		                 ; to fill screen)
 		reg WW %14       ; world width
 		reg BY %15       ; tileset source Y for blocks
 
@@ -87,8 +88,8 @@ render:
 		set blockh hi(blocks)  ; block address = starting address
 		set blockl lo(blocks)
 
-		add y py %0           ; block address += (iterator y + player y) * world width
-		mul %0 WW %0
+		add y py %0           ; block address += (iterator y + player y) * world
+		mul %0 WW %0          ; width
 		add blockh %h blockh
 		add blockl %0 blockl
 
@@ -112,8 +113,8 @@ render:
 		at drawx drawy     ; draw tile at destination X/Y
 
 	renderskip:
-		add x px %1           ; if this block is being pointed at (check both X and Y coordinates)
-		eq %1 mxb %2
+		add x px %1           ; if this block is being pointed at (check both
+		eq %1 mxb %2          ; X and Y coordinates)
 		add y py %1
 		eq %1 myb %3
 		and %2 %3 %1
@@ -164,7 +165,6 @@ render:
 ;  Subroutines
 ; ______________________________________________________________________________
 ;
-
 ; Increment cloud scroll counter
 incscroll:
 	ld %0 scrollcount

@@ -46,8 +46,8 @@ play: {
 		add ch (%0:1) ch
 		.ltj ch (%0:CHANNEL_COUNT) playloop
 
-	add y (%0:1) y                        ; move cursor to next line
-	.eqjs y (%0:TRACK_LENGTH) playerpage  ; go to next page as needed
+	add y (%0:1) y                       ; move cursor to next line
+	.eqjs y (%0:PAGE_LENGTH) playerpage  ; go to next page as needed
 	st y cursory
 	st page curpage
 	ret

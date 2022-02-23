@@ -1,10 +1,11 @@
 ; Draw track data
 draw: {
-	reg x %6
-	reg ch %7
+	reg x %6     ; current source position in track
+	reg ch %7    ; page is current page, X/channel/Y start at 0
 	reg y %8
 	reg page %9
-	reg dstx %10
+
+	reg dstx %10  ; destination X/Y on screen where to draw
 	reg dsty %11
 
 	ld page curpage
@@ -41,14 +42,17 @@ draw: {
 				.mov arg4 arg3
 				js print
 
+				; next X iteration (frequency, sustain, decay of one channel)
 				add x (%0:1) x
 				.ltj x (%0:CHANNEL_LENGTH) drawcharsloop
 
+			; next channel iteration (square, sawtooth, sine, noise of one line)
 			add ch (%0:1) ch
 			.ltj ch (%0:CHANNEL_COUNT) drawchannelsloop
 
+		; next line iteration (Y)
 		add y (%0:1) y
-		.ltj y (%0:TRACK_LENGTH) drawlinesloop
+		.ltj y (%0:PAGE_LENGTH) drawlinesloop
 
 	ret
 }

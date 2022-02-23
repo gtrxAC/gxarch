@@ -152,8 +152,8 @@ drawrunning:
 	set arg2 lo(FMTTIMELEFTFRAME)
 	js int2str
 
-	div timer (%0:FPS) arg0      ; timer is frames, divide by fps (60) to get seconds
-	set arg1 hi(FMTTIMELEFTSEC)
+	div timer (%0:FPS) arg0      ; timer is frames, divide by fps (60) to get
+	set arg1 hi(FMTTIMELEFTSEC)  ; seconds
 	set arg2 lo(FMTTIMELEFTSEC)
 	js int2str
 
@@ -170,7 +170,7 @@ drawrunning:
 	js print
 
 	sub timer (%0:1) timer           ; decrement timer
-	.eqjs timer (%0:0) clicktimeend  ; if timer has reached 0, go to RESULT state
+	.eqjs timer (%0:0) clicktimeend  ; if timer reached 0, go to RESULT state
 	jmp endframe
 
 clickbuttonaction:

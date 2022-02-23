@@ -1,3 +1,5 @@
+; Convert cursor position to on screen coordinates
+; Only one page is shown at a time so we don't need to check page
 ; arg0 = x
 ; arg1 = ch
 ; arg2 = y

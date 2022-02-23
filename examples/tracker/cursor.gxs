@@ -9,6 +9,8 @@
 	reg y %7
 	reg page %8
 
+; Load cursor position into registers defined above
+; Note: sets %1 to constant 1 for easy increment/decrement
 loadpos:
 	ld x cursorx
 	ld ch cursorch
@@ -17,6 +19,7 @@ loadpos:
 	set %1 1
 	ret
 
+; Store cursor position back into RAM
 storepos:
 	st x cursorx
 	st ch cursorch
@@ -31,31 +34,31 @@ storepos:
 ;
 moveleft:
 	js loadpos
-	sub x %1 x
-	cjs %h moveleftch
+	sub x %1 x         ; decrement X
+	cjs %h moveleftch  ; if X underflow, go to previous channel
 	js storepos
 	ret
 
 moveleftch:
-	set x 2
-	sub ch %1 ch
-	cjs %h movelefty
+	set x 2           ; set X to end of the (previous) channel
+	sub ch %1 ch      ; go to previous channel
+	cjs %h movelefty  ; if channel underflow, go to previous line
 	ret
 
 movelefty:
-	set ch 3
-	sub y %1 y
-	cjs %h moveleftpage
+	set ch 3             ; go to last channel of line
+	sub y %1 y           ; go to previous line
+	cjs %h moveleftpage  ; if line underflow, go to previous page
 	ret
 
 moveleftpage:
-	set y 19
-	sub page %1 page
-	cjs %h moveleftstop
+	set y 19             ; go to last line of page
+	sub page %1 page     ; go to previous page
+	cjs %h moveleftstop  ; if page underflow, stop
 	ret
 
 moveleftstop:
-	set x 0
+	set x 0     ; go to the beginning of the track (position 0 everything)
 	set ch 0
 	set y 0
 	set page 0
@@ -64,6 +67,8 @@ moveleftstop:
 ; ______________________________________________________________________________
 ;
 ;  Right
+;  Works mostly the same as left, except increment instead of decrement, and
+;  check upper bounds instead of checking underflow
 ; ______________________________________________________________________________
 ;
 moveright:
@@ -82,7 +87,7 @@ moverightch:
 moverighty:
 	set ch 0
 	add y %1 y
-	.eqjs y (%0:TRACK_LENGTH) moverightpage
+	.eqjs y (%0:PAGE_LENGTH) moverightpage
 	ret
 
 moverightpage:
@@ -93,7 +98,7 @@ moverightpage:
 	ret
 
 moverightstop:
-	set x 2
+	set x 2           ; go to end of previous page
 	set ch 3
 	set y 19
 	sub page %1 page
@@ -119,7 +124,7 @@ moveup:
 movedown:
 	js loadpos
 	add y %1 y
-	.eqjs y (%0:TRACK_LENGTH) moverightpage
+	.eqjs y (%0:PAGE_LENGTH) moverightpage
 	js storepos
 	ret
 }
