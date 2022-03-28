@@ -18,41 +18,41 @@ draw: {
 			set x 0
 
 			drawcharsloop:
-				; get address of current character
-				.mov x arg0
-				.mov ch arg1
-				.mov y arg2
-				.mov page arg3
+				; Get address of current character
+				mov x arg0
+				mov ch arg1
+				mov y arg2
+				mov page arg3
 				js pos2addr
 
-				; get the ASCII value of the character
+				; Get the ASCII value of the character
 				ldi arg0 arg4
 				js int2hex4b
 
-				; get the location to draw at
-				.mov x arg0
-				.mov ch arg1
-				.mov y arg2
+				; Get the location to draw at
+				mov x arg0
+				mov ch arg1
+				mov y arg2
 				js pos2scr
 
-				; draw the value at the location
+				; Draw the value at the location
 				set arg0 hi(hexbuf)
 				set arg1 lo(hexbuf)
-				.mov arg3 arg2
-				.mov arg4 arg3
+				mov arg3 arg2
+				mov arg4 arg3
 				js print
 
-				; next X iteration (frequency, sustain, decay of one channel)
+				; Next X iteration (frequency, sustain, decay of one channel)
 				add x (%0:1) x
-				.ltj x (%0:CHANNEL_LENGTH) drawcharsloop
+				ltj x (%0:CHANNEL_LENGTH) drawcharsloop
 
-			; next channel iteration (square, sawtooth, sine, noise of one line)
+			; Next channel iteration (square, sawtooth, sine, noise of one line)
 			add ch (%0:1) ch
-			.ltj ch (%0:CHANNEL_COUNT) drawchannelsloop
+			ltj ch (%0:CHANNEL_COUNT) drawchannelsloop
 
-		; next line iteration (Y)
+		; Next line iteration (Y)
 		add y (%0:1) y
-		.ltj y (%0:PAGE_LENGTH) drawlinesloop
+		ltj y (%0:PAGE_LENGTH) drawlinesloop
 
 	ret
 }

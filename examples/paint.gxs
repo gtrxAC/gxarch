@@ -1,17 +1,21 @@
 ; Paint for gxarch
 ; Draw on a 32 × 30 pixel canvas
-; Left/right arrow to change color, left mouse to draw
+; Controls: Left/right arrow to change color, left mouse to draw
 ; Date: 2021-12-03
 ; Author: gtrxAC
 
 ; Based on blockgame but simplified, no player movement, no runtime stdlib, etc.
 ; Canvas size, scale and color count can be changed below
 
-; Note: save file supports max 64 × 60 pixel canvas (3840 bytes, 2× scale to fit screen)
-; Note: color index 0 should be black, there is an optimization that skips drawing color 0 pixels
-;       and the black background color shows through
+; Notes:
+; - Press Insert twice to speed up and get rid of holes when drawing
+; - Save file supports max 64 × 60 pixel canvas (3840 bytes, 2× scale to fit
+;   screen)
+; - Color index 0 should be black, there is an optimization that skips drawing
+;   color 0 pixels and the black background color shows through
 
-.include std/common.gxs  ; common.gxs only has compile time definitions for keys and addresses
+include "std/common.gxs"  ; common.gxs only has compile time definitions for
+                          ; keys and addresses
 
 val CANVASW 32
 val CANVASH 30
@@ -22,149 +26,182 @@ addr ldowntime 0xE000  ; how long have left/right keys been pressed
 addr rdowntime 0xE001
 addr curcolor 0xE002
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 1        ; supports save file
 
+main:
+	; Set current color to white
+	st (%0:2) curcolor
+
 ; ______________________________________________________________________________
 ;
-main:
-	st (%0:2) curcolor     ; set current color to white
-
+;  Update
+;  Check left key
+; ______________________________________________________________________________
+;
 update:
-	.keyj K_LEFT moveleft  ; if left key down, select previous color
+	; If left key down, select previous color
+	keyj K_LEFT moveleft
 	jmp nomoveleft
 
 moveleft:
-	ld %0 ldowntime       ; if left has been down for longer (key down timer > 0), ignore
-	cj %0 checkmoveright
+	; If left has been down for longer (key down timer > 0), ignore
+	cj [%0:ldowntime] checkmoveright
 
-	ld %0 curcolor                 ; if color is already 0, ignore
-	.eqj %0 (%1:0) checkmoveright
-	sub %0 (%1:1) %0               ; decrement color
+	; If color is already 0, ignore
+	eqj [%0:curcolor] (%1:0) checkmoveright
+
+	; Decrement color
+	sub %0 (%1:1) %0
 	st %0 curcolor
 
-	ld %0 ldowntime     ; increment key down timer
-	add %0 %1 %0
+	; Increment key down timer
+	add [%0:ldowntime] %1 %0
 	st %0 ldowntime
 	jmp checkmoveright
 
 nomoveleft:
-	st %8 ldowntime  ; reset key down timer
+	; Reset key down timer
+	st %7 ldowntime
 
-
+; ______________________________________________________________________________
+;
+;  Check right key
+; ______________________________________________________________________________
+;
 checkmoveright:
-	.keyj K_RIGHT moveright  ; if right key down, select next color
+	; If right key down, select next color
+	keyj K_RIGHT moveright
 	jmp nomoveright
 
 moveright:
-	ld %0 rdowntime   ; if right has been down for longer (key down timer > 0), ignore
-	cj %0 checkmouse
+	; If right has been down for longer, ignore
+	cj [%0:rdowntime] checkmouse
 
-	ld %0 curcolor         ; if color is already COLORCOUNT - 1, ignore
-	set %1 COLORCOUNT
-	sub %1 (%2:1) %1
-	.eqj %0 %1 checkmouse
-	add %0 (%1:1) %0       ; increment color
+	; If color is already COLORCOUNT - 1, ignore
+	sub (%1:COLORCOUNT) (%2:1) %1
+	eqj [%0:curcolor] %1 checkmouse
+
+	; Increment color
+	add %0 (%1:1) %0
 	st %0 curcolor
 
-	ld %0 rdowntime  ; increment key down timer
-	add %0 (%1:1) %0
+	; Increment key down timer
+	add [%0:rdowntime] (%1:1) %0
 	st %0 rdowntime
 	jmp checkmouse
 
 nomoveright:
-	st %8 rdowntime  ; reset key down timer
+	; Reset key down timer
+	st %7 rdowntime
 
-
+; ______________________________________________________________________________
+;
+;  Check mouse
+; ______________________________________________________________________________
+;
 checkmouse:
-	ld %0 MOUSEL
-	cj %0 mousedown
+	cj [%0:MOUSEL] mousedown
 	jmp draw
 
 mousedown:
-	set %0 hi(SRAM)  ; init address to write to (0xF000 start of SRAM)
+	; Init address to write to (0xF000 start of SRAM)
+	set %0 hi(SRAM)
 	set %1 lo(SRAM)
 
-	ld %2 MOUSEX          ; get mouse coordinates divided by scale
-	ld %3 MOUSEY          ; to get X/Y of pixel pointed at
-	div %2 (%4:SCALE) %2
-	div %3 %4 %3
+	; X/Y of pixel pointed at = mouse coords / scale
+	div [%2:MOUSEX] (%4:SCALE) %2
+	div [%3:MOUSEY] %4 %3
 
-	mul %3 (%5:CANVASW) %1  ; add (pixel Y * canvas width) to address
+	; address += pixel Y * canvas width
+	mul %3 (%5:CANVASW) %1
 	add %0 %h %0
 
-	add %1 %2 %1  ; add pixel X to address
+	; address += pixel X
+	add %1 %2 %1
 	add %0 %h %0
 
-	ld %2 curcolor  ; write current color to address
-	sti %2 %0
+	; Write current color to address
+	sti [%2:curcolor] %0
+
+; ______________________________________________________________________________
+;
+;  Draw canvas
 ; ______________________________________________________________________________
 ;
 draw: {
-	reg x %0
+	; Variables
+	reg x %0      ; iterator X/Y
 	reg y %1
-	reg curh %2
+	reg curh %2   ; current pixel address
 	reg curl %3
-	reg _1 %4
-	reg scale %5
-	reg w %6
-	reg h %7
-	reg _0 %8
-	reg px %9
-	reg dstx %10
-	reg dsty %11
+	reg px %4     ; loaded pixel value from curh
+	reg dstx %5   ; draw destination (iter X/Y * scale)
+	reg dsty %6
 
-	set x 0            ; iterator X/Y
+	; Constants
+	reg _0 %7     ; constant 0
+	reg _1 %8     ; constant 1
+	reg scale %9  ; SCALE
+	reg w %10     ; canvas width/height
+	reg h %11
+
+	set x 0
 	set y 0
-	set curh 0            ; current pixel address
+	set curh 0
 	set curl 0
-	set _1 1            ; constants
+	set _1 1
 	set scale SCALE
 	set w CANVASW
 	set h CANVASH
-	; %8 = constant 0
-	; %9 = loaded pixel value
-	; %10 %11 = iterator X/Y * scale (draw destination)
 
 drawyloop:
 	set x 0
 
 drawxloop:
-	set curh hi(SRAM)  ; init address to read (0xF000 start of SRAM)
+	; Init address to read (0xF000 start of SRAM)
+	set curh hi(SRAM)
 	set curl lo(SRAM)
 
-	mul y w curl      ; add (pixel Y * canvas width) to address
+	; address += pixel Y * canvas width
+	mul y w curl
 	add curh %h curh
 
-	add curl x curl   ; add pixel X to address
+	; address += pixel X
+	add curl x curl
 	add curh %h curh
 
 	ldi px curh          ; load pixel from address
-	.eqj px _0 drawnext  ; if black pixel, skip
+	eqj px _0 drawnext  ; if black pixel, skip
 
-	mul px scale px  ; multiply color value by scale to get the source X from tileset
+	; Multiply color value by scale to get the source X from tileset
+	mul px scale px
 
-	dw px _0 scale scale  ; draw pixel
+	; Draw pixel
+	dw px _0 scale scale
 	mul x scale dstx
 	mul y scale dsty
 	at dstx dsty
 
 drawnext:
-	add x _1 x          ; next X/Y loop iteration
-	.ltj x w drawxloop
+	; Next loop iteration
+	add x _1 x
+	ltj x w drawxloop
 
 	add y _1 y
-	.ltj y h drawyloop
-
-	ld x curcolor     ; draw currently selected color below canvas
-	set y 8
-	mul x y x
-	set y SCALE
-	set curh 8
-	dw x y curh curh
-	set x 120
-	at _0 x
+	ltj y h drawyloop
 }
+; ______________________________________________________________________________
+;
+;  Draw HUD
+; ______________________________________________________________________________
+;
+	; Draw currently selected color below canvas
+	mul [%0:curcolor] (%1:8) %0
+	dw %0 (%1:SCALE) (%2:8) %2
+	at (%0:0) (%1:120)
+
+	; End frame
 	end
 	jmp update

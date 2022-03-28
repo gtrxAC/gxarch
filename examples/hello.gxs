@@ -6,11 +6,11 @@
 ; Date: 2021-10-12
 ; Author: gtrxAC
 
-dat main  ; All programs must start with "dat" and the label where the program starts.
-          ; "dat" inserts data into the output program, this inserts the address
-          ; of the "main" subroutine to the start of the program.
-          ; On startup, gxarch checks the first two bytes of the program for the address
-          ; of where the program should start (the entry point).
+datl main  ; All programs must start with "datl" and the label where the program starts.
+           ; "dat" inserts data into the output program, "datl" inserts a 16-bit value (address).
+		   ; This inserts the address of the "main" subroutine to the start of the program.
+           ; On startup, gxarch checks the first two bytes of the program for the address
+           ; of where the program should start (the entry point).
 
 dat 0, 0, 0  ; All programs must also have the RGB color values of the background color
              ; after the entry point.
@@ -25,7 +25,7 @@ string: dat "Hello world!"  ; Embed the hello world string into the executable.
 val PRINT_CHARSPERLINE 32  ; We need the print subroutine from the standard library.
 val PRINT_WIDTH 4          ; Before including it we need to specify the font's properties.
 val PRINT_HEIGHT 8         ; The default tileset assets/tileset.png has 32 characters
-.include std/print.gxs     ; per line and each character is 4×8 pixels. See
+include "std/print.gxs"    ; per line and each character is 4×8 pixels. See
                            ; https://github.com/gtrxAC/gxarch/wiki/Tilesets to learn more
                            ; about how tilesets work.
 

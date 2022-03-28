@@ -16,7 +16,7 @@ input: {
 		cj %0 keyfound
 
 		add k (%0:1) k
-		.ltj k (%0:K_COUNT) inputloop
+		ltj k (%0:K_COUNT) inputloop
 
 		st (%0:0) keyflag
 		st %0 curkey
@@ -33,7 +33,7 @@ input: {
 	; Skip input processing if no key was pressed
 	readinputdone:
 		ld k curkey
-		.eqj k (%0:0) return
+		eqj k (%0:0) return
 
 ; ______________________________________________________________________________
 ;
@@ -41,11 +41,11 @@ input: {
 ; ______________________________________________________________________________
 ;
 	procinput:
-		.mov k arg0  ; get key's hex value
+		mov k arg0    ; get key's hex value
 		js hex2int4b
 
-		.eqj arg1 (%0:16) procinput_nohex
-		.mov arg1 k
+		eqj arg1 (%0:16) procinput_nohex
+		mov arg1 k
 
 		ld arg0 cursorx   ; get the address where to write
 		ld arg1 cursorch
@@ -53,20 +53,20 @@ input: {
 		ld arg3 curpage
 		js pos2addr
 
-		sti k arg4  ; write to address
+		sti k arg4    ; write to address
 		js moveright
 		ret
 
 	; If key is not hex, check if it's P or an arrow key
 	procinput_nohex:
-		.eqj k (%0:K_LEFT) moveleft
-		.eqj k (%0:K_RIGHT) moveright
-		.eqj k (%0:K_UP) moveup
-		.eqj k (%0:K_DOWN) movedown
-		.eqj k (%0:K_P) toggleplay
-		.eqj k (%0:K_p) toggleplay
-		.eqj k (%0:K_PLUS) addpage
-		.eqj k (%0:K_MINUS) removepage
+		eqj k (%0:K_LEFT) moveleft
+		eqj k (%0:K_RIGHT) moveright
+		eqj k (%0:K_UP) moveup
+		eqj k (%0:K_DOWN) movedown
+		eqj k (%0:K_P) toggleplay
+		eqj k (%0:K_p) toggleplay
+		eqj k (%0:K_PLUS) addpage
+		eqj k (%0:K_MINUS) removepage
 		ret
 }
 
@@ -82,7 +82,7 @@ toggleplay:
 	st %2 oldch
 	st %3 oldy
 	st %4 oldpage
-	st (%0:0) cursorx   ; start playing from the start of the track
+	st (%0:0) cursorx    ; start playing from the start of the track
 	st (%0:0) cursorch
 	st (%0:0) cursory
 	st (%0:0) curpage
@@ -108,17 +108,17 @@ toggleplayoff:
 addpage:
 	ld %1 pagecount
 	add %1 (%0:1) %1
-	.gtj %1 (%0:MAX_PAGES) return
+	gtj %1 (%0:MAX_PAGES) return
 	st %1 pagecount
 	ret
 
 removepage:
 	ld %1 pagecount
 	sub %1 (%0:1) %1
-	.eqj %1 (%0:0) return
+	eqj %1 (%0:0) return
 	ld %0 curpage
-	.eqjs %0 %1 removepage_pageup  ; if on last page (after removing page, that
-	st %1 pagecount                ; is out of bounds), go one page back
+	eqjs %0 %1 removepage_pageup  ; if on last page (after removing page, that
+	st %1 pagecount               ; is out of bounds), go one page back
 	ret
 
 removepage_pageup:

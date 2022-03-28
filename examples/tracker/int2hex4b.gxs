@@ -14,9 +14,9 @@ hexbuf: dat "0"
 ; ______________________________________________________________________________
 ;
 int2hex4b:
-	; also see conversion other way, hex2int4b
-	.ltj arg0 (%0:0x0A) int2hex4b_digit   ; less than A -> digit
-	.ltj arg0 (%0:0x10) int2hex4b_letter  ; at least A but valid -> letter
+	; Also see conversion other way, hex2int4b
+	ltj arg0 (%0:0x0A) int2hex4b_digit   ; less than A -> digit
+	ltj arg0 (%0:0x10) int2hex4b_letter  ; at least A but valid -> letter
 
 	st (%0:K_QUESTION) hexbuf  ; invalid, return '?'
 	ret

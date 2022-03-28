@@ -11,19 +11,19 @@
 ; ______________________________________________________________________________
 ;
 hex2int4b:
-	; if '/' < input < ':' it's an ASCII digit
+	; If '/' < input < ':' it's an ASCII digit
 	gt arg0 (%0:K_SLASH) %1
 	lt arg0 (%0:K_COLON) %2
 	and %1 %2 %1
 	cj %1 hex2int4b_digit
 
-	; if '@' < input < 'G' it's uppercase A-F
+	; If '@' < input < 'G' it's uppercase A-F
 	gt arg0 (%0:K_AT) %1
 	lt arg0 (%0:K_G) %2
 	and %1 %2 %1
 	cj %1 hex2int4b_upper
 
-	; if '`' < input < 'g' it's lowercase a-f
+	; If '`' < input < 'g' it's lowercase a-f
 	gt arg0 (%0:K_GRAVE) %1
 	lt arg0 (%0:K_g) %2
 	and %1 %2 %1
@@ -33,7 +33,7 @@ hex2int4b:
 	ret
 
 hex2int4b_digit:
-	; subtract 0x30 to get the ASCII digit's numeric value
+	; Subtract 0x30 to get the ASCII digit's numeric value
 	sub arg0 (%0:0x30) arg1
 	ret
 

@@ -10,17 +10,17 @@ drawhud:
 		reg x arg3
 		reg y arg4
 
-		; get cursor location on screen
+		; Get cursor location on screen
 		ld arg0 cursorx
 		ld arg1 cursorch
 		ld arg2 cursory
 		js pos2scr
 
-		; draw currently selected line (dark gray)
+		; Draw currently selected line (dark gray)
 		dw (%0:0) (%1:46) (%2:128) (%3:6)
 		at (%0:0) y
 
-		; draw currently selected character (light gray)
+		; Draw currently selected character (light gray)
 		dw (%0:0) (%1:40) (%2:4) (%3:6)
 		at x y
 	}
@@ -35,8 +35,8 @@ drawhud:
 		cj %1 drawplaying
 
 		ld %1 cursorx
-		.eqj %1 (%0:0) drawfreq
-		.eqj %1 (%0:1) drawsust
+		eqj %1 (%0:0) drawfreq
+		eqj %1 (%0:1) drawsust
 
 		set addrh hi(decaystr)
 		set addrl lo(decaystr)

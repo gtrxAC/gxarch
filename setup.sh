@@ -1,5 +1,4 @@
 #!/bin/bash
-_ () { [[ "${!1}" = "" ]] && export $1="$2"; }
 # ______________________________________________________________________________
 #
 #  Set up raylib project
@@ -11,12 +10,10 @@ _ () { [[ "${!1}" = "" ]] && export $1="$2"; }
 #  - Web                     TARGET=Web ./setup.sh
 # ______________________________________________________________________________
 #
-
-# Default to host platform
-[[ "$TARGET" = "" ]] && TARGET=$(uname)
+source config.sh
 
 # Set up directory structure
-mkdir -p include src lib assets lib/$TARGET
+mkdir --parents include src assets lib/$TARGET
 
 # ______________________________________________________________________________
 #
@@ -54,8 +51,10 @@ case "$TARGET" in
 		;;
 
 	"Windows_NT")
-		# Works on Windows (w64devkit) and Linux (mingw-w64)
-		_ ARCH "x86_64"
+		# To build for 32-bit, set ARCH to i686 in both build and setup.sh, then
+		# run setup again
+		ARCH="x86_64"
+
 		if command -v $ARCH-w64-mingw32-gcc > /dev/null; then
 			cd raylib/src
 			make CC=$ARCH-w64-mingw32-gcc AR=$ARCH-w64-mingw32-ar OS=Windows_NT || \
@@ -66,16 +65,10 @@ case "$TARGET" in
 			cd ../..
 		else
 			if [[ `uname` = "Linux" ]]; then
-				if command -v apt > /dev/null; then
-					sudo apt install mingw-w64
-					source setup.sh
-					exit
-				else
 					echo "Please install mingw-w64 using your package manager"
 					exit 1
-				fi
 			else
-				echo "Compiler for $ARCH not found, make sure you're using w64devkit.exe from https://github.com/skeeto/w64devkit/releases"
+				echo "Compiler for $ARCH not found, make sure you're using https://github.com/skeeto/w64devkit/releases for the correct architecture"
 				exit 1
 			fi
 		fi

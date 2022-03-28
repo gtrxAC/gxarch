@@ -4,7 +4,7 @@
 ; Date: 2021-11-21
 ; Author: gtrxAC
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 1        ; supports save file
 
@@ -16,9 +16,9 @@ addr FORMATASCII 0x001D  ; formatted into the string
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
-.include std/int2str.gxs
+include "std/common.gxs"
+include "std/print.gxs"
+include "std/int2str.gxs"
 
 main:
 	reg curkey %4     ; current key being checked
@@ -30,27 +30,33 @@ loop:
 	; you have to scan every available keycode and check if it's pressed. This
 	; is good for games where multiple keys may be pressed at the same time.
 
-	key curkey ispressed   ; is current key pressed?
-	cj ispressed keyfound  ; then store it in SRAM
+	; If current key is pressed, store it in SRAM
+	key curkey ispressed
+	cj ispressed keyfound
 
-	add curkey (%1:1) curkey       ; next key
-	.ltj curkey (%1:K_COUNT) loop
+	; Next iteration
+	add curkey (%1:1) curkey
+	ltj curkey (%1:K_COUNT) loop
 
 loopend:
-	ld arg0 SRAM            ; update string with last key's numeric value
+	; Update string with last key's numeric value
+	ld arg0 SRAM
 	set arg1 hi(FORMATNUM)
 	set arg2 lo(FORMATNUM)
 	js int2str
 
-	st arg0 FORMATASCII  ; update string with last key's ASCII value
+	; Update string with last key's ASCII value
+	st arg0 FORMATASCII
 
-	set arg0 hi(string)  ; print string on screen
+	; Print string on screen
+	set arg0 hi(string)
 	set arg1 lo(string)
 	set arg2 0
 	set arg3 0
 	js print
 
-	end           ; draw frame and loop
+	; Draw frame and end loop
+	end
 	set curkey 0
 	jmp loop
 

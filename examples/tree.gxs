@@ -4,7 +4,7 @@
 ; Date: 2022-01-06
 ; Author: gtrxAC
 
-dat main        ; set program entry point
+datl main       ; set program entry point
 dat 0, 128, 64  ; set screen clear color (dark green)
 dat 0           ; doesn't support save file
 
@@ -13,8 +13,8 @@ string: dat "Generating, may take a while"
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
+include "std/common.gxs"
+include "std/print.gxs"
 
 val GRIDW 128     ; The screen gets automatically cleared every frame, and cannot be read
 val GRIDH 128     ; from, so we need to keep the generated bitmap data in our own buffer,
@@ -27,7 +27,6 @@ addr grid 0x4000  ; then draw it on screen after generating.
 ;  Bitmap utilities
 ; ______________________________________________________________________________
 ;
-
 ; Gets the address of a pixel. Used by setpixel and getpixel.
 ; %20 = X
 ; %21 = Y
@@ -66,16 +65,17 @@ getpixel:
 ;  Generate the tree
 ; ______________________________________________________________________________
 ;
-
 main: {
-	reg ih %13    ; declare variables
+	; Declare variables (registers)
+	reg ih %13
 	reg il %14
 	reg x %5
 	reg y %6
 	reg oldX %9
 	reg oldY %10
 
-	reg _1 %11      ; and constants
+	; Declare constants
+	reg _1 %11
 	reg _2 %8
 	reg _3 %12
 	reg _4 %7
@@ -83,33 +83,37 @@ main: {
 	reg MAXITERH %15
 	reg MAXITERL %16
 
-	set SIZE 63     ; set constants
-	set MAXITERH 5  ; max iterations is a 16-bit value, just like the iterator (ih, il)
-	set MAXITERL 0  ; so we can have more than 256 iterations
+	; Set constants
+	set SIZE 63
+	set MAXITERH 5  ; max iterations is a 16-bit value, just like the iterator
+	set MAXITERL 0  ; (ih, il), so we can have more than 256 iterations
 	set _1 1
 	set _2 2
 	set _3 3
 	set _4 4
 
-	.mov SIZE arg0  ; set the seed (middle of screen)
-	.mov SIZE arg1
+	; Set the seed (middle of screen)
+	mov SIZE arg0
+	mov SIZE arg1
 	set arg2 2
 	js setpixel
 
 	iterloop:
 		setinitialpos:
-			ld %0 RAND   ; set x/y to a random initial position
+			; Set X/Y to a random initial position
+			ld %0 RAND
 			ld %1 RAND
 			div %0 _2 x
 			div %1 _2 y
 
 		loop:
-			.mov x oldX
-			.mov y oldY
+			mov x oldX
+			mov y oldY
 
-			ld %0 RAND    ; increment/decrement x and y randomly
-			mul %0 _3 %0  ; generate random number 0 to 255, multiply by 3, get high byte
-			sub %h _1 %0  ; of result (0-2), subtract 1, add that to x/y
+			; Increment/decrement x and y randomly
+			ld %0 RAND
+			mul %0 _3 %0  ; generate random number 0 to 255, multiply by 3, take
+			sub %h _1 %0  ; high byte (0-2), subtract 1, add that to x/y
 			add x %0 x
 
 			ld %0 RAND
@@ -117,29 +121,34 @@ main: {
 			sub %h _1 %0
 			add y %0 y
 
-			.mov x arg0  ; if this pixel was already set, plot a pixel at oldX and oldY
-			.mov y arg1  ; and go to next iteration
+			; If this pixel was already set, plot a pixel at oldX and oldY and
+			; go to next iteration
+			mov x arg0
+			mov y arg1
 			js getpixel
 			cj %22 plot
 			jmp loop     ; if this pixel isn't set, try again
 
 		plot:
-			.mov oldX arg0  ; plot the result x/y in bitmap
-			.mov oldY arg1
+			; Plot the result x/y in the bitmap
+			mov oldX arg0
+			mov oldY arg1
 			set arg2 1
 			js setpixel
 
-			set arg0 hi(string)  ; draw "generating" string and result so far
+			; Draw "generating" string and result so far
+			set arg0 hi(string)
 			set arg1 lo(string)
 			set arg2 0
 			set arg3 0
 			js print
 			js drawresult
 
-		add il _1 il               ; next iteration
+		; Next iteration
+		add il _1 il
 		add ih %h ih
-		.ltj ih MAXITERH iterloop
-		.ltj il MAXITERL iterloop
+		ltj ih MAXITERH iterloop
+		ltj il MAXITERL iterloop
 
 done:
 	js drawresult
@@ -157,7 +166,8 @@ drawresult: {
 	reg y arg1
 	reg pxvalue %22
 
-	reg _1 %17    ; constants (1, width, height, 0)
+	; Constants (1, width, height, 0)
+	reg _1 %17
 	reg w %18
 	reg h %19
 	reg _0 %28
@@ -167,7 +177,8 @@ drawresult: {
 	set w GRIDW
 	set h GRIDH
 
-	set x 0         ; draw every pixel of the generated bitmap
+	; Draw every pixel of the generated bitmap
+	set x 0
 xloop:
 	set y 0
 yloop:
@@ -175,9 +186,9 @@ yloop:
 	dw pxvalue _0 _1 _1
 	at x y
 	add y _1 y
-	.ltj y h yloop
+	ltj y h yloop
 	add x _1 x
-	.ltj x w xloop
+	ltj x w xloop
 
 	end
 	ret

@@ -3,18 +3,18 @@
 ; Date:
 ; Author:
 
-dat main
+datl main
 dat 0, 0, 0
 dat 0
 
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
-.include std/int2str.gxs
-.include std/mouse.gxs
-.include std/button.gxs   ; requires mouse.gxs
+include "std/common.gxs"
+include "std/print.gxs"
+include "std/int2str.gxs"
+include "std/mouse.gxs"
+include "std/button.gxs"   ; requires mouse.gxs
 
 main:
 	; Startup code, only run once

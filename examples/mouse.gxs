@@ -3,7 +3,7 @@
 ; Date: 2021-11-07
 ; Author: gtrxAC
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 0        ; doesn't support save file
 
@@ -24,16 +24,17 @@ addr FORMATRPRESS 0x005F
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/print.gxs
-.include std/int2str.gxs
-.include std/common.gxs   ; common.gxs has MOUSE X/Y/L/R constants
-.include std/mouse.gxs
+include "std/print.gxs"
+include "std/int2str.gxs"
+include "std/common.gxs"   ; common.gxs has MOUSE X/Y/L/R constants
+include "std/mouse.gxs"
 
 main:
-	js updatemouse   ; call updatemouse from std/mouse.gxs to update
-	                 ; MOUSE L/R TIME/PRESS variables
+	; Call updatemouse from std/mouse.gxs to update MOUSE L/R TIME/PRESS vars
+	js updatemouse
 
-	ld arg0 MOUSEX        ; format mouse values into strings
+	; Format mouse values into strings
+	ld arg0 MOUSEX
 	set arg1 hi(FORMATX)
 	set arg2 lo(FORMATX)  ; mouse X position
 	js int2str
@@ -63,7 +64,8 @@ main:
 	set arg2 lo(FORMATRPRESS)
 	js int2str
 
-	set arg0 hi(xystr)  ; draw strings
+	; Draw strings
+	set arg0 hi(xystr)
 	set arg1 lo(xystr)
 	set arg2 0
 	set arg3 0
@@ -93,7 +95,8 @@ main:
 	set arg3 32
 	js print
 
-	set arg0 hi(plusstr)  ; draw a + character at the mouse position
+	; Draw a + character at the mouse position
+	set arg0 hi(plusstr)
 	set arg1 lo(plusstr)
 	ld arg2 MOUSEX
 	ld arg3 MOUSEY

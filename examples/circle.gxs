@@ -4,7 +4,7 @@
 ; Date: 2021-12-31
 ; Author: gtrxAC
 
-dat main        ; set program entry point
+datl main       ; set program entry point
 dat 64, 0, 208  ; set screen clear color (dark blue)
 dat 0           ; doesn't support save file
 
@@ -16,9 +16,9 @@ addr FMTRADSTR 0x000E  ; address of "000" in radstr, for int2str formatting
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
-.include std/int2str.gxs
+include "std/common.gxs"
+include "std/print.gxs"
+include "std/int2str.gxs"
 
 ; ______________________________________________________________________________
 ;
@@ -47,8 +47,9 @@ circle: {
 	reg imm4 %28
 	reg imm5 %29
 
-	set %0 0        ; set up immediate values
-	set %1 1        ; %28 will be another immediate
+	; Set drawing source, 1×1 pixel top left of tileset
+	set %0 0
+	set %1 1
 	set %2 2
 	set %3 254      ; unsigned -2
 	dw %0 %0 %1 %1
@@ -57,7 +58,7 @@ circle: {
 	set ddfX 1
 	mul %3 rad ddfY
 	set x 0
-	.mov rad y
+	mov rad y
 
 	add y0 rad imm4
 	at x0 imm4
@@ -69,8 +70,10 @@ circle: {
 	at imm4 y0
 
 circleloop:
-	set imm4 129               ; original checks if >= 0 but signed numbers not supported
-	.ltjs f imm4 circleifstmt  ; so we're checking if < 129 (screen size)
+	; Original checks if >= 0 but signed numbers not supported, so we're
+	; checking if < 129 (screen size)
+	set imm4 129
+	ltjs f imm4 circleifstmt
 
 	add x %1 x
 	add ddfX %2 ddfX
@@ -99,7 +102,7 @@ circleloop:
 	sub x0 y imm4
 	at imm4 imm5
 
-	.ltj x y circleloop
+	ltj x y circleloop
 
 circleifstmt:
 	sub y %1 y
@@ -117,18 +120,21 @@ circleifstmt:
 ;
 main: {
 	reg rad %4
-	set rad 30   ; set initial radius value to 30px
+	set rad 30  ; set initial radius value to 30px
 
 loop:
-	key (%0:K_LEFT) %0  ; left/down arrow keys: decrease radius
+	; Left/down arrow keys: decrease radius
+	key (%0:K_LEFT) %0
 	key (%1:K_DOWN) %1
 	or %0 %1 %2
 	cjs %2 decradius
 
-	key (%0:K_RIGHT) %0  ; right/up arrow keys: increase radius
+	; Right/up arrow keys: increase radius
+	key (%0:K_RIGHT) %0
 	key (%1:K_UP) %1
 	or %0 %1 %2
 	cjs %2 incradius
+
 ; ______________________________________________________________________________
 ;
 ;  Rendering loop
@@ -137,15 +143,17 @@ loop:
 draw:
 	set arg0 64
 	set arg1 64
-	.mov rad arg2
+	mov rad arg2
 	js circle
 
-	.mov rad arg0            ; format current radius into radstr
+	; Format current radius into radstr
+	mov rad arg0
 	set arg1 hi(FMTRADSTR)
 	set arg2 lo(FMTRADSTR)
 	js int2str
 
-	set arg0 hi(helpstr)  ; print strings
+	; Print strings
+	set arg0 hi(helpstr)
 	set arg1 lo(helpstr)
 	set arg2 0
 	set arg3 0
@@ -166,7 +174,6 @@ draw:
 ;  Called when arrow keys are pressed
 ; ______________________________________________________________________________
 ;
-
 incradius:
 	add rad (%0:1) rad
 	ret

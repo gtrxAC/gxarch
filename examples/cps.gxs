@@ -3,21 +3,21 @@
 ; Date: 2022-01-08
 ; Author: gtrxAC
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 0        ; doesn't support save file
 
 val FPS 60
 
-timeleftstr: dat "Time left:000 sec (000 frames)"
-val TIMELEFTX 4               ; X position where to draw this string
-addr FMTTIMELEFTSEC 0x0010    ; Addresses of where to format numbers into the string
-addr FMTTIMELEFTFRAME 0x0019
+timeleftstr: dat "Time left: 000 sec (000 frames)"
+val TIMELEFTX 8               ; X position where to draw this string
+addr FMTTIMELEFTSEC 0x0011    ; Addresses of where to format numbers into the string
+addr FMTTIMELEFTFRAME 0x001A
 
 resultstr: dat "You clicked 000 times (000 CPS)"
-val RESULTX 2
-addr FMTRESULTCOUNT 0x0031
-addr FMTRESULTCPS 0x003C
+val RESULTX 7
+addr FMTRESULTCOUNT 0x0032
+addr FMTRESULTCPS 0x003D
 
 titlestr: dat "gxarch: CPS Test"
 val TITLEX 32
@@ -33,28 +33,26 @@ val RESTARTY 78
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
-.include std/int2str.gxs
-.include std/mouse.gxs
-.include std/button.gxs
+include "std/common.gxs"
+include "std/print.gxs"
+include "std/int2str.gxs"
+include "std/mouse.gxs"
+include "std/button.gxs"
 
 val ST_START 0    ; program state constants
 val ST_RUNNING 1
 val ST_RESULT 2
 
-val STRINGY 48        ; Y position where to draw all strings (except button labels)
-val BUTTONX 48        ; X/Y position where to draw button for START/RUNNING state
+val STRINGY 48         ; Y position where to draw all strings (except button labels)
+val BUTTONX 48         ; X/Y position where to draw button for START/RUNNING state
 val BUTTONY 64
 val RESTARTBUTTONX 48  ; position where to draw button for RESULT state
 val RESTARTBUTTONY 76  ; offset so the user doesn't accidentally skip over results
-val BUTTONSX 16       ; button source image X/Y/width/height
+val BUTTONSX 16        ; button source image X/Y/width/height
 val BUTTONSY 32
 val BUTTONW 32
 val BUTTONH 12
 
-; ______________________________________________________________________________
-;
 main:
 	reg clicks %4
 	reg timer %5
@@ -79,29 +77,35 @@ main:
 		set x 0
 		drawbgxloop:
 			set y 0
-		drawbgyloop:
-			at x y    ; draw tile
+			drawbgyloop:
+				; Draw tile
+				at x y
 
-			add y INC y             ; next iteration
-			.ltj y MAX drawbgyloop
+				; Next Y iteration
+				add y INC y
+				ltj y MAX drawbgyloop
+
+			; Next X iteration
 			add x INC x
-			.ltj x MAX drawbgxloop
+			ltj x MAX drawbgxloop
 	}
 ; ______________________________________________________________________________
 ;
-;  Update game state (using subroutines)
+;  Update game state
+;  Uses subroutines
 ; ______________________________________________________________________________
 ;
-	.eqjs state (%0:ST_START) drawstart
-	.eqjs state (%0:ST_RUNNING) drawrunning
-	.eqjs state (%0:ST_RESULT) drawresult
+	eqjs state (%0:ST_START) drawstart
+	eqjs state (%0:ST_RUNNING) drawrunning
+	eqjs state (%0:ST_RESULT) drawresult
 endframe:
 	end
 	jmp main
 
 ; ______________________________________________________________________________
 ;
-;  START state (click button to start game)
+;  START state
+;  Click button to start game
 ; ______________________________________________________________________________
 ;
 drawstart:
@@ -112,7 +116,7 @@ drawstart:
 	set arg4 BUTTONW
 	set arg5 BUTTONH
 	js button
-	cjs %26 startbuttonaction
+	cjs btndown startbuttonaction
 
 	set arg0 hi(startstr)
 	set arg1 lo(startstr)
@@ -134,7 +138,8 @@ startbuttonaction:
 	ret
 ; ______________________________________________________________________________
 ;
-;  RUNNING state (lasts 4 seconds, click to increment counter)
+;  RUNNING state
+;  Lasts 4 seconds, click to increment counter
 ; ______________________________________________________________________________
 ;
 drawrunning:
@@ -145,15 +150,16 @@ drawrunning:
 	set arg4 BUTTONW
 	set arg5 BUTTONH
 	js button
-	cjs %26 clickbuttonaction
+	cjs btndown clickbuttonaction
 
-	.mov timer arg0
+	mov timer arg0
 	set arg1 hi(FMTTIMELEFTFRAME)
 	set arg2 lo(FMTTIMELEFTFRAME)
 	js int2str
 
 	div timer (%0:FPS) arg0      ; timer is frames, divide by fps (60) to get
-	set arg1 hi(FMTTIMELEFTSEC)  ; seconds
+	                             ; seconds
+	set arg1 hi(FMTTIMELEFTSEC)
 	set arg2 lo(FMTTIMELEFTSEC)
 	js int2str
 
@@ -169,8 +175,9 @@ drawrunning:
 	set arg3 CLICKSTARTY
 	js print
 
-	sub timer (%0:1) timer           ; decrement timer
-	.eqjs timer (%0:0) clicktimeend  ; if timer reached 0, go to RESULT state
+	; Decrement timer, if timer reached 0, go to RESULT state
+	sub timer (%0:1) timer
+	eqjs timer (%0:0) clicktimeend
 	jmp endframe
 
 clickbuttonaction:
@@ -179,7 +186,8 @@ clickbuttonaction:
 
 ; Subroutine, called when the timer ends
 clicktimeend:
-	.mov clicks arg0             ; format results into result string
+	; Format results into result string
+	mov clicks arg0
 	set arg1 hi(FMTRESULTCOUNT)
 	set arg2 lo(FMTRESULTCOUNT)
 	js int2str
@@ -193,7 +201,8 @@ clicktimeend:
 	ret
 ; ______________________________________________________________________________
 ;
-;  RESULT state (shows click count, click to go back to START state)
+;  RESULT state
+;  Shows click count, click to go back to START state
 ; ______________________________________________________________________________
 ;
 drawresult:
@@ -204,7 +213,7 @@ drawresult:
 	set arg4 BUTTONW
 	set arg5 BUTTONH
 	js button
-	cjs %26 restartbuttonaction
+	cjs btndown restartbuttonaction
 
 	set arg0 hi(restartstr)
 	set arg1 lo(restartstr)

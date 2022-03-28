@@ -74,27 +74,27 @@ moveleftstop:
 moveright:
 	js loadpos
 	add x %1 x
-	.eqjs x (%0:CHANNEL_LENGTH) moverightch
+	eqjs x (%0:CHANNEL_LENGTH) moverightch
 	js storepos
 	ret
 
 moverightch:
 	set x 0
 	add ch %1 ch
-	.eqjs ch (%0:CHANNEL_COUNT) moverighty
+	eqjs ch (%0:CHANNEL_COUNT) moverighty
 	ret
 
 moverighty:
 	set ch 0
 	add y %1 y
-	.eqjs y (%0:PAGE_LENGTH) moverightpage
+	eqjs y (%0:PAGE_LENGTH) moverightpage
 	ret
 
 moverightpage:
 	set y 0
 	add page %1 page
 	ld %0 pagecount
-	.eqjs page %0 moverightstop
+	eqjs page %0 moverightstop
 	ret
 
 moverightstop:
@@ -124,7 +124,7 @@ moveup:
 movedown:
 	js loadpos
 	add y %1 y
-	.eqjs y (%0:PAGE_LENGTH) moverightpage
+	eqjs y (%0:PAGE_LENGTH) moverightpage
 	js storepos
 	ret
 }

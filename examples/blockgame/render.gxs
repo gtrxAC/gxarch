@@ -1,44 +1,32 @@
-val BLOCK_BORDER_SX 8      ; border/background of currently selected block in HUD
-val BLOCK_BORDER_SY 0      ; source X, source Y, width and height, dest X, dest Y
+val BLOCK_BORDER_SX 8     ; border/bg of currently selected block in HUD
+val BLOCK_BORDER_SY 0     ; source X, Y, width and height, dest X, Y
 val BLOCK_BORDER_SIZE 12
 val BLOCK_BORDER_X 78
 val BLOCK_BORDER_Y 0
 
-val SEL_BORDER_X 20       ; outline of block being pointed at
+val SEL_BORDER_X 20  ; outline of block being pointed at
 val SEL_BORDER_Y 0
-val BLOCKS_Y 32           ; Y position of row containing block textures
+val BLOCKS_Y 32      ; Y position of row containing block textures
 
-render:
 ; ______________________________________________________________________________
 ;
 ;  Draw background
 ; ______________________________________________________________________________
 ;
-	; Draw scrolling clouds
-	{
-		reg bgx %0
-		reg bgy %1
-		reg bgw %2
-		reg bgh %3
+render:
+	; Draw clouds at current scroll count
+	dw [%0:scrollcount] (%1:48) (%2:128) (%3:36)
+	at (%1:0) %1
 
-		val BG_Y 48   ; coordinates of BG (X is scrollcount)
-		val BG_W 128
-		val BG_H 36
-
-		ld bgx scrollcount  ; draw clouds at current scroll count
-		set bgy BG_Y
-		set bgw BG_W
-		set bgh BG_H
-		dw bgx bgy bgw bgh
-		at (%1:0) %1
-	}
-
-	ld %0 framecount  ; increment frame count
+	; Increment frame count
+	ld %0 framecount
 	add %0 (%1:1) %0
 	st %0 framecount
 
-	div %0 (%2:CLOUDSPEED) %29  ; if framecount is divisible by CLOUDSPEED,
-	.eqjs %r (%0:0) incscroll   ; increment cloud scroll count
+	; Increment cloud scroll count every CLOUDSPEED frames
+	; (if framecounter is divisible by CLOUDSPEED)
+	div %0 (%2:CLOUDSPEED) %29
+	eqjs %r (%0:0) incscroll
 
 ; ______________________________________________________________________________
 ;
@@ -47,7 +35,7 @@ render:
 ;
 	{
 		; Variables
-		; if changing registers, also change them in drawindicator subroutine
+		; If changing registers, also change them in drawindicator subroutine
 		reg x %4       ; X/Y iterator
 		reg y %5
 		reg px %6      ; player X/Y
@@ -55,7 +43,7 @@ render:
 		reg blockh %8  ; block address, high/low bytes
 		reg blockl %9
 		reg block %10  ; value at block address (block value/ID)
-		reg mxb %20    ; mouse x/y block
+		reg mxb %20    ; mouse X/Y block
 		reg myb %21
 		reg drawx %17  ; current draw location
 		reg drawy %18
@@ -69,13 +57,15 @@ render:
 		reg WW %14       ; world width
 		reg BY %15       ; tileset source Y for blocks
 
-		set y 0             ; set initial values for variables
+		; Set initial values for variables
+		set y 0
 		ld px playerx
 		ld py playery
 		ld mxb mousexblock
 		ld myb mouseyblock
 
-		set _1 1             ; set constants
+		; Set constants
+		set _1 1
 		set BSIZE BLOCKSIZE
 		set ITERMAX 13
 		set WW WWIDTH
@@ -85,53 +75,67 @@ render:
 		set x 0
 
 	renderxloop:
-		set blockh hi(blocks)  ; block address = starting address
+		; block address = starting address
+		set blockh hi(blocks)
 		set blockl lo(blocks)
 
-		add y py %0           ; block address += (iterator y + player y) * world
-		mul %0 WW %0          ; width
+		; block address += (iterator y + player y) * world width
+		add y py %0
+		mul %0 WW %0
 		add blockh %h blockh
 		add blockl %0 blockl
 
-		add blockl x blockl   ; block address += iterator x + player x
+		; block address += iterator x + player x
+		add blockl x blockl
 		add blockh %h blockh
 		add blockl px blockl
 		add blockh %h blockh
 
-		ldi block blockh          ; load current block, skip drawing if it's air
-		.eqj block (%0:0) renderskip
+		; Load current block, skip drawing if it's air
+		ldi block blockh
+		eqj block (%0:0) renderskip
 
-		set %0 BLOCKCOUNT         ; skip drawing if block id exceeds block count
+		; Skip drawing if block id exceeds block count
+		set %0 BLOCKCOUNT
 		sub %0 _1 %0
-		.gtj block %0 renderskip
+		gtj block %0 renderskip
 
-		mul block BSIZE tsx    ; multiply the block's id by block size
-		dw tsx BY BSIZE BSIZE  ; to get the tileset coordinate to draw from
+		; Multiply block ID by block size to get the tileset coords to draw from
+		mul block BSIZE tsx
+		dw tsx BY BSIZE BSIZE
 
-		mul x BSIZE drawx  ; destination X/Y = iterator X/Y * block size
+		; destination X/Y = iterator X/Y * block size
+		mul x BSIZE drawx
 		mul y BSIZE drawy
-		at drawx drawy     ; draw tile at destination X/Y
+
+		; Draw tile
+		at drawx drawy
 
 	renderskip:
-		add x px %1           ; if this block is being pointed at (check both
-		eq %1 mxb %2          ; X and Y coordinates)
+		; If this block is being pointed at (check both X and Y coordinates),
+		; draw an indicator
+		add x px %1
+		eq %1 mxb %2
 		add y py %1
 		eq %1 myb %3
 		and %2 %3 %1
-		cjs %1 drawindicator  ; then draw an indicator
+		cjs %1 drawindicator
 
-		add x _1 x                  ; next X iteration if row isn't done
-		.ltj x ITERMAX renderxloop
+		; next X iteration if row isn't done
+		add x _1 x
+		ltj x ITERMAX renderxloop
 
-		add y _1 y                  ; next Y iteration if drawing not finished
-		.ltj y ITERMAX renderyloop
+		; next Y iteration if drawing isn't finished
+		add y _1 y
+		ltj y ITERMAX renderyloop
 	}
 ; ______________________________________________________________________________
 ;
 ;  Draw HUD (player position and currently selected block)
 ; ______________________________________________________________________________
 ;
-	ld arg0 playerx         ; format player X/Y into coordinate string
+	; Format player X/Y into coordinate string
+	ld arg0 playerx
 	set arg1 hi(COORDSTRX)
 	set arg2 lo(COORDSTRX)
 	js int2str
@@ -141,17 +145,18 @@ render:
 	set arg2 lo(COORDSTRY)
 	js int2str
 
-	set arg0 hi(coordstr)  ; print coordinate string in the top left corner
+	; Print coordinate string in the top left corner
+	set arg0 hi(coordstr)
 	set arg1 lo(coordstr)
 	set arg2 0
 	set arg3 2
 	js print
 
-	; draw border for current block
+	; Draw border for current block
 	dw (%0:BLOCK_BORDER_SX) (%1:BLOCK_BORDER_SY) (%2:BLOCK_BORDER_SIZE) %2
 	at (%0:BLOCK_BORDER_X) (%1:BLOCK_BORDER_Y)
 
-	; draw current block
+	; Draw current block
 	ld %0 curblock
 	mul %0 %12 %0
 	dw %0 (%1:BLOCKS_Y) (%2:BLOCKSIZE) %2

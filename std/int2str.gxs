@@ -16,7 +16,7 @@
 ;    pointer, you'll have to calculate the address yourself (see mouse example).
 ; ______________________________________________________________________________
 ;
-.include std/common.gxs
+include "std/common.gxs"
 
 int2str: {
 	reg src arg0    ; source integer to convert
@@ -24,20 +24,36 @@ int2str: {
 	reg destl arg2  ; destination string address, low byte
 	reg divres %23  ; division result
 
-	div src (%0:100) divres      ; divide by 100 to get 3rd digit
-	add divres (%0:0x30) divres  ; number + 0x30 = ASCII digit of number
-	sti divres desth             ; store digit into string
+	div src (%0:100) divres          ; divide by 100 to get 3rd digit
+	ltj src (%0:100) int2strskip100
+	add divres (%0:0x30) divres      ; number + 0x30 = ASCII digit of number
+	sti divres desth                 ; store digit into string
+	jmp int2str10
 
-	add destl (%0:1) destl  ; next character
-	add desth %h desth
+int2strskip100:
+	sti (%0:0x7F) desth
 
-	div %r (%0:10) divres        ; divide remainder by 10 to get 2nd digit
-	add divres (%0:0x30) divres  ; ...
-	sti divres desth
-
+int2str10:
+	; Next character
 	add destl (%0:1) destl
 	add desth %h desth
 
+	; 2nd digit (remainder / 10)
+	div %r (%0:10) divres
+	ltj src (%0:10) int2strskip10
+	add divres (%0:0x30) divres
+	sti divres desth
+	jmp int2str1
+
+int2strskip10:
+	sti (%0:0x7F) desth
+
+int2str1:
+	; Next character
+	add destl (%0:1) destl
+	add desth %h desth
+
+	; 3rd digit (remainder)
 	add %r (%0:0x30) divres
 	sti divres desth
 	ret

@@ -5,15 +5,15 @@
 ; Date: 2022-02-22
 ; Author: gtrxAC
 
-dat main      ; set program entry point
+datl main     ; set program entry point
 dat 8, 8, 12  ; set screen clear color (almost black)
 dat 1         ; supports save file
 
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
+include "std/common.gxs"
+include "std/print.gxs"
 
 ; use "cj (reg) return" to quickly return from any subroutine
 return: ret
@@ -48,11 +48,11 @@ val LINE_LENGTH 12    ; how many bytes one line has
 val CHANNEL_COUNT 4   ; how many channels one line has
 val CHANNEL_LENGTH 3  ; how many bytes one channel has
 
-val MAX_PAGES 15     ; SRAM can fit 3840 bytes, one page is 20 × 12 bytes
-                     ; note: each page is stored as 256 bytes because it's
-                     ;       simpler to work with, only need to change the high
-                     ;       byte of addresses (if each page was stored as 20 ×
-                     ;       12 = 240 bytes, 16 pages would be possible)
+val MAX_PAGES 15  ; SRAM can fit 3840 bytes, one page is 20 × 12 bytes
+                  ; note: each page is stored as 256 bytes because it's
+                  ;       simpler to work with, only need to change the high
+                  ;       byte of addresses (if each page was stored as 20 ×
+                  ;       12 = 240 bytes, 16 pages would be possible)
 
 val DEFAULT_PAGES 4
 
@@ -61,16 +61,16 @@ suststr: dat "SUST"
 decaystr: dat "DECAY"
 playstr: dat "Z["      ; note: "Z[" in the font is a musical note
 
-.include examples/tracker/hex2int4b.gxs  ; hex (0-9 a-f A-F) to int (0x00-0x0F)
-.include examples/tracker/int2hex4b.gxs  ; int to hex string conversion
-.include examples/tracker/pos2scr.gxs    ; cursor position to screen coords
-.include examples/tracker/pos2addr.gxs   ; cursor position to memory address
+include "examples/tracker/hex2int4b.gxs"  ; hex (0-9 a-f A-F) to int (0x00-0x0F)
+include "examples/tracker/int2hex4b.gxs"  ; int to hex string conversion
+include "examples/tracker/pos2scr.gxs"    ; cursor position to screen coords
+include "examples/tracker/pos2addr.gxs"   ; cursor position to memory address
 
-.include examples/tracker/cursor.gxs     ; cursor movement subs (editmode)
-.include examples/tracker/drawhud.gxs    ; misc draw routines
-.include examples/tracker/draw.gxs       ; track drawing
-.include examples/tracker/input.gxs      ; user input, some input subroutines
-.include examples/tracker/play.gxs       ; playback and playmode cursor movement
+include "examples/tracker/cursor.gxs"     ; cursor movement subs (editmode)
+include "examples/tracker/drawhud.gxs"    ; misc draw routines
+include "examples/tracker/draw.gxs"       ; track drawing
+include "examples/tracker/input.gxs"      ; user input, some input subroutines
+include "examples/tracker/play.gxs"       ; playback and playmode cursor movement
 
 main:
 	st (%0:DEFAULT_PAGES) pagecount

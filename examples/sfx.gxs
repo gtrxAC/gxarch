@@ -3,7 +3,7 @@
 ; Date: 2022-02-21
 ; Author: gtrxAC
 
-dat main           ; set program entry point
+datl main          ; set program entry point
 dat 160, 160, 176  ; set screen clear color (gray)
 dat 0              ; doesn't support save file
 
@@ -18,11 +18,11 @@ int2strbuf: dat "000"
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
-.include std/int2str.gxs
-.include std/mouse.gxs
-.include std/button.gxs   ; requires mouse.gxs
+include "std/common.gxs"
+include "std/print.gxs"
+include "std/int2str.gxs"
+include "std/mouse.gxs"
+include "std/button.gxs"
 
 val BUTTONY 32
 val BUTTONW 10
@@ -71,25 +71,25 @@ loop:
 	set arg1 31
 	set arg2 SQUAREBTNX
 	js btncommon
-	cjs %26 settype0
+	cjs btndown settype0
 
 	set arg0 75
 	set arg1 31
 	set arg2 SAWTOOTHBTNX
 	js btncommon
-	cjs %26 settype1
+	cjs btndown settype1
 
 	set arg0 86
 	set arg1 31
 	set arg2 SINEBTNX
 	js btncommon
-	cjs %26 settype2
+	cjs btndown settype2
 
 	set arg0 97
 	set arg1 31
 	set arg2 NOISEBTNX
 	js btncommon
-	cjs %26 settype3
+	cjs btndown settype3
 
 ; ______________________________________________________________________________
 ;
@@ -106,9 +106,9 @@ loop:
 	set arg1 47
 	set arg2 LEFTBTNX
 	js btncommon
-	cjs %26 decfreq
+	cjs btndown decfreq
 
-	.mov SND1 arg0
+	mov SND1 arg0
 	set arg1 hi(int2strbuf)
 	set arg2 lo(int2strbuf)
 	js int2str
@@ -123,7 +123,7 @@ loop:
 	set arg1 47
 	set arg2 RIGHTBTNX
 	js btncommon
-	cjs %26 incfreq
+	cjs btndown incfreq
 
 ; ______________________________________________________________________________
 ;
@@ -140,9 +140,9 @@ loop:
 	set arg1 63
 	set arg2 LEFTBTNX
 	js btncommon
-	cjs %26 decsust
+	cjs btndown decsust
 
-	.mov SND2 arg0
+	mov SND2 arg0
 	set arg1 hi(int2strbuf)
 	set arg2 lo(int2strbuf)
 	js int2str
@@ -157,7 +157,7 @@ loop:
 	set arg1 63
 	set arg2 RIGHTBTNX
 	js btncommon
-	cjs %26 incsust
+	cjs btndown incsust
 
 ; ______________________________________________________________________________
 ;
@@ -174,9 +174,9 @@ loop:
 	set arg1 79
 	set arg2 LEFTBTNX
 	js btncommon
-	cjs %26 decdecay
+	cjs btndown decdecay
 
-	.mov SND3 arg0
+	mov SND3 arg0
 	set arg1 hi(int2strbuf)
 	set arg2 lo(int2strbuf)
 	js int2str
@@ -191,7 +191,7 @@ loop:
 	set arg1 79
 	set arg2 RIGHTBTNX
 	js btncommon
-	cjs %26 incdecay
+	cjs btndown incdecay
 
 ; ______________________________________________________________________________
 ;
@@ -205,7 +205,7 @@ loop:
 	set arg4 PLAYBTNW
 	set arg5 BUTTONH
 	js button
-	cjs %26 playsound
+	cjs btndown playsound
 
 	end
 	jmp loop
@@ -226,7 +226,8 @@ btncommon:
 
 ; ______________________________________________________________________________
 ;
-;  Wave type subroutines (top row buttons)
+;  Wave type subroutines
+;  Called when top row buttons are pressed
 ; ______________________________________________________________________________
 ;
 settype0:

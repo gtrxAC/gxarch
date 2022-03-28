@@ -25,10 +25,10 @@
 ;    width 4, height 8).
 ;  - This subroutine doesn't do line wrapping, everything is drawn on one line.
 ;  - The registers %20 %21 %22 are overwritten, copy them to other registers
-;    using the .mov macro if you need to use them after calling print.
+;    using the mov macro if you need to use them after calling print.
 ; ______________________________________________________________________________
 ;
-.include std/common.gxs
+include "std/common.gxs"
 
 print: {
 	reg strh arg0    ; address of string, high byte
@@ -39,24 +39,30 @@ print: {
 	reg sx %25       ; current char X location in tileset
 	reg sy %26       ; current char Y location in tileset
 
-	ldi curchar strh      ; load character
-	cj curchar printdraw  ; if not null term, continue
+	ldi curchar strh                 ; load character
+	eqj curchar (%0:0x7F) printskip  ; if char is 0x7F, skip
+	cj curchar printdraw             ; if not null term, continue
 	ret
+
 printdraw:
 	div curchar (%0:PRINT_CHARSPERLINE) sy  ; source Y = char / chars per line
-	.mov %r sx                              ; source X = division remainder
+	mov %r sx                               ; source X = division remainder
 
 	set %0 PRINT_WIDTH
 	set %1 PRINT_HEIGHT
 	mul sx %0 sx         ; source X *= character width
 	mul sy %1 sy         ; source Y *= character height
 
-	dw sx sy %0 %1  ; draw character
+	; Draw character
+	dw sx sy %0 %1
 	at x y
 
-	add strl (%2:1) strl  ; go to next character
-	add strh %h strh
+	; Next character cell
+	add x %0 x
 
-	add x %0 x  ; next character cell
+printskip:
+	; Go to next character
+	add strl (%2:1) strl
+	add strh %h strh
 	jmp print
 }

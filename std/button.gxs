@@ -11,7 +11,7 @@
 ;    %23 = image source Y
 ;    %24 = image source width
 ;    %25 = image source height
-;    %26 = return value (has the button been pressed)
+;    %26 = return value (has the button been pressed), you can also use btndown
 ;
 ;  Notes:
 ;  - The button images should be stacked on top of each other in the tileset,
@@ -19,7 +19,8 @@
 ;    hovered button.
 ; ______________________________________________________________________________
 ;
-.include std/common.gxs
+include "std/common.gxs"
+reg btndown arg6
 
 button: {
 	reg x arg0
@@ -28,33 +29,35 @@ button: {
 	reg sy arg3
 	reg w arg4
 	reg h arg5
-	reg result arg6
 
-	set result 0
+	set btndown 0
 
-	ld %0 MOUSEX
-	.ltj %0 x button_draw
+	; If mouse X is not inside the button, draw the first frame (skip to drawing
+	; the button without incrementing the source Y)
+	ltj [%0:MOUSEX] x button_draw
 
 	add x w %1
-	.gtj %0 %1 button_draw
+	gtj %0 %1 button_draw
 
-	ld %0 MOUSEY
-	.ltj %0 y button_draw
+	; If mouse Y is not inside the button, draw the first frame
+	ltj [%0:MOUSEY] y button_draw
 
 	add y h %1
-	.gtj %0 %1 button_draw
+	gtj %0 %1 button_draw
 
-	ld %0 MOUSEL
-	cj %0 button_down
+	; If left mouse is down, draw the third frame
+	cj [%0:MOUSEL] button_down
 
-	ld %0 MOUSELPRESS
-	cj %0 button_press
+	; If left mouse is pressed, draw the third frame and set btndown to 1
+	cj [%0:MOUSELPRESS] button_press
 
+	; At this point, mouse is inside the button but not pressed, so it's
+	; hovered, draw the second frame
 	add sy h sy
 	jmp button_draw
 
 button_press:
-	set result 1
+	set btndown 1
 
 button_down:
 	add sy h sy

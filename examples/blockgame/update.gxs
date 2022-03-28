@@ -1,5 +1,6 @@
 update:
-	ld %0 framecount       ; only allow moving every SPEED frames
+	; Only allow moving every SPEED frames
+	ld %0 framecount
 	div %0 (%1:SPEED) %29
 	cj %r getmouseblock
 
@@ -14,32 +15,35 @@ update:
 	set BCOUNT BLOCKCOUNT
 	set WH WHEIGHT
 
-	sub WW (_13:13) WW  ; screen can show 13 blocks in both X/Y at a time, so
-	sub WH _13 WH       ; maximum possible player X/Y is (world width/height
-	                    ; - 13) so we don't try to draw out of bounds (top left
-	                    ; block on screen is player position)
+	; Screen can show 13 blocks in both X/Y at a time, so maximum possible
+	; player X/Y is (world width/height - 13) so we don't try to draw out of
+	; bounds (top left block on screen is player position)
+	sub WW (_13:13) WW
+	sub WH _13 WH
 
-	.keyjs K_w moveup
-	.keyjs K_a moveleft
-	.keyjs K_s movedown
-	.keyjs K_d moveright
+	keyjs K_w moveup
+	keyjs K_a moveleft
+	keyjs K_s movedown
+	keyjs K_d moveright
 ; ______________________________________________________________________________
 ;
 ;  Previous/next block keys
 ; ______________________________________________________________________________
 ;
-	.keyj K_z prevblock  ; if Z is pressed, select previous block
-	jmp noprevblock      ; if not, reset its down timer
+	; If Z is pressed, select previous block, else reset down timer
+	keyj K_z prevblock
+	jmp noprevblock
 prevblock:
 	ld %0 zdowntime
 	cj %0 checknextblock
 
 	ld %4 curblock
-	.eqj %4 %2 checknextblock
+	eqj %4 %2 checknextblock
 	sub %4 %2 %4
 	st %4 curblock
 
-	ld %0 zdowntime  ; increment counter
+	; Increment counter
+	ld %0 zdowntime
 	add %0 %2 %0
 	st %0 zdowntime
 	jmp checknextblock
@@ -47,18 +51,20 @@ noprevblock:
 	st %1 zdowntime
 
 checknextblock:
-	.keyj K_x nextblock  ; if X is pressed, select next block
-	jmp nonextblock      ; if not, reset its down timer
+	; If X is pressed, select next block, else reset down timer
+	keyj K_x nextblock
+	jmp nonextblock
 nextblock:
 	ld %0 xdowntime
 	cj %0 getmouseblock
 
 	ld %4 curblock
 	add %4 %2 %4
-	.eqj %4 BCOUNT getmouseblock
+	eqj %4 BCOUNT getmouseblock
 	st %4 curblock
 
-	ld %0 xdowntime  ; increment counter
+	; Increment counter
+	ld %0 xdowntime
 	add %0 %2 %0
 	st %0 xdowntime
 	jmp getmouseblock
@@ -69,8 +75,9 @@ nonextblock:
 ;  Mouse
 ; ______________________________________________________________________________
 ;
+; Get the block that the mouse is pointing at
 getmouseblock:
-	ld %0 MOUSEX              ; get the block that the mouse is pointing at
+	ld %0 MOUSEX
 	div %0 (%2:BLOCKSIZE) %0
 	ld %1 playerx
 	add %0 %1 %0
@@ -82,34 +89,40 @@ getmouseblock:
 	add %0 %1 %0
 	st %0 mouseyblock
 
-	ld %0 MOUSEL        ; if left mouse is down, replace pointed block with air
+	; If left mouse is down, replace pointed block with air
+	ld %0 MOUSEL
 	cjs %0 removeblock
-	ld %0 MOUSER        ; if right mouse is down, replace pointed block with
-	cjs %0 placeblock   ; current block
+
+	; If right mouse is down, replace pointed block with current block
+	ld %0 MOUSER
+	cjs %0 placeblock
 	jmp render
 ; ______________________________________________________________________________
 ;
 ;  Subroutines
 ; ______________________________________________________________________________
 ;
-; get address of block being pointed at
+; Get address of block being pointed at
 getblockaddr:
-	set %0 hi(blocks)  ; block address = starting address
+	; block address = starting address
+	set %0 hi(blocks)
 	set %1 lo(blocks)
 
-	ld %2 mouseyblock      ; block address += mouse y block * world width
+	; block address += mouse y block * world width
+	ld %2 mouseyblock
 	mul %2 (%3:WWIDTH) %2
 	add %0 %h %0
 	add %1 %2 %1
 
-	ld %2 mousexblock  ; block address += mouse x block
+	; block address += mouse x block
+	ld %2 mousexblock
 	add %1 %2 %1
 	add %0 %h %0
 	ret
 
 moveup:
 	ld %4 playery
-	.eqj %4 %1 moveuplimit
+	eqj %4 %1 moveuplimit
 	sub %4 %2 %4
 	st %4 playery
 moveuplimit:
@@ -117,7 +130,7 @@ moveuplimit:
 
 moveleft:
 	ld %4 playerx
-	.eqj %4 %1 moveleftlimit
+	eqj %4 %1 moveleftlimit
 	sub %4 %2 %4
 	st %4 playerx
 moveleftlimit:
@@ -126,7 +139,7 @@ moveleftlimit:
 movedown:
 	ld %4 playery
 	add %4 %2 %4
-	.gtj %4 WH movedownlimit
+	gtj %4 WH movedownlimit
 	st %4 playery
 movedownlimit:
 	ret
@@ -134,7 +147,7 @@ movedownlimit:
 moveright:
 	ld %4 playerx
 	add %4 %2 %4
-	.gtj %4 WW moverightlimit
+	gtj %4 WW moverightlimit
 	st %4 playerx
 moverightlimit:
 	ret

@@ -18,28 +18,31 @@ updatemouse:
 	st (%0:0) MOUSELPRESS
 	st %0 MOUSERPRESS
 
-	ld %0 MOUSEL          ; if left mouse down, increase its down time
-	cj %0 updmouse_ldown
+	; If left mouse down, increase its down time
+	cj [%0:MOUSEL] updmouse_ldown
 
-	ld %0 MOUSELTIME          ; if left mouse was released, set MOUSELPRESS
-	cjs %0 updmouse_lrelease
+	; If left mouse was released, set MOUSELPRESS
+	cjs [%0:MOUSELTIME] updmouse_lrelease
 
-	st (%0:0) MOUSELTIME   ; if not down, reset down time
+	; If not down, reset down time
+	st (%0:0) MOUSELTIME
 	jmp updmouse_lnotdown
 
 updmouse_ldown:
 	ld %1 MOUSELTIME
-	add %0 %1 %1
+	add %0 %1 %1      ; note: %0 already contains 1 because it was loaded with
+	                  ; MOUSEL which should be 1
 	st %1 MOUSELTIME
 
 updmouse_lnotdown:
-	ld %0 MOUSER          ; if right mouse down, increase its down time
-	cj %0 updmouse_rdown
+	; If right mouse down, increase its down time
+	cj [%0:MOUSER] updmouse_rdown
 
-	ld %0 MOUSERTIME          ; if right mouse was released, set MOUSERPRESS
-	cjs %0 updmouse_rrelease
+	; If right mouse was released, set MOUSERPRESS
+	cjs [%0:MOUSERTIME] updmouse_rrelease
 
-	st (%0:0) MOUSERTIME   ; if not down, reset down time
+	; If not down, reset down time
+	st (%0:0) MOUSERTIME
 	jmp updmouse_rnotdown
 
 updmouse_rdown:

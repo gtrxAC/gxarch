@@ -12,10 +12,12 @@ pos2scr: {
 	reg resx arg3
 	reg resy arg4
 
-	mul y (%0:6) resy     ; result y = y*6 + 8
+	; result y = y*6 + 8
+	mul y (%0:6) resy
 	add resy (%0:8) resy
 
-	mul x (%0:4) resx      ; result x = x*4 + ch*16 + 32
+	; result x = x*4 + ch*16 + 32
+	mul x (%0:4) resx
 	mul ch (%0:16) ch
 	add resx ch resx
 	add resx (%0:32) resx

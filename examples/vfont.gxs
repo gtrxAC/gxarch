@@ -3,7 +3,7 @@
 ; Date: 2022-01-17
 ; Author: gtrxAC
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 0        ; doesn't support save file
 
@@ -32,8 +32,8 @@ printv_charwidths:
 	dat 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 4, 4
 	dat 3, 4, 4, 4, 4, 4, 3, 4, 4, 2, 3, 4, 3, 4, 4, 4, 4, 4, 3, 4, 3, 4, 4, 4, 4, 4, 4, 4, 2, 4, 4, 0
 
-.include std/printv.gxs
-.include std/print.gxs
+include "std/printv.gxs"
+include "std/print.gxs"
 
 main:
 	set arg0 hi(string1)  ; The arguments are the same as print, but make sure

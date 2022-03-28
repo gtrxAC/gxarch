@@ -3,29 +3,24 @@
 ; Date: 2021-12-31
 ; Author: gtrxAC
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 0        ; doesn't support save file
 
-.include std/common.gxs
-
-; This example doesn't operate on main memory, it only uses 6 registers:
-; %0 = increment and draw size (constant 1)
-; %1 = screen size and random value division (constant 128)
-; %2 = draw source Y (constant 0), initial value is 0 so we don't need to set it
-; %3 = draw source X (random value 0 - 1)
-; %4 = X iterator
-; %5 = Y iterator
+include "std/common.gxs"
 
 main:
-	reg INC %0   ; set names for registers
-	reg SIZE %1
-	reg SY %2
-	reg sx %3
-	reg x %4
+	; This example doesn't operate on main memory, it only uses registers:
+	reg INC %0   ; increment and draw size (constant 1)
+	reg SIZE %1  ; screen size and random value division (constant 128)
+	reg SY %2    ; draw source Y (constant 0), initial value is 0 so we don't
+	             ; need to set it
+	reg sx %3    ; draw source X (random value 0 - 1)
+	reg x %4     ; X/Y iterator
 	reg y %5
 
-	set INC 1     ; set constants
+	; Set constants
+	set INC 1
 	set SIZE 128
 loop:
 	set y 0
@@ -39,11 +34,14 @@ loopx:
 	dw sx SY INC INC   ; draw the pixel from the tileset
 	at x y             ; at the coordinates of the current iterator
 
-	add x INC x        ; next X iteration
-	.ltj x SIZE loopx
+	; Next X iteration
+	add x INC x
+	ltj x SIZE loopx
 
-	add y INC y        ; next Y iteration
-	.ltj y SIZE loopy
+	; Next Y iteration
+	add y INC y
+	ltj y SIZE loopy
 
-	end       ; draw frame and loop
+	; Draw frame and end loop
+	end
 	jmp loop

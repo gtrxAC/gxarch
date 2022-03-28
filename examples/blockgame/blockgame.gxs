@@ -1,31 +1,38 @@
 ; Block Game for gxarch
 ; Move around in a blocky world and place or remove blocks
-; Controls: WASD to move, left mouse to remove, right mouse to place, Z/X to switch block
+; Controls: WASD to move, left mouse to remove, right mouse to place,
+;           Z/X to switch block
 ; Date: 2021-11-18
 ; Author: gtrxAC
 
-dat main          ; set program entry point
+datl main         ; set program entry point
 dat 96, 208, 255  ; set screen clear color (cyan)
 dat 1             ; supports save file
 
-coordstr: dat "X:000 yY:000  Block:"  ; in the font, the lowercase y is the
-                                      ; black border for the uppercase Y
+coordstr: dat "X:000 yY:000  Block;"  ; in the font, the lowercase y is the
+                                      ; black border for the uppercase Y, ';'
+                                      ; is the same as ':' but without the
+                                      ; border on the right
 
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/int2str.gxs
-.include std/print.gxs
+include "std/common.gxs"
+include "std/int2str.gxs"
+include "std/print.gxs"
 
 ; Constants
-val WWIDTH 128         ; save RAM is 4K(0xFxxx) - 256(reserved 0xFFxx) = 3840 bytes
-val WHEIGHT 29         ; we use the first 30 bytes of SRAM for variables, so 128 × 29 world size
+val WWIDTH 128         ; save RAM is 4K(0xFxxx) - 256(reserved 0xFFxx) = 3840
+                       ; bytes
+val WHEIGHT 29         ; we use the first 30 bytes of SRAM for variables, so
+                       ; 128 × 29 world size
 val BLOCKSIZE 10
-val SPEED 2            ; player can move every SPEED frames (1 block per frame is too fast)
+val SPEED 2            ; player can move every SPEED frames (1 block per frame
+                       ; is too fast)
 val BLOCKCOUNT 12
 val CLOUDSPEED 10      ; clouds move by 1 pixel every CLOUDSPEED frames
-addr COORDSTRX 0x0008  ; addresses of where numbers are formatted into the coordstr string
+addr COORDSTRX 0x0008  ; addresses of where numbers are formatted into the
+                       ; coordstr string
 addr COORDSTRY 0x000F
 
 ; Variables (saved in SRAM)
@@ -38,17 +45,15 @@ addr scrollcount 0xF005  ; for scrolling clouds
 addr blocks 0xF01D       ; starting address of block array
 
 ; Variables (not saved)
-addr zdowntime 0xE000    ; how long Z/X have been down for (to prevent key repeat)
+addr zdowntime 0xE000    ; how long Z/X have been down (to prevent key repeat)
 addr xdowntime 0xE001
 addr mousexblock 0xE002  ; what block coordinates is the mouse pointing at
 addr mouseyblock 0xE003
 
-.include examples/blockgame/worldgen.gxs
+include "examples/blockgame/worldgen.gxs"
 
 main:
-	ld %0 worldready      ; generate world if not generated yet
-	set %1 0
-	.eqjs %0 %1 genworld
+	eqjs [%0:worldready] (%1:0) genworld  ; generate world if not generated yet
 
-.include examples/blockgame/update.gxs
-.include examples/blockgame/render.gxs
+include "examples/blockgame/update.gxs"
+include "examples/blockgame/render.gxs"

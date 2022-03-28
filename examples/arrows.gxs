@@ -3,7 +3,7 @@
 ; Date: 2021-12-27
 ; Author: gtrxAC
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 0        ; doesn't support save file
 
@@ -13,26 +13,23 @@ disablestr: dat "Left mouse: disable rollover"
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/common.gxs
-.include std/print.gxs
-.include std/mouse.gxs
+include "std/common.gxs"
+include "std/print.gxs"
+include "std/mouse.gxs"
 
-val D_LEFT 0    ; constants for player facing directions
-val D_DOWN 16   ; these are also source X values for the player sprite
+; Constants for player facing directions, these are also source X values for the
+; player sprite
+val D_LEFT 0
+val D_DOWN 16
 val D_RIGHT 32
 val D_UP 48
 
 main:
-	; %4 = player X, default middle of screen
-	; %5 = player Y
-	; %6 = is rollover enabled? 1 = yes, 0 = no
-	; %7 = player facing direction
-	; %8 = screen size, constant 128
-	reg pX %4
+	reg pX %4     ; player X/Y, default middle of screen
 	reg pY %5
-	reg ro %6
-	reg dir %7
-	reg SCRSZ %8
+	reg ro %6     ; is rollover enabled? 1 = yes, 0 = no
+	reg dir %7    ; player facing direction, see D_* constants above
+	reg SCRSZ %8  ; screen size, constant 128
 
 	set pX 56
 	set pY 56
@@ -52,18 +49,18 @@ loop:
 	set %0 0
 	set %1 1
 	set %2 112
-	.keyjs K_w moveup
-	.keyjs K_a moveleft
-	.keyjs K_s movedown
-	.keyjs K_d moveright
-	.keyjs K_W moveup
-	.keyjs K_A moveleft
-	.keyjs K_S movedown
-	.keyjs K_D moveright
-	.keyjs K_UP moveup
-	.keyjs K_LEFT moveleft
-	.keyjs K_DOWN movedown
-	.keyjs K_RIGHT moveright
+	keyjs K_w moveup
+	keyjs K_a moveleft
+	keyjs K_s movedown
+	keyjs K_d moveright
+	keyjs K_W moveup
+	keyjs K_A moveleft
+	keyjs K_S movedown
+	keyjs K_D moveright
+	keyjs K_UP moveup
+	keyjs K_LEFT moveleft
+	keyjs K_DOWN movedown
+	keyjs K_RIGHT moveright
 
 ; ______________________________________________________________________________
 ;
@@ -89,7 +86,7 @@ drawbgloop:
 	at _0 y
 
 	add y inc y
-	.ltj y SCRSZ drawbgloop
+	ltj y SCRSZ drawbgloop
 }
 
 ; ______________________________________________________________________________
@@ -148,22 +145,22 @@ reg spd %1
 reg _112 %2
 
 moveup:
-	set dir D_UP          ; set sprite movement direction
-	sub pY spd pY         ; decrement player Y
-	.eqj pY _0 moveupend  ; if Y reached 0, goto moveupend
+	set dir D_UP         ; set sprite movement direction
+	sub pY spd pY        ; decrement player Y
+	eqj pY _0 moveupend  ; if Y reached 0, goto moveupend
 	ret
 moveupend:
 	cj ro moveupro  ; if rollover is enabled, goto moveupro
 	add pY spd pY   ; else, cancel movement
 	ret
 moveupro:
-	.mov _112 pY  ; roll over to bottom of screen
+	mov _112 pY  ; roll over to bottom of screen
 	ret
 
 movedown:
 	set dir D_DOWN
 	add pY spd pY
-	.gtj pY _112 movedownend
+	gtj pY _112 movedownend
 	ret
 movedownend:
 	cj ro movedownro
@@ -176,20 +173,20 @@ movedownro:
 moveleft:
 	set dir D_LEFT
 	sub pX spd pX
-	.eqj pX _0 moveleftend
+	eqj pX _0 moveleftend
 	ret
 moveleftend:
 	cj ro moveleftro
 	add pX spd pX
 	ret
 moveleftro:
-	.mov _112 pX
+	mov _112 pX
 	ret
 
 moveright:
 	set dir D_RIGHT
 	add pX spd pX
-	.gtj pX _112 moverightend
+	gtj pX _112 moverightend
 	ret
 moverightend:
 	cj ro moverightro

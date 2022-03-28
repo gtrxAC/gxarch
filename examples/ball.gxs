@@ -3,66 +3,52 @@
 ; Date: 2021-12-22
 ; Author: gtrxAC
 
-dat main     ; set program entry point
+datl main    ; set program entry point
 dat 0, 0, 0  ; set screen clear color (black)
 dat 0        ; doesn't support save file
 
-.include std/common.gxs
+include "std/common.gxs"
 
 ; Main memory is not used, all variables are stored in registers:
-; %10 = X position (randomized at start)
-; %11 = Y position
-; %12 = X delta (how many pixels the ball moves each frame)
-; %13 = Y delta
-; %14 = coordinates of screen right edge (constant 126)
-; %15 = coordinates of screen bottom edge (constant 118)
-; %16 = current animation frame (changes when hitting edges)
-; %17 = constant 0
-; %18 = ball size (constant 3)
-
-reg x %10
+reg x %10      ; X/Y position (randomized at start)
 reg y %11
-reg dx %12
+reg dx %12     ; X/Y delta (how many pixels the ball moves each frame)
 reg dy %13
-reg REDGE %14
-reg BEDGE %15
-reg anim %16
-reg _0 %17
-reg BSZ %18
-reg SND1 %19
-reg SND2 %20
-reg SND3 %21
-reg SND4 %22
+reg REDGE %14  ; coordinates of screen right edge (constant 126)
+reg BEDGE %15  ; coordinates of screen bottom edge (constant 118)
+reg anim %16   ; current animation frame (changes when hitting edges)
+reg _0 %17     ; constant 0
+reg BSZ %18    ; ball size (constant 3)
 
 main:
-	ld x RAND       ; generate random start position
+	; Generate random start position
+	ld x RAND
 	ld y RAND
-	div x (%0:2) x  ; RAND is 0-255, but screen is only 128 pixels, so divide by 2
+
+	; RAND is 0-255, but screen is only 128 pixels, so divide by 2
+	div x (%0:2) x
 	div y %0 y
 
 	set dx 1
 	set dy 1
-	set REDGE 126  ; screen edges are not the same as screen resolution, because:
-	set BEDGE 118  ; - if it were 128, the ball would be partially off screen when
-	set BSZ 3      ;   hitting the bottom and right edges
+	set REDGE 126  ; screen edges are not same as screen resolution, because:
+	set BEDGE 118  ; - if it were 128, the ball would be partially off screen
+	               ;   when hitting the bottom and right edges
 	               ; - if both X and Y were the same, the ball's movement would
 	               ;   always be the same and very repetitive
-
-	set SND1 SND_SQUARE  ; attributes for sound when the ball bounces
-	set SND2 96          ; frequency
-	set SND3 1           ; sustain length
-	set SND4 32          ; decay length
+	set BSZ 3
 
 update:
+	; Move ball to mouse position if mouse clicked
 	ld %0 MOUSEL
 	cjs %0 gotomouse
 
-	add x dx x           ; ball X += X delta
-	.gtjs x REDGE right  ; if hit right edge, set delta X to -1 (255 in unsigned)
-	.eqjs x _0 left      ; if hit left edge, set delta X to 1
-	add y dy y           ; ball Y += Y delta
-	.gtjs y BEDGE down   ; if hit bottom edge, set delta Y to -1
-	.eqjs y _0 up        ; if hit top edge, set delta Y to 1
+	add x dx x          ; ball X += X delta
+	gtjs x REDGE right  ; if hit right edge, set delta X to -1 (255 unsigned)
+	eqjs x _0 left      ; if hit left edge, set delta X to 1
+	add y dy y          ; ball Y += Y delta
+	gtjs y BEDGE down   ; if hit bottom edge, set delta Y to -1
+	eqjs y _0 up        ; if hit top edge, set delta Y to 1
 
 draw:
 	dw anim _0 BSZ BSZ
@@ -70,6 +56,11 @@ draw:
 	end
 	jmp update
 
+; ______________________________________________________________________________
+;
+;  Subroutines
+; ______________________________________________________________________________
+;
 right:
 	set dx 255
 	js nextframe
@@ -87,13 +78,14 @@ down:
 
 up:
 	set dy 1
-	; js nextframe
+	; js nextframe  ; fall through so unnecessary
 	; ret
 
+; Move to the next ball animation frame and play a sound
 nextframe:
-	snd SND1 SND2 SND3 SND4
+	snd (%0:SND_SQUARE) (%1:96) (%2:1) (%3:32)
 	add anim BSZ anim
-	.eqj anim (%1:24) resetframe
+	eqj anim (%1:24) resetframe
 	ret
 
 resetframe:
