@@ -12,14 +12,14 @@
 # Example
 This example is further explained [here](https://github.com/gtrxAC/gxarch/blob/main/examples/hello.gxs).
 ```asm
-dat main
+datl main
 
 string: dat "Hello world!"
 
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-.include std/print.gxs
+include std/print.gxs
 
 main:
 	set %20 hi(string)
@@ -53,12 +53,12 @@ main:
 3. Run `TARGET=Windows_NT ./build.sh` to compile the project.
 
 ## Assembler
-1. Install [Node.js](https://nodejs.org).
-2. Open a command prompt/terminal in this directory and run `node gxasm program.gxs`.
-  * On some systems, it may be `nodejs` instead of `node`.
-  * Replace `program.gxs` with the assembly file's name. Try it on the examples: `examples/hello.gxs`.
-3. The output file is generated in the same directory as the gxs file.
-4. You can specify `-r` at the end of the command to also automatically run the file. `node gxasm examples/hello.gxs -r`
+1. If you're on Windows, follow the first 3 steps of the [Windows](#windows) guide.
+2. Run `./build_asm.sh`.
+3. Run `./gxasm program.gxs` to assemble a program. On Windows, use `gxasm.exe program.gxs`.
+* Replace `program.gxs` with the assembly file's name. Try it on the examples: `examples/hello.gxs`.
+4. The output file is generated in the same directory as the gxs file.
+5. You can specify `-r` at the end of the command to also automatically run the file. `./gxasm examples/hello.gxs -r` or `gxasm.exe examples/hello.gxs -r`
 
 ## Web
 1. If you're on Windows, follow the first 3 steps of the [Windows](#windows) guide.
@@ -66,4 +66,4 @@ main:
 3. Run `TARGET=Web ./build.sh` to compile the project.
 
 # Making your own programs
-Documentation is still work in progress, but if you want to make your own programs, check [the wiki](https://github.com/gtrxAC/gxarch/wiki) for some resources. You can also look through the [examples](https://github.com/gtrxAC/gxarch/tree/main/examples) (some are more documented than others). If you need any help, join the [raylib Discord](https://discord.gg/raylib) and ask me (`@>gtrx<#6036`).
+Documentation is still work in progress, but if you want to make your own programs, check [the wiki](https://github.com/gtrxAC/gxarch/wiki) for some resources. You can also look through the [examples](https://github.com/gtrxAC/gxarch/tree/main/examples) (some are more documented than others).
