@@ -19,7 +19,7 @@ string: dat "Hello world!"
 val PRINT_CHARSPERLINE 32
 val PRINT_WIDTH 4
 val PRINT_HEIGHT 8
-include std/print.gxs
+include "std/print.gxs"
 
 main:
 	set %20 hi(string)
