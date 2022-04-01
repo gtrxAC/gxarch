@@ -1,0 +1,25 @@
+name: Build gxvm/gxasm
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup build environment
+        run: |
+          sudo apt update
+          sudo apt install mingw-w64
+          ./setup.sh
+          TARGET=Windows_NT ./setup.sh
+          
+      - name: Build gxvm
+        run: |
+          ./build.sh
+          TARGET=Windows_NT ./build.sh
+          
+      - name: Build gxasm
+        run: |
+          ./build_asm.sh
+          TARGET=Windows_NT ./build_asm.sh
