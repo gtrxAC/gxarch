@@ -23,3 +23,18 @@ jobs:
         run: |
           ./build_asm.sh
           TARGET=Windows_NT ./build_asm.sh
+
+      - name: Create artifact for Linux
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: gxarch-linux
+          path: |
+            gxvm
+            gxasm
+            
+      - name: Create artifact for Windows
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          name: gxarch-windows
+          path: "*.exe"
+          
