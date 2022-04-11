@@ -2,7 +2,7 @@
 examples/testing/
 emsdk/
 raylib/
-include/
+include/raylib.h
 lib/
 assets/*.h
 
