@@ -41,7 +41,7 @@ case "$TARGET" in
 	"Linux")
 		CC="gcc"
 		PLATFORM="PLATFORM_DESKTOP"
-		TARGET_FLAGS="src/tinyfiledialogs.c -lm"
+		TARGET_FLAGS="src/tinyfiledialogs.c -lm -ldl -lpthread"
 		;;
 
 	"Web")
