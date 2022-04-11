@@ -15,6 +15,24 @@ source config.sh
 # Set up directory structure
 mkdir --parents include src assets lib/$TARGET
 
+# Stop building if an error occurs
+set -e
+
+# ______________________________________________________________________________
+#
+#  Install dependencies
+# ______________________________________________________________________________
+#
+if command -v apt > /dev/null; then
+	echo "Installing dependencies"
+	sudo apt install build-essential git libasound2-dev mesa-common-dev \
+	libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
+elif command -v dnf > /dev/null; then
+	echo "Installing dependencies"
+	sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel \
+	libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel
+fi
+
 # ______________________________________________________________________________
 #
 #  Install or update raylib
@@ -65,8 +83,8 @@ case "$TARGET" in
 			cd ../..
 		else
 			if [[ `uname` = "Linux" ]]; then
-					echo "Please install mingw-w64 using your package manager"
-					exit 1
+				echo "Please install mingw-w64 using your package manager"
+				exit 1
 			else
 				echo "Compiler for $ARCH not found, make sure you're using https://github.com/skeeto/w64devkit/releases for the correct architecture"
 				exit 1
