@@ -54,7 +54,7 @@ case "$TARGET" in
 	"Linux")
 		CC="gcc"
 		PLATFORM="PLATFORM_DESKTOP"
-		TARGET_FLAGS="-lm"
+		TARGET_FLAGS="-lm -ldl -lpthread"
 		;;
 
 	*)
