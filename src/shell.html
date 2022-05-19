@@ -125,12 +125,12 @@
                 const tilesetelem = document.querySelector('#tileset');
 
                 const rombuf = romelem.files[0].arrayBuffer();
-                const tilesetbuf = tilesetelem.files[0].arrayBuffer();
+                const tilesetbuf = tilesetelem.files[0]?.arrayBuffer();
 
                 Promise.all([rombuf, tilesetbuf]).then(([rom, tileset]) => {
                     FS.writeFile('rom.gxa', new Uint8Array(rom));
-                    FS.writeFile('rom.png', new Uint8Array(tileset));
-                    Module.ccall('loadfile', null, ['string'], ['rom.gxa']);
+                    if (tilesetbuf) FS.writeFile('rom.png', new Uint8Array(tileset));
+                    Module.ccall('loadFile', null, ['string'], ['rom.gxa']);
 
                     const inputelem = document.querySelector('#inputs');
                     inputelem.style.display = 'none';

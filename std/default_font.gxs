@@ -1,0 +1,22 @@
+; ______________________________________________________________________________
+;
+;  gxarch standard library - default font properties
+;
+;  Include this before including print.gxs.
+; ______________________________________________________________________________
+;
+; How many characters each row contains in the tileset.
+; Usually tileset width divided by PRINT_WIDTH, rounded down.
+val PRINT_CHARSPERLINE 25
+
+; PRINT_WIDTH is the maximum width of a character, or how many pixels a
+; character takes up in the tileset, even if all of it isn't used. The actual
+; character widths are specified per character in the array below.
+val PRINT_WIDTH 5
+val PRINT_HEIGHT 8
+
+printCharWidths:
+	dat 4, 2, 4, 4, 4, 4, 5, 2, 3, 3, 4, 4, 2, 4, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
+	dat 4, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 4
+	dat 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 3, 4, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
+	dat 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 4, 5

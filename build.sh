@@ -13,7 +13,6 @@
 #  - Build and run           ./build.sh -r
 # ______________________________________________________________________________
 #
-./png2h.sh
 source config.sh
 
 # Add release or debug flags
@@ -48,7 +47,7 @@ case "$TARGET" in
 		CC="emcc"
 		EXT=".html"
 		PLATFORM="PLATFORM_WEB"
-		TARGET_FLAGS="-s ASYNCIFY -s USE_GLFW=3 -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 --shell-file src/shell.html -s EXPORTED_RUNTIME_METHODS=ccall -s EXPORTED_FUNCTIONS=_main,_loadfile"
+		TARGET_FLAGS="-s ASYNCIFY -s USE_GLFW=3 -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 --shell-file src/shell.html -s EXPORTED_RUNTIME_METHODS=ccall -s EXPORTED_FUNCTIONS=_main,_loadFile"
 		source emsdk/emsdk_env.sh
 		;;
 
@@ -58,8 +57,27 @@ case "$TARGET" in
 		;;
 esac
 
-# Don't run the project if build fails
+# Stop the build process if anything fails
 set -e
+
+# Convert images to headers to be embedded into the executable
+cd assets
+xxd -i font.png > font.h
+xxd -i icon.png > icon.h
+xxd -i tileset.png > tileset.h
+cd ..
+
+# Compile assembler if needed
+[[ -e gxasm ]] || ./build_asm.sh
+
+# Assemble intro animation and embed into the executable
+if [[ "$TARGET" = "Web" ]]; then
+	./gxasm assets/intro_web.gxs
+	xxd -i assets/intro_web.gxa > assets/intro.h
+else
+	./gxasm assets/intro.gxs
+	xxd -i assets/intro.gxa > assets/intro.h
+fi
 
 $CC $SRC -Iinclude -Llib/$TARGET -o $NAME$EXT \
 	-lraylib -D$PLATFORM $FLAGS $TARGET_FLAGS

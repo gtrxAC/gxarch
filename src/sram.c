@@ -13,13 +13,13 @@ void err(const char *fmt, ...);
 #endif
 
 // Saves SRAM data to a file. localStorage is used on Web instead.
-void _save(struct VM *vm) {
+void save(VM *vm) {
 	#ifdef PLATFORM_WEB
-		char script[(RESERVED - SRAM)*4 + 128] = "[";
+		char script[16384 + 128] = "[";
 		char num[4];
 
-		for (int i = SRAM; i < RESERVED; i++) {
-			sprintf(num, "%d", vm->mem[i]);
+		for (int i = 0; i < 0x1000; i++) {
+			sprintf(num, "%d", vm->sram[i]);
 			strcat(script, num);
 			strcat(script, ",");
 		}
@@ -27,38 +27,44 @@ void _save(struct VM *vm) {
 		strcat(script, TextFormat("].forEach((b, i) => localStorage.setItem(`%s_${i}`, b))", getfilename()));
 		emscripten_run_script(script);
 	#else
-		if (vm->nosave) return;
-		char *savename = TextReplace(vm->filename, GetFileExtension(vm->filename), ".sav");
-		bool needsave = false;
+		if (vm->noSave) return;
+		char *saveName = TextReplace(vm->fileName, GetFileExtension(vm->fileName), ".sav");
 
 		// If SRAM is blank and save file doesn't exist, no point in saving
-		for (int i = SRAM; i < RESERVED; i++) if (vm->mem[i]) needsave = true;
-		if (!needsave && !FileExists(savename)) return;
+		bool needSave = false;
+		for (int i = 0; i < 0x1000; i++) {
+			if (vm->sram[i]) {
+				needSave = true;
+				break;
+			}
+		}
 
-		SaveFileData(savename, vm->mem + SRAM, RESERVED - SRAM);
-		free(savename);
+		if (needSave || FileExists(saveName)) SaveFileData(saveName, vm->sram, 0x1000);
+		free(saveName);
 	#endif
 }
 
 // Loads SRAM data from a file.
-void _load(struct VM *vm) {
+void load(VM *vm) {
+	if (vm->state == ST_IDLE) return;
+	
 	#ifdef PLATFORM_WEB
-		for (int i = 0; i < RESERVED - SRAM; i++) {
-			vm->mem[SRAM + i] = emscripten_run_script_int(
+		for (int i = 0; i < 0x1000; i++) {
+			vm->sram[i] = emscripten_run_script_int(
 				TextFormat("parseInt(localStorage.getItem('%s_%d'))", getfilename(), i));
 		}
 	#else
-		if (vm->nosave) return;
-		char *savename = TextReplace(vm->filename, GetFileExtension(vm->filename), ".sav");
-		if (!FileExists(savename)) return;
+		if (vm->noSave) return;
+		char *saveName = TextReplace(vm->fileName, GetFileExtension(vm->fileName), ".sav");
+		if (!FileExists(saveName)) return;
 
 		unsigned int size;
-		u8 *data = LoadFileData(savename, &size);
+		u8 *data = LoadFileData(saveName, &size);
 
 		if (!data) err("Failed to load file");
-		if (size > RESERVED - SRAM) err("Save file too large, 0x%.4X > 0xF00", size);
+		if (size > 0x1000) err("Save file too large, 0x%.4X > 0x1000", size);
 
-		memcpy(vm->mem + SRAM, data, RESERVED - SRAM);
+		memcpy(vm->sram, data, 0x1000);
 		UnloadFileData(data);
 	#endif
 }

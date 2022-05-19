@@ -1,68 +1,84 @@
 ; ______________________________________________________________________________
 ;
-;  Print subroutine
+;  gxarch standard library - printing
 ;
-;  Arguments:
-;    %20 %21 = address of string to print
-;    %22 = X position to print at
-;    %23 = Y position
-;
-;  Constants (need to be defined before including this file):
-;    PRINT_CHARSPERLINE = how many chars are on each line in the tileset
-;    PRINT_WIDTH = width of each character
-;    PRINT_HEIGHT = height of each character
-;
-;  Uses registers:
-;    %24 = current character being printed
-;    %25 = character source X position in tileset
-;    %26 = character source Y
+;  Include default_font.gxs or define your own font properties before including
+;  this file.
 ;
 ;  Notes:
 ;  - In the tileset, the characters must start at (0, 0), in ASCII order,
-;    starting at null (the first row is empty, assuming PRINT_WIDTH = 4).
-;    You should use the default tileset assets/tileset.png as a base for your
-;    own tileset if you're using the default parameters (32 chars per line,
-;    width 4, height 8).
-;  - This subroutine doesn't do line wrapping, everything is drawn on one line.
-;  - The registers %20 %21 %22 are overwritten, copy them to other registers
-;    using the mov macro if you need to use them after calling print.
+;    starting at space (the first ASCII printable character).
+;  - This function doesn't do line wrapping, everything is drawn on one line.
 ; ______________________________________________________________________________
 ;
 include "std/common.gxs"
 
+; ______________________________________________________________________________
+;
+;  print strH strL x y
+;  Prints the string at address strH strL on the screen at (x, y).
+;
+;  strH strL: the address which contains the string to print (high, low byte)
+;  x: the X position to draw at
+;  y: the Y position to draw at
+; ______________________________________________________________________________
+;
 print: {
-	reg strh arg0    ; address of string, high byte
-	reg strl arg1    ; low byte
-	reg x arg2       ; X print location (gets overwritten)
-	reg y arg3       ; Y print location
-	reg curchar %24  ; current character value being drawn
-	reg sx %25       ; current char X location in tileset
-	reg sy %26       ; current char Y location in tileset
+	args strH, strL, x, y
+	vars curChar
 
-	ldi curchar strh                 ; load character
-	eqj curchar (%0:0x7F) printskip  ; if char is 0x7F, skip
-	cj curchar printdraw             ; if not null term, continue
+	; load the next character and draw it, stop if it's a null terminator
+	ld curChar [strH]
+	cj curChar printDraw
 	ret
 
-printdraw:
-	div curchar (%0:PRINT_CHARSPERLINE) sy  ; source Y = char / chars per line
-	mov %r sx                               ; source X = division remainder
+printDraw:
+	; print the character and move to the next character cell
+	arg [curChar], [x], [y]
+	call printChar
+	add [x] [rVal] x
 
-	set %0 PRINT_WIDTH
-	set %1 PRINT_HEIGHT
-	mul sx %0 sx         ; source X *= character width
-	mul sy %1 sy         ; source Y *= character height
-
-	; Draw character
-	dw sx sy %0 %1
-	at x y
-
-	; Next character cell
-	add x %0 x
-
-printskip:
-	; Go to next character
-	add strl (%2:1) strl
-	add strh %h strh
+	; next character
+	add [strL] 1 strL
+	add [strH] [resH] strH
 	jmp print
+}
+
+; ______________________________________________________________________________
+;
+;  printChar char x y
+;  Prints a single character on the screen at (x, y). Used as a base for other
+;  print functions.
+;
+;  char: the character to print
+;  x: the X position to draw at
+;  y: the Y position to draw at
+; ______________________________________________________________________________
+;
+printChar: {
+	args char, x, y
+	vars widthH, widthL, width, sx, sy
+
+	;subtract 32 from the character, ASCII printable characters start at 32
+	sub [char] 32 char
+
+	; get the character's position in the tileset
+	div [char] PRINT_CHARSPERLINE sy
+	mod [char] PRINT_CHARSPERLINE sx
+
+	mul [sx] PRINT_WIDTH sx
+	mul [sy] PRINT_HEIGHT sy
+
+	; get the character's width
+	set widthH hi(printCharWidths)
+	set widthL lo(printCharWidths)
+	add [widthL] [char] widthL
+	add [widthH] [resH] widthH
+	ld width [widthH]
+
+	; draw the character
+	arg [sx], [sy], [width], PRINT_HEIGHT, [x], [y]
+	sys SYS_DRAW
+	retv [width]
+	ret
 }

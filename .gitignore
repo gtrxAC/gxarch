@@ -8,7 +8,6 @@ assets/*.h
 
 gxvm
 gxasm
-png2h
 *.exe
 
 *.data
@@ -16,8 +15,7 @@ png2h
 *.wasm
 index.html
 
-dump.bin
 screenshot*.png
 *.gxa
 *.sav
-*.sym.txt
+*.dmp

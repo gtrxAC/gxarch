@@ -2,8 +2,7 @@ GIMP Palette
 Name: gxarch
 Columns: 15
 
-# Note: gxarch supports max 16 colors, this palette only has 15 so you can use
-#       transparent as one color
+# Note: gxarch supports max 16 colors, this palette only has 15 so you can use transparent as one color
 
   0   0   0	Black
  80  80 112	Gray

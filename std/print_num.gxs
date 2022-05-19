@@ -1,0 +1,57 @@
+; ______________________________________________________________________________
+;
+;  gxarch standard library - number printing
+;
+;  Include print.gxs before including this file.
+; ______________________________________________________________________________
+;
+;  printNum num x y
+;  Prints the number num on the screen in decimal format at (x, y).
+;
+;  num: the number to print (unsigned 8-bit)
+;  x: the X position to draw at
+;  y: the Y position to draw at
+; ______________________________________________________________________________
+;
+printNum: {
+	args num, x, y
+	vars result, remainder
+
+	; divide by 100 to get 1st (looking from left) digit
+	div [num] 100 result
+	ltj [num] 100 printNum10
+
+	; number + 0x30 = ASCII digit of number
+	add [result] 0x30 result
+
+	; print digit
+	arg [result], [x], [y]
+	call printChar
+
+printNum10:
+	; next character
+	add [x] [rVal] x
+
+	; 2nd digit (remainder/10)
+	mod [num] 100 remainder
+	div [remainder] 10 result
+	add [result] 0x30 result
+	ltj [num] 10 printNum1
+
+	; print digit
+	arg [result], [x], [y]
+	call printChar
+
+printNum1:
+	; next character
+	add [x] [rVal] x
+
+	; 3rd digit (remainder)
+	mod [num] 10 remainder
+	add [remainder] 0x30 result
+
+	; print digit
+	arg [result], [x], [y]
+	call printChar
+	ret
+}

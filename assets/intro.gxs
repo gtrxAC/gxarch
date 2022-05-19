@@ -1,0 +1,376 @@
+; ______________________________________________________________________________
+;
+;  gxarch - intro animation and test menu
+;
+;  Date: 2022-05-01
+;  Author: gtrxAC
+; ______________________________________________________________________________
+;
+datl main
+
+string: dat "Press Ctrl + O to open ROM"
+
+include "std/default_font.gxs"
+include "std/print.gxs"
+include "std/print_num.gxs"
+
+reg fCount %0
+reg fCountMod %1
+reg logoY %2
+reg logoAnimX %3
+reg logoAnimY %4
+
+return:
+	ret
+
+; ______________________________________________________________________________
+;
+;  Logo data and drawing
+; ______________________________________________________________________________
+;
+logo:
+	dat 0,3,3,3,0,3,3,0,0,0,0,0,0
+	dat 3,3,0,0,3,3,0,0,0,0,0,0,0
+	dat 3,3,0,0,3,3,0,0,0,0,0,0,0
+	dat 0,3,3,3,3,3,0,0,0,0,0,0,0
+	dat 0,0,0,0,3,3,0,0,0,0,0,0,0
+	dat 3,3,3,3,3,0,0,0,3,3,0,0,0
+	dat 0,0,0,0,3,3,0,3,3,0,0,0,0
+	dat 0,0,0,0,0,3,3,3,0,0,0,0,0
+	dat 0,0,0,0,3,3,0,3,3,0,0,0,0
+	dat 0,0,0,3,3,0,0,0,0,0,0,0,0
+	dat 0,0,0,0,0,0,3,0,3,0,3,0,3
+	dat 0,0,0,0,0,0,3,0,3,0,3,3,3
+	dat 0,0,0,0,0,0,3,3,3,0,3,0,3
+	dat 0,0,0,0,0,0,0,3,0,0,3,0,3
+
+drawLogoPixel: {
+	args x, y, color
+	vars iterX, iterY, dstX, dstY
+
+	set iterY 0
+	drawPixelYLoop:
+		set iterX 0
+		drawPixelXLoop:
+			mul [x] 3 dstX
+			mul [y] 3 dstY
+			add [dstX] [iterX] dstX
+			add [dstY] [iterY] dstY
+			add [dstX] 72 dstX
+			add [dstY] [logoY] dstY
+
+			arg 127, [color], 1, 1, [dstX], [dstY]
+			sys SYS_DRAW
+
+			add [iterX] 1 iterX
+			ltj [iterX] [logoAnimX] drawPixelXLoop
+
+		add [iterY] 1 iterY
+		ltj [iterY] [logoAnimY] drawPixelYLoop
+
+	ret
+}
+
+drawLogo: {
+	vars x, y, dstX, dstY, yMulTmp, addrH, addrL, curPx
+	
+	set y 0
+	drawLogoYLoop:
+		set x 0
+		drawLogoXLoop:
+			; for performance reasons, this assumes that the logo is in the
+			; first 256 bytes of the ROM, if it's not, uncomment the commented
+			; instructions below
+
+			set addrH hi(logo)
+			set addrL lo(logo)
+			add [addrL] [x] addrL
+			; add [addrH] [resH] addrH
+			mul [y] 13 yMulTmp
+			; add [addrH] [resH] addrH
+			add [addrL] [yMulTmp] addrL
+			; add [addrH] [resH] addrH
+
+			ld curPx [addrH]
+			eqj [curPx] 0 drawLogoSkip
+			arg [x], [y], [curPx]
+			call drawLogoPixel
+
+			drawLogoSkip:
+				add [x] 1 x
+				ltj [x] 13 drawLogoXLoop
+
+		add [y] 1 y
+		ltj [y] 14 drawLogoYLoop
+
+	ret
+}
+
+; ______________________________________________________________________________
+;
+;  Intro animation
+; ______________________________________________________________________________
+;
+incAnimX: {
+	vars freq
+
+	eqj [logoAnimX] 3 return
+	add [logoAnimX] 1 logoAnimX
+
+	mul [logoAnimX] 40 freq
+	add [freq] 10 freq
+
+	arg SND_SINE, [freq], 1, [freq]
+	sys SYS_SOUND
+	ret
+}
+
+incAnimY: {
+	vars freq
+
+	eqj [logoAnimY] 3 return
+	add [logoAnimY] 1 logoAnimY
+
+	mul [logoAnimY] 30 freq
+	add [freq] 60 freq
+
+	arg SND_SQUARE, [freq], 1, [freq]
+	sys SYS_SOUND
+	ret
+}
+
+main:
+	set logoAnimX 1
+	set logoAnimY 1
+	set logoY 192
+
+loopDrop:
+	add [logoY] 1 logoY
+	call drawLogo
+
+	add [fCount] 1 fCount
+	sys SYS_END
+	eqj [fCount] 120 loopDropDone
+	jmp loopDrop
+
+drawOpenStr:
+	arg hi(string), lo(string), 44, 112
+	call print
+	ret
+
+loopDropDone:
+	set fCount 0
+
+; ______________________________________________________________________________
+;
+;  Main loop
+;  Check key inputs to open test menu
+; ______________________________________________________________________________
+;
+loop:
+	eqc [fCount] 20 incAnimX
+	eqc [fCount] 40 incAnimX
+	eqc [fCount] 70 incAnimY
+	eqc [fCount] 80 incAnimY
+
+	mod [fCount] 64 fCountMod
+	ltc [fCountMod] 32 drawOpenStr
+
+	call drawLogo
+	
+	eqc [mouseR] 1 loopTest
+
+	add [fCount] 1 fCount
+	sys SYS_END
+	jmp loop
+
+; ______________________________________________________________________________
+;
+;  Main test menu
+; ______________________________________________________________________________
+;
+test1Str: dat "Test Menu"
+test2Str: dat "Press UP for input test"
+test3Str: dat "Press DOWN for mouse test"
+test4Str: dat "Press LEFT for error test"
+test5Str: dat "Press RIGHT for background test"
+exitStr: dat "Press mouse left to exit"
+
+loopTest:
+	arg hi(test1Str), lo(test1Str), 0, 0  call print
+	arg hi(test2Str), lo(test2Str), 0, 8  call print
+	arg hi(test3Str), lo(test3Str), 0, 16  call print
+	arg hi(test4Str), lo(test4Str), 0, 24  call print
+	arg hi(test5Str), lo(test5Str), 0, 32  call print
+	arg hi(exitStr), lo(exitStr), 0, 40  call print
+
+	eqc [kUp] 1 loopKeyTest
+	eqc [kDown] 1 loopMouseTest
+	eqc [kLeft] 1 initErrorTest
+	eqc [kRight] 1 loopBgTest
+
+	eqj [mouseL] 1 return
+	sys SYS_END
+	jmp loopTest
+
+; ______________________________________________________________________________
+;
+;  Key test
+; ______________________________________________________________________________
+;
+keyTestStr: dat "Input Test"
+keyLabelStr: dat "Up  Dn  Lt  Rt  A1  A2  A3"
+
+loopKeyTest:
+	arg hi(keyTestStr), lo(keyTestStr), 76, 64
+	call print
+
+	arg hi(exitStr), lo(exitStr), 48, 72
+	call print
+
+	arg hi(keyLabelStr), lo(keyLabelStr), 44, 80
+	call print
+
+	arg [kUp], 44, 88  call printNum
+	arg [kDown], 60, 88  call printNum
+	arg [kLeft], 76, 88  call printNum
+	arg [kRight], 92, 88  call printNum
+	arg [kAct1], 108, 88  call printNum
+	arg [kAct2], 124, 88  call printNum
+	arg [kAct3], 140, 88  call printNum
+
+	eqj [mouseL] 1 return
+	sys SYS_END
+	jmp loopKeyTest
+
+; ______________________________________________________________________________
+;
+;  Mouse test
+; ______________________________________________________________________________
+;
+mouseTestStr: dat "Mouse Test"
+mouseExitStr: dat "Press ACT1/J to exit"
+mouseLabelStr: dat "X   Y   Lt  Rt"
+
+loopMouseTest:
+	arg hi(mouseTestStr), lo(mouseTestStr), 76, 64
+	call print
+
+	arg hi(mouseExitStr), lo(mouseExitStr), 56, 72
+	call print
+
+	arg hi(mouseLabelStr), lo(mouseLabelStr), 68, 80
+	call print
+
+	arg [mouseX], 68, 88  call printNum
+	arg [mouseY], 84, 88  call printNum
+	arg [mouseL], 100, 88  call printNum
+	arg [mouseR], 116, 88  call printNum
+
+	arg 0x2B, [mouseX], [mouseY]
+	call printChar
+	
+	eqj [kAct1] 1 return
+	sys SYS_END
+	jmp loopMouseTest
+
+; ______________________________________________________________________________
+;
+;  Error test
+; ______________________________________________________________________________
+;
+errTestStr: dat "Error Test"
+err1Str: dat "Press UP to read invalid address"
+err2Str: dat "Press DOWN to write invalid address"
+err3Str: dat "Press LEFT to read invalid register"
+err4Str: dat "Press RIGHT to write invalid register"
+err5Str: dat "Press ACT1/J to divide by 0"
+err6Str: dat "Press ACT2/K to play invalid sound type"
+err7Str: dat "Press ACT3/L to do invalid syscall"
+
+initErrorTest:
+	; update keyboard registers once
+	sys SYS_END
+
+loopErrorTest:
+	arg hi(errTestStr), lo(errTestStr), 0, 0  call print
+	arg hi(err1Str), lo(err1Str), 0, 8  call print
+	arg hi(err2Str), lo(err2Str), 0, 16  call print
+	arg hi(err3Str), lo(err3Str), 0, 24  call print
+	arg hi(err4Str), lo(err4Str), 0, 32  call print
+	arg hi(err5Str), lo(err5Str), 0, 40  call print
+	arg hi(err6Str), lo(err6Str), 0, 48  call print
+	arg hi(err7Str), lo(err7Str), 0, 56  call print
+	arg hi(exitStr), lo(exitStr), 0, 72  call print
+
+	eqc [kUp] 1 errAddrRead
+	eqc [kDown] 1 errAddrWrite
+	eqc [kLeft] 1 errRegRead
+	eqc [kRight] 1 errRegWrite
+	eqc [kAct1] 1 errDiv0
+	eqc [kAct2] 1 errBadSound
+	eqc [kAct3] 1 errBadSys
+	
+	eqj [mouseL] 1 return
+	sys SYS_END
+	jmp loopErrorTest
+
+errDiv0: div 1 0 %0  ret
+errAddrRead: ld %0 0x8000  ret
+errAddrWrite: st %0 0x0000  ret
+
+errBadSound:
+	arg 4, 0, 0, 0
+	sys SYS_SOUND
+	ret
+
+errBadSys: sys 3  ret
+
+errRegRead:
+	; gxasm won't let us assemble with %64
+	; st %64 0xE000
+	dat 3, 64, 0xE0, 0x00
+	ret
+
+errRegWrite:
+	; ld %64 0xE000
+	dat 2, 64, 0xE0, 0x00
+	ret
+
+; ______________________________________________________________________________
+;
+;  Background color test
+; ______________________________________________________________________________
+;
+{
+	bgTestStr: dat "Background Test"
+	bgLabelStr: dat "X: 127  Y:"
+
+	reg bgTestFCount %5
+
+	bgTestResetY:
+		set clearY 0
+		ret
+
+	bgTestChange:
+		set bgTestFCount 0
+		add [clearY] 1 clearY
+		eqc [clearY] 15 bgTestResetY
+		ret
+
+	loopBgTest:
+		arg hi(bgTestStr), lo(bgTestStr), 66, 64  call print
+		arg hi(exitStr), lo(exitStr), 48, 72  call print
+		arg hi(bgLabelStr), lo(bgLabelStr), 68, 80  call print
+
+		arg [clearY], 112, 80
+		call printNum
+
+		set clearX 127
+		add [bgTestFCount] 1 bgTestFCount
+		eqc [bgTestFCount] 30 bgTestChange
+
+		eqj [mouseL] 1 bgTestResetY
+		sys SYS_END
+		jmp loopBgTest
+}

@@ -1,15 +1,36 @@
 ; ______________________________________________________________________________
 ;
-;  Reserved addresses
+;  gxarch standard library - common definitions
 ; ______________________________________________________________________________
 ;
-addr SRAM 0xF000
-addr RESERVED 0xFF00
-addr MOUSEX 0xFF00
-addr MOUSEY 0xFF01
-addr MOUSEL 0xFF02
-addr MOUSER 0xFF03
-addr RAND 0xFF04
+;  Reserved registers
+; ______________________________________________________________________________
+;
+reg rVal %48    ; function return value, set by retv instruction
+reg mouseX %49  ; mouse X position
+reg mouseY %50  ; mouse Y position
+reg mouseL %51  ; mouse left button
+reg mouseR %52  ; mouse right button
+reg kUp %53     ; up arrow/W
+reg kDown %54   ; down arrow/S
+reg kLeft %55   ; left arrow/A
+reg kRight %56  ; right arrow/D
+reg kAct1 %57   ; first action key/J
+reg kAct2 %58   ; second action key/K
+reg kAct3 %59   ; third action key/L
+reg clearX %60  ; screen clear color, X from tileset
+reg clearY %61  ; screen clear color, Y from tileset
+reg rand %62    ; random number
+reg resH %63    ; arithmetic result high byte
+
+; ______________________________________________________________________________
+;
+;  System calls
+; ______________________________________________________________________________
+;
+val SYS_DRAW 0
+val SYS_END 1
+val SYS_SOUND 2
 
 ; ______________________________________________________________________________
 ;
@@ -20,97 +41,3 @@ val SND_SQUARE 0
 val SND_SAWTOOTH 1
 val SND_SINE 2
 val SND_NOISE 3
-
-; ______________________________________________________________________________
-;
-;  Keyboard keys
-; ______________________________________________________________________________
-;
-val K_BACKSPACE 0x08
-val K_TAB 0x09
-val K_RETURN 0x0A    val K_ENTER 0x0A
-val K_CTRL 0x11
-val K_WIN 0x12
-val K_ALT 0x13
-val K_ESC 0x1B       val K_ESCAPE 0x1B
-
-val K_SPACE 0x20
-val K_EXCLAMATION 0x21
-val K_QUOTE 0x22
-val K_HASH 0x23
-val K_DOLLAR 0x24
-val K_PERCENT 0x25
-val K_AMPERSAND 0x26
-val K_APOSTROPHE 0x27
-val K_LPAREN 0x28
-val K_RPAREN 0x29
-val K_ASTERISK 0x2A
-val K_PLUS 0x2B
-val K_COMMA 0x2C
-val K_MINUS 0x2D
-val K_PERIOD 0x2E
-val K_SLASH 0x2F
-
-val K_0 0x30    val K_1 0x31    val K_2 0x32    val K_3 0x33    val K_4 0x34
-val K_5 0x35    val K_6 0x36    val K_7 0x37    val K_8 0x38    val K_9 0x39
-
-val K_COLON 0x3A
-val K_SEMICOLON 0x3B
-val K_LESS 0x3C
-val K_EQUAL 0x3D
-val K_GREATER 0x3E
-val K_QUESTION 0x3F
-val K_AT 0x40
-
-val K_A 0x41    val K_B 0x42    val K_C 0x43    val K_D 0x44    val K_E 0x45
-val K_F 0x46    val K_G 0x47    val K_H 0x48    val K_I 0x49    val K_J 0x4A
-val K_K 0x4B    val K_L 0x4C    val K_M 0x4D    val K_N 0x4E    val K_O 0x4F
-val K_P 0x50    val K_Q 0x51    val K_R 0x52    val K_S 0x53    val K_T 0x54
-val K_U 0x55    val K_V 0x56    val K_W 0x57    val K_X 0x58    val K_Y 0x59
-val K_Z 0x5A
-
-val K_LBRACKET 0x5B
-val K_BACKSLASH 0x5C
-val K_RBRACKET 0x5D
-val K_CIRCUMFLEX 0x5E
-val K_UNDERSCORE 0x5F
-val K_GRAVE 0x60
-
-val K_a 0x61    val K_b 0x62    val K_c 0x63    val K_d 0x64    val K_e 0x65
-val K_f 0x66    val K_g 0x67    val K_h 0x68    val K_i 0x69    val K_j 0x6A
-val K_k 0x6B    val K_l 0x6C    val K_m 0x6D    val K_n 0x6E    val K_o 0x6F
-val K_p 0x70    val K_q 0x71    val K_r 0x72    val K_s 0x73    val K_t 0x74
-val K_u 0x75    val K_v 0x76    val K_w 0x77    val K_x 0x78    val K_y 0x79
-val K_z 0x7A
-
-val K_LBRACE 0x7B
-val K_PIPE 0x7C
-val K_RBRACE 0x7D
-val K_TILDE 0x7E
-
-val K_F1 0x80    val K_F2 0x81    val K_F3 0x82    val K_F4 0x83
-val K_F5 0x84    val K_F6 0x85    val K_F7 0x86    val K_F8 0x87
-val K_F9 0x88    val K_F10 0x89   val K_F11 0x8A   val K_F12 0x8B
-
-val K_UP 0x8C
-val K_LEFT 0x8D
-val K_DOWN 0x8E
-val K_RIGHT 0x8F
-
-val K_COUNT 0x90
-
-; ______________________________________________________________________________
-;
-;  Register names
-; ______________________________________________________________________________
-;
-reg arg0 %20
-reg arg1 %21
-reg arg2 %22
-reg arg3 %23
-reg arg4 %24
-reg arg5 %25
-reg arg6 %26
-reg arg7 %27
-reg arg8 %28
-reg arg9 %29

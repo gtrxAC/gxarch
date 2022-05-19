@@ -1,56 +1,22 @@
-; Welcome to gxarch!
-; Read https://github.com/gtrxAC/gxarch/wiki/Beginner-Tips to learn more.
+; ______________________________________________________________________________
+;
+;  gxarch - hello world
+;
+;  Prints "Hello world!" on the screen
+;
+;  Date: 2022-05-01
+;  Author: gtrxAC
+; ______________________________________________________________________________
+;
+datl main
 
-; Hello World for gxarch
-; Prints "Hello world!" on the screen using a 4×8 font
-; Date: 2021-10-12
-; Author: gtrxAC
+string: dat "Hello world!"
 
-datl main  ; All programs must start with "datl" and the label where the program starts.
-           ; "dat" inserts data into the output program, "datl" inserts a 16-bit value (address).
-		   ; This inserts the address of the "main" subroutine to the start of the program.
-           ; On startup, gxarch checks the first two bytes of the program for the address
-           ; of where the program should start (the entry point).
-
-dat 0, 0, 0  ; All programs must also have the RGB color values of the background color
-             ; after the entry point.
-
-dat 0  ; This byte indicates whether or not this program supports save files (save RAM or SRAM).
-       ; 0 for no, anything else for yes.
-
-string: dat "Hello world!"  ; Embed the hello world string into the executable.
-                            ; This is a C-style null-terminated string.
-                            ; "string" is used to refer to the address of this string.
-
-val PRINT_CHARSPERLINE 32  ; We need the print subroutine from the standard library.
-val PRINT_WIDTH 4          ; Before including it we need to specify the font's properties.
-val PRINT_HEIGHT 8         ; The default tileset assets/tileset.png has 32 characters
-include "std/print.gxs"    ; per line and each character is 4×8 pixels. See
-                           ; https://github.com/gtrxAC/gxarch/wiki/Tilesets to learn more
-                           ; about how tilesets work.
-
-                           ; 'val' creates a constant value. Every time we use for example
-                           ; PRINT_WIDTH in our code, it gets replaced with 4, just like #define in C.
-                           ; 'addr' does the same, but for addresses (16-bit) instead of values (8-bit).
-                           ; 'reg' does the same for registers, it is used in print.gxs and many others.
+include "std/default_font.gxs"
+include "std/print.gxs"
 
 main:
-	set %20 hi(string)  ; Print (and many other subroutines) need us to put parameters
-	set %21 lo(string)  ; in registers, starting at %20. Registers are like small memory
-	set %22 0           ; slots that can hold temporary data. gxarch has 32 of them.
-	set %23 0           ; By convention, gxarch uses registers %20 to %28 for subroutines.
-	                    ; https://github.com/gtrxAC/gxarch/wiki/Beginner-Tips#register-management
-
-	                    ; std/print.gxs also includes std/common.gxs which has definitions
-	                    ; for more user friendly names for the registers, so we can use
-	                    ; arg0, arg1... instead of %20, %21...
-
-	js print            ; Call print subroutine. JS stands for jump subroutine.
-	                    ; Check std/print.gxs to see how the print subroutine works, and what
-	                    ; the registers %20 - %23 are used for.
-
-	end                 ; The end instruction draws a frame and clears the next frame with
-	jmp main            ; black, so we need to run our program in an infinite loop.
-	                    ; If we don't draw a frame, only a blank frame is shown and the
-	                    ; emulator freezes, as the end instruction is directly tied to the
-	                    ; emulator's main rendering loop.
+	arg hi(string), lo(string), 0, 0
+	call print
+	sys SYS_END
+	jmp main
