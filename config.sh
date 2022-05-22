@@ -2,7 +2,7 @@
 # ______________________________________________________________________________
 #
 #  Build options
-#  This script is sourced by build/setup, no need to run it yourself
+#  This script is sourced by build.sh and setup.sh, no need to run it yourself
 # ______________________________________________________________________________
 #
 # Executable name, extension is added depending on target platform.

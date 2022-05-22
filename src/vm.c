@@ -317,7 +317,6 @@ void step(VM *vm) {
 		}
 
 		case OP_RET:
-			vm->reg.rVal = 0;
 			vm->pc = vm->callStack[--vm->sp];
 
 			for (int i = 0; i < 8; i++) {
@@ -370,15 +369,60 @@ void step(VM *vm) {
 					vm->needDraw = true;
 					vm->reg.mouseX = GetMouseX() / vm->scale;
 					vm->reg.mouseY = GetMouseY() / vm->scale;
-					if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) vm->reg.mouseL++; else vm->reg.mouseL = 0;
-					if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) vm->reg.mouseR++; else vm->reg.mouseR = 0;
-					if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) vm->reg.up++; else vm->reg.up = 0;
-					if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) vm->reg.down++; else vm->reg.down = 0;
-					if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) vm->reg.left++; else vm->reg.left = 0;
-					if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) vm->reg.right++; else vm->reg.right = 0;
-					if (IsKeyDown(KEY_J)) vm->reg.act[0]++; else vm->reg.act[0] = 0;
-					if (IsKeyDown(KEY_K)) vm->reg.act[1]++; else vm->reg.act[1] = 0;
-					if (IsKeyDown(KEY_L)) vm->reg.act[2]++; else vm->reg.act[2] = 0;
+
+					if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+						if (vm->reg.mouseL < 255) vm->reg.mouseL++; 
+					} else {
+						vm->reg.mouseL = 0;
+					}
+
+					if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+						if (vm->reg.mouseR < 255) vm->reg.mouseR++;
+					} else {
+						vm->reg.mouseR = 0;
+					}
+
+					if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
+						if (vm->reg.up < 255) vm->reg.up++;
+					} else {
+						vm->reg.up = 0;
+					}
+
+					if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
+						if (vm->reg.down < 255) vm->reg.down++;
+					} else {
+						vm->reg.down = 0;
+					}
+
+					if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
+						if (vm->reg.left < 255) vm->reg.left++;
+					} else {
+						vm->reg.left = 0;
+					}
+
+					if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
+						if (vm->reg.right < 255) vm->reg.right++;
+					} else {
+						vm->reg.right = 0;
+					}
+
+					if (IsKeyDown(KEY_J)) {
+						if (vm->reg.act[0] < 255) vm->reg.act[0]++;
+					} else {
+						vm->reg.act[0] = 0;
+					}
+					
+					if (IsKeyDown(KEY_K)) {
+						if (vm->reg.act[1] < 255) vm->reg.act[1]++;
+					} else {
+						vm->reg.act[1] = 0;
+					}
+					
+					if (IsKeyDown(KEY_L)) {
+						if (vm->reg.act[2] < 255) vm->reg.act[2]++;
+					} else {
+						vm->reg.act[2] = 0;
+					}
 					break;
 
 				case SYS_SOUND: {

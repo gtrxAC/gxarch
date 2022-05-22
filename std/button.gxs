@@ -1,0 +1,66 @@
+; ______________________________________________________________________________
+;
+;  gxarch standard library - button
+; ______________________________________________________________________________
+;
+;  button x y sx sy w h
+;  Draws a button with a different image depending on if it's hovered or
+;  pressed, and returns true if it's pressed.
+;
+;  x y: the position to draw at
+;  sx sy: the source position of the button image
+;  width height: the size of the button
+;
+;  return value: 1 if the button was pressed, 0 if not
+;
+;  Notes:
+;  - The tileset should have 3 button images stacked on top of each other, the
+;    hovered button under the normal button and the pressed button under the
+;    hovered button. The height is for one button image, not all 3 of them.
+; ______________________________________________________________________________
+;
+include "std/common.gxs"
+
+button: {
+	args x, y, sx, sy, width, height
+	vars result
+
+	; Set return value to 0 by default
+	set rVal 0
+
+	; If mouse X is not inside the button, draw the first frame (skip to drawing
+	; the button without incrementing the source Y)
+	ltj [mouseX] [x] buttonDraw
+
+	add [x] [width] result
+	gtj [mouseX] [result] buttonDraw
+
+	; If mouse Y is not inside the button, draw the first frame
+	ltj [mouseY] [y] buttonDraw
+
+	add [y] [height] result
+	gtj [mouseY] [result] buttonDraw
+
+	; If left mouse is pressed, draw the third frame and set return value to 1
+	eqj [mouseL] 1 buttonPress
+	
+	; If left mouse is down, draw the third frame
+	cj mouseL buttonDown
+
+	; At this point, mouse is inside the button but not pressed, so it's
+	; hovered, draw the second frame
+	add [sy] [height] sy
+	jmp buttonDraw
+
+buttonPress:
+	set rVal 1
+
+buttonDown:
+	add [sy] [height] sy
+	add [sy] [height] sy
+
+buttonDraw:
+	arg [sx], [sy], [width], [height], [x], [y]
+	sys SYS_DRAW
+	ret
+}

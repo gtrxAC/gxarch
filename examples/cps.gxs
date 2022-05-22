@@ -1,0 +1,176 @@
+; ______________________________________________________________________________
+;
+;  CPS Test for gxarch
+;
+;  Tests your clicks per second
+;
+;  Date: 2022-05-20
+;  Author: gtrxAC
+; ______________________________________________________________________________
+;
+; Set program entry point
+datl main
+
+titleStr: dat "gxarch: CPS Test"
+timeLeftStr: dat "Time left:   sec (    frames)"
+resultStr: dat "You clicked     times (   CPS)"
+clickStr: dat "Click!"
+startStr: dat "Start!"
+restartStr: dat "Restart"
+
+include "std/common.gxs"
+include "std/default_font.gxs"
+include "std/print.gxs"
+include "std/print_num.gxs"
+include "std/button.gxs"
+
+; Program state constants
+val ST_START 0
+val ST_RUNNING 1
+val ST_RESULT 2
+
+drawButtonCommon: {
+	args y
+	arg 80, [y], 32, 32, 32, 12
+	call button
+	ret
+}
+
+main:
+	reg clicks %0
+	reg timer %1
+	reg state %2
+	reg result %3
+; ______________________________________________________________________________
+;
+;  Draw tiled background
+; ______________________________________________________________________________
+;
+	{
+		reg x %4
+		reg y %5
+
+		set x 0
+		drawBgXLoop:
+			set y 0
+			drawBgYLoop:
+				; Draw tile
+				arg 0, 32, 32, 32, [x], [y]
+				sys SYS_DRAW
+
+				; Next Y iteration
+				add [y] 32 y
+				ltj [y] 160 drawBgYLoop
+
+			; Next X iteration
+			add [x] 32 x
+			ltj [x] 192 drawBgXLoop
+	}
+
+; ______________________________________________________________________________
+;
+;  Update game state
+;
+;  Uses subroutines
+; ______________________________________________________________________________
+;
+	eqc [state] ST_START drawStart
+	eqc [state] ST_RUNNING drawRunning
+	eqc [state] ST_RESULT drawResult
+endFrame:
+	sys SYS_END
+	jmp main
+
+; ______________________________________________________________________________
+;
+;  START state
+;
+;  Click button to start game
+; ______________________________________________________________________________
+;
+drawStart:
+	arg 80
+	call drawButtonCommon
+	cc rVal startButtonAction
+
+	arg hi(titleStr), lo(titleStr), 64, 64
+	call print
+
+	arg hi(startStr), lo(startStr), 84, 82
+	call print
+	jmp endFrame
+
+startButtonAction:
+	set timer 240
+	set clicks 0
+	set state ST_RUNNING
+	ret
+
+; ______________________________________________________________________________
+;
+;  RUNNING state
+;
+;  Lasts 4 seconds, click to increment counter
+; ______________________________________________________________________________
+;
+drawRunning:
+	arg 80
+	call drawButtonCommon
+	cc rVal clickButtonAction
+
+	arg [timer], 107, 64
+	call printNum
+
+	div [timer] 60 result
+	arg [result], 72, 64
+	call printNum
+
+	arg hi(timeLeftStr), lo(timeLeftStr), 38, 64
+	call print
+
+	arg hi(clickStr), lo(clickStr), 84, 82
+	call print
+
+	; Decrement timer, if timer reached 0, go to RESULT state
+	sub [timer] 1 timer
+	eqc [timer] 0 clickTimeEnd
+	jmp endFrame
+
+clickButtonAction:
+	add [clicks] 1 clicks
+	ret
+
+; Subroutine, called when the timer ends
+clickTimeEnd:
+	set state ST_RESULT
+	ret
+
+; ______________________________________________________________________________
+;
+;  RESULT state
+;
+;  Shows click count, click to go back to START state
+; ______________________________________________________________________________
+;
+drawResult:
+	arg 96
+	call drawButtonCommon
+	cc rVal restartButtonAction
+
+	arg hi(resultStr), lo(resultStr), 36, 64
+	call print
+
+	arg hi(restartStr), lo(restartStr), 82, 98
+	call print
+
+	arg [clicks], 84, 64
+	call printNum
+
+	div [clicks] 4 result
+	arg [result], 123, 64
+	call printNum
+	jmp endFrame
+
+restartButtonAction:
+	set state ST_START
+	ret

@@ -19,8 +19,7 @@ include "std/common.gxs"
 ;  Prints the string at address strH strL on the screen at (x, y).
 ;
 ;  strH strL: the address which contains the string to print (high, low byte)
-;  x: the X position to draw at
-;  y: the Y position to draw at
+;  x y: the position to draw at
 ; ______________________________________________________________________________
 ;
 print: {
@@ -51,8 +50,7 @@ printDraw:
 ;  print functions.
 ;
 ;  char: the character to print
-;  x: the X position to draw at
-;  y: the Y position to draw at
+;  x y: the position to draw at
 ; ______________________________________________________________________________
 ;
 printChar: {

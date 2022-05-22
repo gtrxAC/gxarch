@@ -9,8 +9,7 @@
 ;  Prints the number num on the screen in decimal format at (x, y).
 ;
 ;  num: the number to print (unsigned 8-bit)
-;  x: the X position to draw at
-;  y: the Y position to draw at
+;  x y: the position to draw at
 ; ______________________________________________________________________________
 ;
 printNum: {

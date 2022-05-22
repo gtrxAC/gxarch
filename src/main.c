@@ -171,12 +171,12 @@ void loadFile(char *name) {
 		}
 
 		int palSize;
-		Color *colors = LoadImagePalette(tileset, 17, &palSize);
+		Color *colors = LoadImagePalette(tileset, 256, &palSize);
 
 		if (palSize > 16) {
 			UnloadImagePalette(colors);
 			UnloadImage(tileset);
-			err("Tileset has too many colors, max 16");
+			err("Tileset has too many colors, %d > 16", palSize);
 		}
 
 		for (int i = 0; i < palSize; i++) {
