@@ -29,7 +29,7 @@ main:
 	; Call the print function
 	call print
 
-	; Draw a frame
+	; Finish drawing the frame
 	sys SYS_END
 
 	; End the loop
@@ -38,20 +38,17 @@ main:
 
 
 # Building
-* If you don't want to build gxarch yourself, you can go to [Actions](https://github.com/gtrxAC/gxarch/actions), choose the latest commit and download the artifact for your platform. In this case, you don't need to clone the repository, unless you want the examples.
-* If you do want to build gxarch yourself, clone the repo and follow the below instructions.
+* If you don't want to build gxarch yourself, download the pre-compiled executables [here](https://nightly.link/gtrxAC/gxarch/workflows/main/main). You don't need to clone the repository unless you want the examples.
+1. If you're on Windows, download [w64devkit](https://github.com/skeeto/w64devkit/releases). Make sure you get a release zip, not the source code. Extract the archive somewhere and run `w64devkit.exe`. On Linux, just open a terminal.
+2. Follow the below instructions for the platform you want to build for. If you want to create your own programs, you'll also need to build the [assembler](#assembler).
 
-## Linux
+## Desktop
 1. Run `./setup.sh` to install raylib.
 2. Run `./build.sh` to compile the project.
 
-## Windows
-1. Download [w64devkit](https://github.com/skeeto/w64devkit/releases):
-* `w64devkit-x.x.x.zip` for 64-bit
-* `w64devkit-i686-x.x.x.zip` for 32-bit
-2. Extract w64devkit and run `w64devkit.exe`.
-3. Inside w64devkit, go to the directory where you cloned gxarch.
-4. Follow the instructions for [Linux](#linux).
+## Web
+2. Run `TARGET=Web ./setup.sh` to install raylib.
+3. Run `TARGET=Web ./build.sh` to compile the project.
 
 ## Windows (cross compile)
 1. Install `mingw-w64` using your package manager.
@@ -59,17 +56,11 @@ main:
 3. Run `TARGET=Windows_NT ./build.sh` to compile the project.
 
 ## Assembler
-1. If you're on Windows, follow the first 3 steps of the [Windows](#windows) guide.
-2. Run `./build_asm.sh`.
-3. Run `./gxasm program.gxs` to assemble a program. On Windows, use `gxasm.exe program.gxs`.
+1. Run `./build_asm.sh`.
+2. Run `./gxasm program.gxs` to assemble a program. On Windows, use `gxasm.exe program.gxs`.
 * Replace `program.gxs` with the assembly file's name. Try it on the examples: `examples/hello.gxs`.
-4. The output file is generated in the same directory as the gxs file.
-5. You can specify `-r` at the end of the command to also automatically run the file. `./gxasm examples/hello.gxs -r` or `gxasm.exe examples/hello.gxs -r`
-
-## Web
-1. If you're on Windows, follow the first 3 steps of the [Windows](#windows) guide.
-2. Run `TARGET=Web ./setup.sh` to install raylib.
-3. Run `TARGET=Web ./build.sh` to compile the project.
+3. The output file is generated in the same directory as the gxs file.
+4. You can specify `-r` at the end of the command to also automatically run the file. `./gxasm examples/hello.gxs -r` or `gxasm.exe examples/hello.gxs -r`
 
 # Making your own programs
 Documentation is still work in progress, but if you want to make your own programs, check [the wiki](https://github.com/gtrxAC/gxarch/wiki) for some resources.
