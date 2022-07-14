@@ -332,10 +332,9 @@ int main(int argc, char **argv) {
 
 void mainLoop(void) {
 	if (IsFileDropped()) {
-		int unused;
-		char **files = GetDroppedFiles(&unused);
-		loadFile(files[0]);
-		ClearDroppedFiles();
+		FilePathList files = LoadDroppedFiles();
+		loadFile(files.paths[0]);
+		UnloadDroppedFiles(files);
 	}
 
 	if (IsKeyPressed(KEY_PAGE_UP)) {
