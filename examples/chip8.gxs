@@ -1,0 +1,812 @@
+; ______________________________________________________________________________
+;
+;  gxarch - CHIP-8 interpreter
+;
+;  This is a simple CHIP-8 interpreter or emulator, it has some inaccuracies but
+;  many programs work fine.
+;
+;  Controls:
+;  - arrow keys map to 2,4,6,8
+;  - other keys are on screen
+;
+;  How to use (commands are for Linux or w64devkit):
+;  - assemble the save file (first 512 bytes of memory):
+;    ./gxasm examples/chip8_sav.gxs
+;  - append your ROM file to it:
+;    cat rom.ch8 >> examples/chip8_sav.gxa
+;  - rename chip8_sav.gxa to be a save file for the interpreter:
+;    mv examples/chip8_sav.gxa examples/chip8.sav
+;  - assemble and run this file:
+;    ./gxasm -r examples/chip8.gxs
+;
+;  Date: 2022-07-14
+;  Author: gtrxAC
+; ______________________________________________________________________________
+;
+addr vram 0xE000
+addr regs 0xE800
+addr vf 0xE80F
+addr stack 0xE900
+addr keyboard 0xEA00
+addr mem 0xF000
+
+reg iH %0
+reg iL %1
+reg pcH %2
+reg pcL %3
+reg spH %4
+reg spL %5
+reg delayTimer %6
+reg soundTimer %7
+
+reg vxAddrH %8
+reg vxAddrL %9
+reg vxValue %10
+
+reg vyAddrH %11
+reg vyAddrL %12
+reg vyValue %13
+
+reg keyAddrH %14
+reg keyAddrL %15
+reg keyValue %16
+
+reg opH %17
+reg opL %18
+
+; ______________________________________________________________________________
+;
+
+datl main
+
+include "std/default_font.gxs"
+include "std/print.gxs"
+include "std/print_num.gxs"
+
+return: ret
+
+invalidOpStr: dat "INVALID OPCODE"
+overflowStr: dat "STACK OVERFLOW"
+underflowStr: dat "STACK UNDERFLOW"
+
+invalidOp: {
+	arg hi(invalidOpStr), lo(invalidOpStr), 0, 0
+	call print
+
+	arg [opH], 0, 8
+	call printNum
+
+	arg [opL], 16, 8
+	call printNum
+
+	sys SYS_END
+	jmp invalidOp
+}
+
+overflow: {
+	arg hi(overflowStr), lo(overflowStr), 0, 0
+	call print
+
+	arg [opH], 0, 8
+	call printNum
+
+	arg [opL], 16, 8
+	call printNum
+
+	sys SYS_END
+	jmp overflow
+}
+
+underflow: {
+	arg hi(underflowStr), lo(underflowStr), 0, 0
+	call print
+
+	sys SYS_END
+	jmp underflow
+}
+
+; ______________________________________________________________________________
+;
+;  gxarch standard library - button
+;  Modified for chip8.gxs
+; ______________________________________________________________________________
+;
+include "std/common.gxs"
+
+button: {
+	args x, y, sx, sy, width, height
+	vars result
+
+	; Set return value to 0 by default
+	set rVal 0
+
+	; If mouse X is not inside the button, draw the first frame (skip to drawing
+	; the button without incrementing the source Y)
+	ltj [mouseX] [x] buttonDraw
+
+	add [x] [width] result
+	gtj [mouseX] [result] buttonDraw
+
+	; If mouse Y is not inside the button, draw the first frame
+	ltj [mouseY] [y] buttonDraw
+
+	add [y] [height] result
+	gtj [mouseY] [result] buttonDraw
+
+	; If left mouse is pressed, draw the third frame and set return value to 1
+	cj mouseL buttonPress
+	
+	; If left mouse is down, draw the third frame
+	cj mouseL buttonDown
+
+	; At this point, mouse is inside the button but not pressed, so it's
+	; hovered, draw the second frame
+	add [sy] [height] sy
+	jmp buttonDraw
+
+buttonPress:
+	set rVal 1
+
+buttonDown:
+	add [sy] [height] sy
+	add [sy] [height] sy
+
+buttonDraw:
+	arg [sx], [sy], [width], [height], [x], [y]
+	sys SYS_DRAW
+	ret
+}
+; ______________________________________________________________________________
+;
+
+step: {
+	vars realPCH, realPCL, tmpCond1, tmpCond2, tmpAnd
+
+	; convert chip8 memory space to gxarch memory space (0x111 -> 0xF111)
+	set realPCH [pcH]
+	set realPCL [pcL]
+	or [realPCH] 0xF0 realPCH
+
+	; load the next two bytes
+	ld opH [realPCH]
+	add [realPCL] 1 realPCL
+	add [realPCH] [resH] realPCH
+	ld opL [realPCH]
+
+	; increment program counter
+	add [pcL] 2 pcL
+	add [pcH] [resH] pcH
+
+	eq [opH] 0x00 tmpCond1
+	eq [opL] 0xE0 tmpCond2
+	and [tmpCond1] [tmpCond2] tmpAnd
+	cj tmpAnd insClear
+	eq [opL] 0xEE tmpCond2
+	and [tmpCond1] [tmpCond2] tmpAnd
+	cj tmpAnd insReturn
+
+	and [opH] 0xF0 tmpCond1
+	eqj [tmpCond1] 0x10 insJump
+	eqj [tmpCond1] 0x20 insCall
+	eqj [tmpCond1] 0x30 insIfRegEqVal
+	eqj [tmpCond1] 0x40 insIfRegNeqVal
+	eqj [tmpCond1] 0x50 insIfRegEqReg
+	eqj [tmpCond1] 0x60 insSetRegToVal
+	eqj [tmpCond1] 0x70 insAddVal
+	eqj [tmpCond1] 0x80 ins8
+	eqj [tmpCond1] 0x90 insIfRegNeqReg
+	eqj [tmpCond1] 0xA0 insSetI
+	eqj [tmpCond1] 0xB0 insJumpOffset
+	eqj [tmpCond1] 0xC0 insRand
+	eqj [tmpCond1] 0xD0 insDraw
+	eqj [tmpCond1] 0xE0 insE
+	eqj [tmpCond1] 0xF0 insF
+	; jmp invalidOp
+	ret
+
+ins8:
+	and [opL] 0x0F tmpCond1
+	eqj [tmpCond1] 0x00 insSetRegToReg
+	eqj [tmpCond1] 0x01 insOr
+	eqj [tmpCond1] 0x02 insAnd
+	eqj [tmpCond1] 0x03 insXor
+	eqj [tmpCond1] 0x04 insAddReg
+	eqj [tmpCond1] 0x05 insSub
+	eqj [tmpCond1] 0x06 insShr
+	eqj [tmpCond1] 0x07 insSub2
+	eqj [tmpCond1] 0x0E insShl
+	jmp invalidOp
+
+insE:
+	eqj [opL] 0x9E insIfKey
+	eqj [opL] 0xA1 insIfNotKey
+	jmp invalidOp
+
+insF:
+	eqj [opL] 0x07 insLoadDT
+	eqj [opL] 0x0A insWaitKey
+	eqj [opL] 0x15 insSetDT
+	eqj [opL] 0x18 insSetST
+	eqj [opL] 0x1E insAddI
+	eqj [opL] 0x29 insGetHexDigit
+	eqj [opL] 0x33 insBCD
+	eqj [opL] 0x55 insStoreRegs
+	eqj [opL] 0x65 insLoadRegs
+	jmp invalidOp
+}
+
+;
+insClear: {
+	args addrH, addrL, zero
+	set addrH hi(vram)
+	set addrL lo(vram)
+
+	insClearLoop:
+		st zero [addrH]
+		add [addrL] 1 addrL
+		add [addrH] [resH] addrH
+		ltj [addrH] 0xE8 insClearLoop
+
+	ret
+}
+
+insReturn: {
+	sub [spL] 1 spL
+	cj resH underflow
+	; add [spH] [resH] spH
+	ld pcL [spH]
+	sub [spL] 1 spL
+	; add [spH] [resH] spH
+	ld pcH [spH]
+	ret
+}
+
+;
+insJump: {
+	and [opH] 0x0F pcH
+	set pcL [opL]
+	ret
+}
+
+insCall: {
+	and [opH] 0x0F opH
+
+	st pcH [spH]
+	add [spL] 1 spL
+	cj resH overflow
+	; add [spH] [resH] spH
+	st pcL [spH]
+	add [spL] 1 spL
+	; add [spH] [resH] spH
+	set pcH [opH]
+	set pcL [opL]
+	ret
+}
+
+insIfRegEqVal: {
+	and [opH] 0x0F vxAddrL
+	
+	ld vxValue [vxAddrH]
+	eqj [vxValue] [opL] skip
+	ret
+}
+
+;
+insIfRegNeqVal: {
+	and [opH] 0x0F vxAddrL
+	
+	ld vxValue [vxAddrH]
+	eqj [vxValue] [opL] return
+	jmp skip
+}
+
+insIfRegEqReg: {
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+
+	eqj [vxValue] [vyValue] skip
+	ret
+}
+
+;
+insSetRegToVal: {
+	and [opH] 0x0F vxAddrL
+	st opL [vxAddrH]
+	ret
+}
+
+;
+insAddVal: {
+	and [opH] 0x0F vxAddrL
+
+	ld vxValue [vxAddrH]
+
+	add [vxValue] [opL] vxValue
+	st vxValue [vxAddrH]
+	ret
+}
+
+insSetRegToReg: {
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vyValue [vyAddrH]
+	st vyValue [vxAddrH]
+	ret
+}
+
+;
+insOr: {
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	or [vxValue] [vyValue] vxValue
+	st vxValue [vxAddrH]
+	ret
+}
+
+;
+insAnd: {
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	and [vxValue] [vyValue] vxValue
+	st vxValue [vxAddrH]
+	ret
+}
+
+;
+insXor: {
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	xor [vxValue] [vyValue] vxValue
+	st vxValue [vxAddrH]
+	ret
+}
+
+;
+insAddReg: {
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	add [vxValue] [vyValue] vxValue
+	st vxValue [vxAddrH]
+	st resH vf
+	ret
+}
+
+insSub: {
+	args zero, vxValueCopy
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	ld vxValueCopy [vxAddrH]
+
+	sub [vxValue] [vyValue] vxValue
+	st vxValue [vxAddrH]
+
+	st zero vf
+	gtj [vxValueCopy] [vyValue] setVF
+	; eqj [vxValueCopy] [vyValue] setVF
+	ret
+}
+
+insShr: {
+	args LSB
+	and [opH] 0x0F vxAddrL
+
+	ld vxValue [vxAddrH]
+	and [vxValue] 0x01 LSB
+	div [vxValue] 2 vxValue
+	st vxValue [vxAddrH]
+	st LSB vf
+	ret
+}
+
+insSub2: {
+	args zero, vxValueCopy
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	ld vxValueCopy [vxAddrH]
+
+	sub [vyValue] [vxValue] vxValue
+	st vxValue [vxAddrH]
+
+	st zero vf
+	gtj [vyValue] [vxValueCopy] setVF
+	ret
+}
+
+insShl: {
+	args MSB
+	and [opH] 0x0F vxAddrL
+
+	ld vxValue [vxAddrH]
+	and [vxValue] 0x80 MSB
+	div [MSB] 128 MSB
+	mul [vxValue] 2 vxValue
+	st vxValue [vxAddrH]
+	st MSB vf
+	ret
+}
+
+insIfRegNeqReg: {
+	and [opH] 0x0F vxAddrL
+	div [opL] 16 vyAddrL
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	eqj [vxValue] [vyValue] return
+	jmp skip
+}
+
+;
+insSetI: {
+	and [opH] 0x0F iH
+	set iL [opL]
+	ret
+}
+
+insJumpOffset: {
+	args V0
+	and [opH] 0x0F opH
+
+	ld V0 regs
+	add [opL] [V0] pcL
+	add [opH] [resH] pcH
+	ret
+}
+
+insRand: {
+	args result
+	and [opH] 0x0F opH
+
+	set vxAddrL [opH]
+	and [rand] [opL] result
+	st result [vxAddrH]
+	ret
+}
+
+;
+insDraw: {
+	; args are just variables
+	args srcByte, srcBit, oldBit, zero, bitMask
+	vars size, srcAddrH, srcAddrL, dstAddrH, dstAddrL, i
+	and [opH] 0x0F vxAddrL
+	and [opL] 0xF0 vyAddrL
+	div [vyAddrL] 16 vyAddrL
+	and [opL] 0x0F size
+
+	set srcAddrH [iH]
+	set srcAddrL [iL]
+	or [srcAddrH] 0xF0 srcAddrH
+
+	ld vxValue [vxAddrH]
+	ld vyValue [vyAddrH]
+	set dstAddrH hi(vram)
+	set dstAddrL lo(vram)
+	add [dstAddrL] [vxValue] dstAddrL
+	add [dstAddrH] [resH] dstAddrH
+	mul [vyValue] 64 vyValue
+	add [dstAddrH] [resH] dstAddrH
+	add [dstAddrL] [vyValue] dstAddrL
+
+	st zero vf
+
+	insDrawLoopY:
+		ld srcByte [srcAddrH]
+		set bitMask 128
+
+		insDrawLoopX:
+			ld oldBit [dstAddrH]
+			and [srcByte] [bitMask] srcBit
+			div [srcBit] [bitMask] srcBit
+			xor [oldBit] [srcBit] srcBit
+			gtc [oldBit] [srcBit] setVF
+			st srcBit [dstAddrH]
+
+			add [dstAddrL] 1 dstAddrL
+			add [dstAddrH] [resH] dstAddrH
+			div [bitMask] 2 bitMask
+			cj bitMask insDrawLoopX
+
+		; next source byte
+		add [srcAddrL] 1 srcAddrL
+		add [srcAddrH] [resH] srcAddrH
+
+		; next destination Y
+		add [dstAddrL] 56 dstAddrL
+		add [dstAddrH] [resH] dstAddrH
+
+		; draw next byte if remaining
+		add [i] 1 i
+		ltj [i] [size] insDrawLoopY
+
+	ret
+}
+
+insIfKey: {
+	and [opH] 0x0F vxAddrL
+	ld keyAddrL [vxAddrH]
+	ld keyValue [keyAddrH]
+	cj keyValue skip
+	ret
+}
+
+insIfNotKey: {
+	and [opH] 0x0F vxAddrL
+	ld keyAddrL [vxAddrH]
+	ld keyValue [keyAddrH]
+	cj keyValue return
+	jmp skip
+}
+
+insLoadDT: {
+	and [opH] 0x0F vxAddrL
+	st delayTimer [vxAddrH]
+	ret
+}
+
+; This doesn't wait until the key was released but that would be too much work
+; to fix a small inaccuracy
+insWaitKey: {
+	set keyAddrL 0x00
+	insWaitKeyLoop:
+		ld keyValue [keyAddrH]
+		cj keyValue insWaitKeyFound
+
+		add [keyAddrL] 0x01 keyAddrL
+		ltj [keyAddrL] 0x10 insWaitKeyLoop
+
+	; run this instruction again if not found
+	sub [pcL] 2 pcL
+	add [pcH] [resH] pcH
+	ret
+
+	insWaitKeyFound:
+		and [opH] 0x0F vxAddrL
+		st keyAddrL [vxAddrH]
+		ret
+}
+
+insSetDT: {
+	and [opH] 0x0F vxAddrL
+	ld delayTimer [vxAddrH]
+	ret
+}
+
+insSetST: {
+	and [opH] 0x0F vxAddrL
+	ld soundTimer [vxAddrH]
+	ret
+}
+
+insAddI: {
+	args zero
+	and [opH] 0x0F vxAddrL
+	ld vxValue [vxAddrH]
+	add [iL] [vxValue] iL
+	add [iH] [resH] iH
+
+	st zero vf
+	gtj [iH] 0x0F setVF
+	ret
+}
+
+insGetHexDigit: {
+	and [opH] 0x0F vxAddrL
+	ld vxValue [vxAddrH]
+	mul [vxValue] 5 vxValue
+
+	set iH 0xF0
+	set iL 0x03
+	add [iL] [vxValue] iL
+	; add [iH] [resH] iH
+	ret
+}
+
+insBCD: {
+	args digit, destH, destL
+	and [opH] 0x0F vxAddrL
+	set destH [iH]
+	set destL [iL]
+	or [destH] 0xF0 destH
+	ld vxValue [vxAddrH]
+
+	div [vxValue] 100 digit
+	st digit [destH]
+	add [destL] 1 destL
+	add [destH] [resH] destH
+
+	mod [vxValue] 100 digit
+	div [digit] 10 digit
+	st digit [destH]
+	add [destL] 1 destL
+	add [destH] [resH] destH
+
+	mod [vxValue] 10 digit
+	st digit [destH]
+	ret
+}
+
+insStoreRegs: {
+	args register, srcH, srcL, destH, destL
+	and [opH] 0x0F vxAddrL
+	add [vxAddrL] 1 vxAddrL
+
+	set destH [iH]
+	set destL [iL]
+	or [destH] 0xF0 destH
+	set srcH hi(regs)
+
+	insStoreRegsLoop:
+		ld register [srcH]
+		st register [destH]
+
+		add [srcL] 1 srcL
+		add [destL] 1 destL
+		add [destH] [resH] destH
+		ltj [srcL] [vxAddrL] insStoreRegsLoop
+
+	ret
+}
+
+;
+insLoadRegs: {
+	args register, srcH, srcL, destH, destL
+	and [opH] 0x0F vxAddrL
+	add [vxAddrL] 1 vxAddrL
+
+	set srcH [iH]
+	set srcL [iL]
+	or [srcH] 0xF0 srcH
+	set destH hi(regs)
+
+	insLoadRegsLoop:
+		ld register [srcH]
+		st register [destH]
+
+		add [srcL] 1 srcL
+		add [srcH] [resH] srcH
+		add [destL] 1 destL
+		ltj [destL] [vxAddrL] insLoadRegsLoop
+
+	ret
+}
+
+setVF: {
+	vars one
+	set one 1
+	st one vf
+	ret
+}
+
+skip: {
+	add [pcL] 2 pcL
+	add [pcH] [resH] pcH
+	ret
+}
+
+draw: {
+	vars srcH, srcL, pixel, x, y
+	set srcH hi(vram)
+	set srcL lo(vram)
+
+	drawLoopY:
+		set x 0
+		drawLoopX:
+			ld pixel [srcH]
+			mul [pixel] 3 pixel
+			arg [pixel], 24, 3, 3, [x], [y]
+			sys SYS_DRAW
+
+			add [x] 3 x
+			add [srcL] 1 srcL
+			add [srcH] [resH] srcH
+			ltj [x] 192 drawLoopX
+
+		add [y] 3 y
+		ltj [y] 96 drawLoopY
+
+	ret 
+}
+
+main: {
+	set vxAddrH hi(regs)
+	set vyAddrH hi(regs)
+	set keyAddrH hi(keyboard)
+	set spH hi(stack)
+	set spL lo(stack)
+	set pcH 0x02
+	set pcL 0x00
+}
+
+mainLoop: {
+	call step
+	call step
+	call step
+	call step
+	call step
+	call step
+	call step
+	call step
+	call step
+	call draw
+	
+	cc delayTimer updateDT
+	cc soundTimer updateST
+	call drawButtons
+
+	sys SYS_END
+	jmp mainLoop
+}
+
+drawButtons: {
+	vars curKey
+
+	arg 64,  96,  16,  27, 16, 16  call button  st rVal 0xEA01
+	arg 80,  96,  32,  27, 16, 16  call button  st rVal 0xEA02
+	arg 96,  96,  48,  27, 16, 16  call button  st rVal 0xEA03
+	arg 112, 96,  64,  75, 16, 16  call button  st rVal 0xEA0C
+
+	arg 64,  112, 64,  27, 16, 16  call button  st rVal 0xEA04
+	arg 80,  112, 80,  27, 16, 16  call button  st rVal 0xEA05
+	arg 96,  112, 96,  27, 16, 16  call button  st rVal 0xEA06
+	arg 112, 112, 80,  75, 16, 16  call button  st rVal 0xEA0D
+
+	arg 64,  128, 112, 27, 16, 16  call button  st rVal 0xEA07
+	arg 80,  128, 0,   75, 16, 16  call button  st rVal 0xEA08
+	arg 96,  128, 16,  75, 16, 16  call button  st rVal 0xEA09
+	arg 112, 128, 96,  75, 16, 16  call button  st rVal 0xEA0E
+
+	arg 64,  144, 32,  75, 16, 16  call button  st rVal 0xEA0A
+	arg 80,  144, 0,   27, 16, 16  call button  st rVal 0xEA00
+	arg 96,  144, 48,  75, 16, 16  call button  st rVal 0xEA0B
+	arg 112, 144, 112, 75, 16, 16  call button  st rVal 0xEA0F
+
+	ld curKey 0xEA02
+	or [curKey] [kUp] curKey
+	st curKey 0xEA02
+
+	ld curKey 0xEA04
+	or [curKey] [kLeft] curKey
+	st curKey 0xEA04
+
+	ld curKey 0xEA06
+	or [curKey] [kRight] curKey
+	st curKey 0xEA06
+
+	ld curKey 0xEA08
+	or [curKey] [kDown] curKey
+	st curKey 0xEA08
+	ret
+}
+
+updateDT: {
+	sub [delayTimer] 1 delayTimer
+	ret
+}
+
+updateST: {
+	arg SND_SQUARE, 128, 16, 0
+	sys SYS_SOUND
+	sub [soundTimer] 1 soundTimer
+	ret
+}

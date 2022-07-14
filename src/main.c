@@ -128,6 +128,7 @@ void loadFileMem(u8 *file, unsigned int size, Image tileset) {
 	// Copy ROM into gxarch memory, clear rest of gxarch memory, load SRAM, init registers
 	memcpy(vm->rom, file, size);
 	for (int i = size; i < 0x10000; i++) vm->mem[i] = 0;
+	vm->state = ST_RUNNING;
 	load(vm);
 
 	for (int i = 0; i < 64; i++) vm->reg.data[i] = 0;
@@ -142,7 +143,6 @@ void loadFileMem(u8 *file, unsigned int size, Image tileset) {
 		case 120: SetWindowTitle("gxVM - running 2x"); break;
 		case 240: SetWindowTitle("gxVM - running 4x"); break;
 	}
-	vm->state = ST_RUNNING;
 }
 
 // Load a ROM file and tileset, if found.
