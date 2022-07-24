@@ -16,9 +16,12 @@ printNum: {
 	args num, x, y
 	vars result, remainder
 
+	; skip drawing hundreds or tens digit if possible
+	ltj [num] 10 printNum1
+	ltj [num] 100 printNum10
+
 	; divide by 100 to get 1st (looking from left) digit
 	div [num] 100 result
-	ltj [num] 100 printNum10
 
 	; number + 0x30 = ASCII digit of number
 	add [result] 0x30 result
@@ -27,24 +30,23 @@ printNum: {
 	arg [result], [x], [y]
 	call printChar
 
-printNum10:
 	; next character
 	add [x] [rVal] x
 
+printNum10:
 	; 2nd digit (remainder/10)
 	mod [num] 100 remainder
 	div [remainder] 10 result
 	add [result] 0x30 result
-	ltj [num] 10 printNum1
 
 	; print digit
 	arg [result], [x], [y]
 	call printChar
 
-printNum1:
 	; next character
 	add [x] [rVal] x
 
+printNum1:
 	; 3rd digit (remainder)
 	mod [num] 10 remainder
 	add [remainder] 0x30 result

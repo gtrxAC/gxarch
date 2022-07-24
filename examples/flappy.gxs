@@ -1,0 +1,407 @@
+; ______________________________________________________________________________
+;
+;  gxarch - flappy
+;
+;  A Flappy Bird clone.
+;  Controls:
+;  - Left mouse to start and play
+;  - Right mouse to pause and continue
+;
+;  Date: 2022-07-24
+;  Author: gtrxAC
+; ______________________________________________________________________________
+;
+datl main
+
+return: ret
+
+val PRINT_CHARSPERLINE 21
+val PRINT_WIDTH 6
+val PRINT_HEIGHT 8
+
+printCharWidths:
+	dat 3, 2, 4, 6, 6, 5, 6, 2, 3, 3, 6, 6, 2, 5, 2, 5, 6, 6, 6, 6, 6
+	dat 6, 6, 6, 6, 6, 2, 2, 5, 5, 5, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 4
+	dat 4, 5, 5, 6, 5, 5, 5, 5, 5, 5, 6, 5, 6, 6, 5, 6, 5, 3, 5, 3, 4
+	dat 5, 3, 5, 5, 5, 5, 5, 4, 5, 5, 2, 4, 5, 2, 6, 5, 5, 5, 5, 5, 5
+	dat 4, 5, 6, 6, 5, 5, 5, 4, 2, 4, 6
+
+include "std/print.gxs"
+include "std/print_num.gxs"
+
+val ST_TITLE 0
+val ST_INGAME 1
+val ST_PAUSED 2
+val ST_GAMEOVER 3
+
+reg state %0
+reg score %1
+reg playerY %2
+reg frameCount %3
+reg pipeTexture %4
+
+addr pipesX 0xE000
+addr pipesY 0xE003
+addr highScore 0xF000  ; in SRAM
+
+titleStr: dat "Press Left Mouse"
+gameOverStr: dat "Game Over"
+scoreStr: dat "Your score:"
+highScoreStr: dat "High score:"
+continueStr: dat "Press Right Mouse to continue"
+
+main:
+	; set clear color (background) to light blue
+	set clearX 127
+	set clearY 12
+
+loop:
+	set %32 0  set %33 0  set %34 0  set %35 0
+	set %36 0  set %37 0  set %38 0  set %39 0
+
+	call drawBackground
+
+	; these are not subroutines so we can call only one of them and then
+	; jmp end, that's also why we need to clear local var registers above
+	eqj [state] ST_TITLE updateTitle
+	eqj [state] ST_INGAME updateGame
+	eqj [state] ST_PAUSED updatePaused
+	eqj [state] ST_GAMEOVER updateGameOver
+
+end:
+	add [frameCount] 1 frameCount
+	sys SYS_END
+	jmp loop
+
+drawBackground: {
+	vars i, cloudsY, waterX
+
+	drawBgLoop:
+		; draw clouds at a slightly alternating position every 32 frames
+		and [frameCount] 0x20 cloudsY
+		div [cloudsY] 0x20 cloudsY
+		add [cloudsY] 16 cloudsY
+		arg 0, 40, 128, 40, [i], [cloudsY]
+		sys SYS_DRAW
+
+		; draw moving water when in game, static water when not
+		eqj [state] ST_INGAME drawBgMoveWater
+		jmp drawBgStaticWater
+
+		drawBgMoveWater:
+			and [frameCount] 0x30 waterX
+			div [waterX] 0x10 waterX
+
+		drawBgStaticWater:
+			arg [waterX], 80, 128, 36, [i], 124
+			sys SYS_DRAW
+
+		add [i] 124 i
+		ltj [i] 192 drawBgLoop
+
+	ret
+}
+
+; ______________________________________________________________________________
+;
+;  Title state
+; ______________________________________________________________________________
+;
+updateTitle: {
+	eqc [mouseL] 1 start
+
+	; draw message, blink every 16 frames
+	vars shouldDrawText
+	and [frameCount] 0x10 shouldDrawText
+	div [shouldDrawText] 0x10 shouldDrawText
+	cc shouldDrawText drawTitleText
+	jmp end
+}
+
+start: {
+	set state ST_INGAME
+	set score 0
+	set playerY 74
+	set pipeTexture 0
+
+	call initPipes
+	ret
+}
+
+initPipes: {
+	vars pipeXAddrH, pipeXAddrL, pipeYAddrH, pipeYAddrL, pipeX, pipeY
+
+	set pipeXAddrH hi(pipesX)
+	set pipeXAddrL lo(pipesX) ; should be zero at the start
+	set pipeYAddrH hi(pipesY)
+	set pipeYAddrL lo(pipesY)
+	initPipesLoop:
+		; start pipes 100 pixels away with 72 px separation
+		mul [pipeXAddrL] 72 pipeX
+		add [pipeX] 100 pipeX
+		st pipeX [pipeXAddrH]
+
+		; random Y value within screen borders
+		and [rand] 0x3F pipeY
+		add [pipeY] 16 pipeY
+		st pipeY [pipeYAddrH]
+
+		add [pipeXAddrL] 1 pipeXAddrL
+		add [pipeYAddrL] 1 pipeYAddrL
+		ltj [pipeXAddrL] 3 initPipesLoop
+
+	ret
+}
+
+drawTitleText: {
+	arg hi(titleStr), lo(titleStr), 59, 76
+	call print
+	ret
+}
+
+; ______________________________________________________________________________
+;
+;  In-game state
+; ______________________________________________________________________________
+;
+updateGame: {
+	eqc [mouseL] 1 jump
+	eqc [mouseR] 1 pause
+	add [playerY] 1 playerY
+	gtc [playerY] 150 gameOver
+
+	call movePipes
+	call checkPipes
+	call drawPipes
+
+	arg 88, 116, 12, 12, 48, [playerY]
+	sys SYS_DRAW
+
+	arg [score], 90, 20
+	call printNum
+	jmp end
+}
+
+movePipes: {
+	vars pipeXAddrH, pipeXAddrL, pipeYAddrH, pipeYAddrL, pipeX, pipeY
+
+	set pipeXAddrH hi(pipesX)
+	set pipeXAddrL lo(pipesX) ; should be zero at the start
+	set pipeYAddrH hi(pipesY)
+	set pipeYAddrL lo(pipesY)
+	movePipesLoop:
+		ld pipeX [pipeXAddrH]
+		sub [pipeX] 1 pipeX
+		eqc [pipeX] 48 addScore
+		st pipeX [pipeXAddrH]
+
+		; on overflow create a new pipe
+		; not a subroutine because we want to keep the local variable regs
+		cj resH newPipe
+	
+	movePipesNext:
+		add [pipeXAddrL] 1 pipeXAddrL
+		add [pipeYAddrL] 1 pipeYAddrL
+		ltj [pipeXAddrL] 3 movePipesLoop
+
+	ret
+
+	newPipe:
+		set pipeX 215
+		st pipeX [pipeXAddrH]
+
+		; random Y value within screen borders
+		and [rand] 0x3F pipeY
+		add [pipeY] 16 pipeY
+		st pipeY [pipeYAddrH]
+
+		jmp movePipesNext
+}
+
+checkPipes: {
+	vars pipeXAddrH, pipeXAddrL, pipeYAddrH, pipeYAddrL, pipeX, pipeY, playerYEnd, pipeYEnd
+
+	set pipeXAddrH hi(pipesX)
+	set pipeXAddrL lo(pipesX) ; should be zero at the start
+	set pipeYAddrH hi(pipesY)
+	set pipeYAddrL lo(pipesY)
+	checkPipesLoop:
+		ld pipeX [pipeXAddrH]
+		ld pipeY [pipeYAddrH]
+
+		ltj [pipeX] 26 checkPipesNext
+		gtj [pipeX] 60 checkPipesNext
+
+		add [playerY] 12 playerYEnd
+		add [pipeY] 42 pipeYEnd
+		gtj [playerYEnd] [pipeYEnd] gameOver
+
+		ltj [pipeY] [playerY] checkPipesNext
+
+		jmp gameOver
+	checkPipesNext:
+		add [pipeXAddrL] 1 pipeXAddrL
+		add [pipeYAddrL] 1 pipeYAddrL
+		ltj [pipeXAddrL] 3 checkPipesLoop
+
+	ret
+}
+
+addScore: {
+	vars tmpMod
+
+	add [score] 1 score
+	arg SND_SQUARE, 100, 1, 70
+	sys SYS_SOUND
+
+	mod [score] 20 tmpMod
+	eqj [tmpMod] 0 changeTexture
+	ret
+}
+
+changeTexture: {
+	add [pipeTexture] 22 pipeTexture
+	mod [pipeTexture] 88 pipeTexture
+	ret
+}
+
+jump: {
+	sub [playerY] 24 playerY
+	gtj [playerY] 200 jumpLimit
+	arg SND_NOISE, 80, 1, 40
+	sys SYS_SOUND
+	ret
+}
+
+jumpLimit: {
+	set playerY 0
+	ret
+}
+
+pause: {
+	set state ST_PAUSED
+	ret
+}
+
+gameOver: {
+	vars tmpHighScore
+
+	set state ST_GAMEOVER
+	arg SND_NOISE, 10, 30, 150
+	sys SYS_SOUND
+
+	ld tmpHighScore highScore
+	gtj [score] [tmpHighScore] newHighScore
+	ret
+}
+
+newHighScore: {
+	st score highScore
+	ret
+}
+
+drawPipes: {
+	vars pipeXAddrH, pipeXAddrL, pipeYAddrH, pipeYAddrL, pipeX, pipeY, pipeBodyY
+
+	set pipeXAddrH hi(pipesX)
+	set pipeXAddrL lo(pipesX) ; should be zero at the start
+	set pipeYAddrH hi(pipesY)
+	set pipeYAddrL lo(pipesY)
+	drawPipesLoop:
+		ld pipeX [pipeXAddrH]
+		ld pipeY [pipeYAddrH]
+
+		; draw top body
+		set pipeBodyY 0
+		drawPipeTopLoop:
+			arg [pipeTexture], 124, 22, 4, [pipeX], [pipeBodyY]
+			sys SYS_DRAW
+
+			add [pipeBodyY] 4 pipeBodyY
+			ltj [pipeBodyY] [pipeY] drawPipeTopLoop
+
+		; draw top end
+		sub [pipeY] 4 pipeY
+		arg [pipeTexture], 116, 22, 8, [pipeX], [pipeY]
+		sys SYS_DRAW
+
+		; draw bottom body
+		add [pipeY] 46 pipeY
+		set pipeBodyY [pipeY]
+		drawPipeBottomLoop:
+			arg [pipeTexture], 124, 22, 4, [pipeX], [pipeBodyY]
+			sys SYS_DRAW
+
+			add [pipeBodyY] 4 pipeBodyY
+			ltj [pipeBodyY] 160 drawPipeBottomLoop
+
+		; draw bottom end
+		arg [pipeTexture], 116, 22, 8, [pipeX], [pipeY]
+		sys SYS_DRAW
+	
+		add [pipeXAddrL] 1 pipeXAddrL
+		add [pipeYAddrL] 1 pipeYAddrL
+		ltj [pipeXAddrL] 3 drawPipesLoop
+
+	ret
+}
+
+; ______________________________________________________________________________
+;
+;  Paused state
+; ______________________________________________________________________________
+;
+updatePaused: {
+	eqc [mouseL] 1 continue
+	eqc [mouseR] 1 continue
+
+	call drawPipes
+
+	arg 88, 116, 12, 12, 48, [playerY]
+	sys SYS_DRAW
+	
+	arg hi(continueStr), lo(continueStr), 32, 76
+	call print
+	jmp end
+}
+
+continue: {
+	set state ST_INGAME
+	ret
+}
+
+; ______________________________________________________________________________
+;
+;  Game over state
+; ______________________________________________________________________________
+;
+updateGameOver: {
+	vars tmpHighScore
+
+	eqc [mouseL] 1 title
+
+	call drawPipes
+
+	arg hi(gameOverStr), lo(gameOverStr), 74, 68
+	call print
+
+	arg hi(scoreStr), lo(scoreStr), 64, 76
+	call print
+	arg [score], 118, 76
+	call printNum
+
+	arg hi(highScoreStr), lo(highScoreStr), 64, 84
+	call print
+	ld tmpHighScore highScore
+	arg [tmpHighScore], 118, 84
+	call printNum
+
+	arg 100, 116, 12, 12, 48, [playerY]
+	sys SYS_DRAW
+	jmp end
+}
+
+title: {
+	set state ST_TITLE
+	ret
+}
