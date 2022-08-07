@@ -36,9 +36,10 @@ val ST_GAMEOVER 3
 
 reg state %0
 reg score %1
-reg playerY %2
-reg frameCount %3
-reg pipeTexture %4
+reg playerY %2      ; player Y position (0 = top, 160 = bottom)
+reg playerVel %3    ; player Y velocity (positive = down, negative = up)
+reg frameCount %4   ; frame count, used for cloud and water animation
+reg pipeTexture %5  ; current pipe texture's X value, changes every 20 points
 
 addr pipesX 0xE000
 addr pipesY 0xE003
@@ -122,6 +123,7 @@ start: {
 	set state ST_INGAME
 	set score 0
 	set playerY 74
+	set playerVel 2
 	set pipeTexture 0
 
 	call initPipes
@@ -167,9 +169,10 @@ drawTitleText: {
 updateGame: {
 	eqc [mouseL] 1 jump
 	eqc [mouseR] 1 pause
-	add [playerY] 1 playerY
+	add [playerY] [playerVel] playerY
 	gtc [playerY] 150 gameOver
 
+	call updateVel
 	call movePipes
 	call checkPipes
 	call drawPipes
@@ -180,6 +183,12 @@ updateGame: {
 	arg [score], 90, 20
 	call printNum
 	jmp end
+}
+
+updateVel: {
+	eqj [playerVel] 2 return
+	add [playerVel] 1 playerVel
+	ret
 }
 
 movePipes: {
@@ -233,7 +242,7 @@ checkPipes: {
 		gtj [pipeX] 60 checkPipesNext
 
 		add [playerY] 12 playerYEnd
-		add [pipeY] 42 pipeYEnd
+		add [pipeY] 47 pipeYEnd
 		gtj [playerYEnd] [pipeYEnd] gameOver
 
 		ltj [pipeY] [playerY] checkPipesNext
@@ -266,7 +275,7 @@ changeTexture: {
 }
 
 jump: {
-	sub [playerY] 24 playerY
+	set playerVel 250
 	gtj [playerY] 200 jumpLimit
 	arg SND_NOISE, 80, 1, 40
 	sys SYS_SOUND
@@ -274,7 +283,7 @@ jump: {
 }
 
 jumpLimit: {
-	set playerY 0
+	set playerVel 2
 	ret
 }
 
@@ -326,7 +335,7 @@ drawPipes: {
 		sys SYS_DRAW
 
 		; draw bottom body
-		add [pipeY] 46 pipeY
+		add [pipeY] 51 pipeY
 		set pipeBodyY [pipeY]
 		drawPipeBottomLoop:
 			arg [pipeTexture], 124, 22, 4, [pipeX], [pipeBodyY]
